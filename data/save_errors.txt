@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/Users/aidaneast/nq-research/src/save_daily_date.py", line 15, in <module>
+    os.makedirs(save_folder, exist_ok=True)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen os>", line 226, in makedirs
+  File "<frozen os>", line 236, in makedirs
+OSError: [Errno 30] Read-only file system: 'data'
