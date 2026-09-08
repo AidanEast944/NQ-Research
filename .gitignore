@@ -1,0 +1,24 @@
+venv/
+src/__pycache__/
+data/save_log.txt
+data/save_errors.txt
+data/forward_check_log.txt
+data/forward_check_errors.txt
+data/forward_resolve_log.txt
+data/forward_resolve_errors.txt
+
+# Secrets - never commit real credentials, broker API keys, or account info.
+# Added ahead of live-capital integration so nothing slips in by accident later.
+.env
+.env.*
+*.key
+*.pem
+secrets.json
+secrets.yaml
+secrets.yml
+credentials.json
+credentials.yaml
+credentials.yml
+broker_config.json
+**/broker_credentials*
+**/*_credentials*
