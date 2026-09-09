@@ -1,6 +1,0 @@
-No data yet for 2026-07-14 - market may not be open, or too early.
-No signal today (2026-07-15). Entry price 29951.5 was inside prior day range (29371.25 - 30019.25).
-SIGNAL LOGGED: SHORT at 29375.0 (stop: 29405.0, target: 29315.0)
-SIGNAL LOGGED: SHORT at 29375.0 (stop: 29405.0, target: 29315.0)
-SIGNAL LOGGED: SHORT at 28673.75 (stop: 28703.75, target: 28613.75)
-No data yet for 2026-07-18 - market may not be open, or too early.
