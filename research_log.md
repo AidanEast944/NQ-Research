@@ -249,16 +249,69 @@ This log documents every strategy hypothesis tested, the method used, the result
   (watching the Tuesday-close-to-Wednesday-open window in particular), not mining this same
   history further for a cleaner cut.
 
+## Entry 21: Gap Continuation, Volatility-Regime Filter (follow-up to Entry 16)
+- **Hypothesis:** Entry 16's corrected gap-continuation edge (468 trades, PF 1.22, just under the
+  1.3 bar) is a momentum/persistence effect that should be stronger in higher-volatility regimes.
+  Tested by splitting the SAME 468 trades (identical stop/target, no re-fit) by entry-day ATR
+  percentile rank against the trailing 60 sessions.
+- **Method:** `get_weekday_open_gap_signals_with_vol_regime_from_archive()` — RTH session true
+  range → rolling ATR (lagged 1 day, no lookahead) → rolling percentile rank. Split at the median
+  and into terciles. Three follow-up checks run on the high-vol (>=median) subset specifically,
+  given the Entry 10/Entry 20 lesson that an exciting aggregate number needs to survive scrutiny
+  before it means anything:
+  1. **Outlier concentration** — does this filter's edge depend on a few huge trades?
+  2. **Confound check** — does the LOW-vol subset show the same "improves over time" walk-forward
+     shape as the high-vol subset? If so, the filter isn't adding real information beyond a
+     generic calendar-time trend already present in Entry 16's unfiltered walk-forward
+     (0.96→1.19→1.27→1.54).
+  3. **Cost sensitivity** — the standardized scorecard has NO cost check built in; verified
+     separately using `trading_costs.apply_costs()`.
+- **Sample:** 452 usable trades (16 dropped for insufficient ATR warmup), split 186 low-vol / 266
+  high-vol.
+- **Result:** High-vol subset: PF 1.32 gross, expectancy $15.27/trade gross, 5/5 scorecard PASS
+  on paper. But:
+  1. **Outlier check: clean.** Top 10 winning trades are only 39.4% of total P&L, median trade is
+     a normal -$80 stop-out (matches the 39.8% win rate on a 2:1 reward:risk setup). Unlike Entry
+     20's Wednesday result, this strategy's fixed 40pt stop/80pt target structurally prevents any
+     single trade from dominating - confirmed empirically, not just assumed.
+  2. **Confound check: the filter passed.** Low-vol's own walk-forward is 1.23→1.41→0.80→1.10 -
+     NOT a steady climb like the unfiltered baseline or the high-vol subset. It craters (PF 0.80,
+     -$105/trade) in the exact window (2025-06-25 to 2026-01-02) where the high-vol subset was
+     having its best run. If this were purely a calendar-time effect, both subsets would move
+     together: they diverge instead, which is real evidence the volatility split is capturing
+     something distinct from "the strategy just got better over time."
+  3. **Cost check: fails the bar.** Net of realistic slippage+commission, PF drops from 1.32 to
+     **1.17** - below the 1.3 threshold. Net expectancy $8.77/trade - a real improvement over
+     Entry 16's unfiltered baseline (~$4.48/trade net) but not enough to clear the scorecard on a
+     cost-adjusted basis. The scorecard's "5/5 PASS" is gross-only and would have overstated this.
+  4. Walk-forward itself is officially "3/4 windows, mixed/inconclusive" per its own summary text
+     (window 1 lost money, PF 0.92) - worth noting the scorecard's headline PASS/FAIL line and the
+     walk-forward's own consistency verdict can disagree, and both need to be read, not just the
+     scorecard.
+- **Verdict:** WATCH, upgraded confidence - a credible, evidence-backed refinement to Entry 16
+  (not a confound artifact, not outlier-dependent), but still short of the profit-factor bar once
+  real costs are applied. Roughly doubles net expectancy per trade vs. the unfiltered baseline.
+- **Reasoning:** This is the most defensible incremental improvement found in today's research
+  push - it survived exactly the kind of scrutiny that sank Entry 20's Wednesday result. Worth
+  adopting as the working definition of the gap-continuation edge going forward (trade the
+  high-vol-regime subset preferentially), but "worth adopting as the better definition" is not the
+  same as "validated" - it still needs the 1.3 net-of-cost profit factor bar cleared, likely via
+  more accumulated live data, before it's more than a well-supported refinement.
+
 ---
 
 ## Current Status Summary (as of 2026-09-09)
-**Tier 1 — Live forward-testing:** Gap Continuation (re-rated WATCH per Entry 16, not the PASS
-Entry 10 implied — same live script, corrected backtest), NQ/ES Pairs, NQ/YM Pairs, ES/YM Pairs
-(PASS per Entries 9/13, but see Entry 18's cointegration caution)
+**Tier 1 — Live forward-testing:** Gap Continuation (re-rated WATCH per Entry 16, refined by
+Entry 21's volatility-regime filter — real, evidence-backed improvement, but net-of-cost PF 1.17
+still misses the 1.3 bar), NQ/ES Pairs, NQ/YM Pairs, ES/YM Pairs (PASS per Entries 9/13, but see
+Entry 18's cointegration caution)
 **Watching, not yet live:** Overnight Session Drift (Entry 17/20) — stop-loss variant now tested;
 all-weekdays version fails the scorecard on drawdown, but the Wednesday-specific subset is a
 genuine (if unproven) hypothesis worth forward-testing
 **Rejected today:** Relative Momentum Rotation (Entry 19) — no momentum-persistence edge found
 across NQ/ES/YM/RTY at a 1-day RTH hold
+**Process note:** the standardized scorecard (scorecard.py) does not check trading costs — every
+"PASSES SCORECARD" verdict to date is gross-only. Worth adding a cost-adjusted check to the
+scorecard itself rather than re-deriving it by hand each time (see Entry 21).
 **All pending:** 100+ trade validation threshold at their respective (corrected, where applicable) definitions
 **Validated for real capital:** None
