@@ -7,8 +7,10 @@ from datetime import date
 
 LOOKBACK = 20
 ENTRY_Z = 2.0
-STOP_Z = 4.0        # if the spread keeps diverging past this, the mean-reversion thesis is failing - cut it
-MAX_HOLD_DAYS = 20   # trading days; if it hasn't reverted by now, stop waiting on a broken thesis
+STOP_Z = 3.5        # matches get_pairs_trading_signals_from_archive()'s default in strategy.py -
+                     # this is the stop that was actually backtested and produced the PF 2.52
+                     # quoted for Entry 9 in research_log.md, not a fresh guess
+MAX_HOLD_DAYS = 15   # same - matches the archive backtest's default, not a fresh guess
 STATE_FILE = "data/pairs_forward_state.json"
 
 def load_state():
