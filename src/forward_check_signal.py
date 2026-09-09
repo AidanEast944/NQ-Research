@@ -12,6 +12,12 @@ LOG_FILE = "data/forward_log.csv"
 
 nq = yf.Ticker("NQ=F")
 history = nq.history(period="5d", interval="15m")
+
+if history.empty:
+    print("WARNING: No data returned from Yahoo Finance. This may be a temporary outage "
+          "or futures contract rollover issue. Skipping this run - will retry next scheduled time.")
+    sys.exit()
+
 history["date"] = history.index.date
 
 today = date.today()
@@ -69,3 +75,6 @@ def log_signal(strategy_name, signal):
         f.write(f"{today},{strategy_name},{signal},{entry_price},{stop_price},{target_price},OPEN,,\n")
 
     print(f"SIGNAL LOGGED [{strategy_name}]: {signal} at {entry_price} (stop: {stop_price}, target: {target_price})")
+
+log_signal("breakout", breakout_signal)
+log_signal("fade", fade_signal)

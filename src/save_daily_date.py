@@ -4,6 +4,11 @@ import os
 nq = yf.Ticker("NQ=F")
 history = nq.history(period="60d", interval="15m")
 
+if history.empty:
+    print("WARNING: No data returned from Yahoo Finance. This may be a temporary outage "
+          "or futures contract rollover issue. Skipping this run - will retry next scheduled time.")
+    exit()
+
 # Add a plain date column, same technique as before
 history["date"] = history.index.date
 
