@@ -22,15 +22,6 @@ broker_config.json
 **/broker_credentials*
 **/*_credentials*
 
-# Raw market data archives - large, regenerable via save_daily_date.py / the data vendor,
-# not something we want bloating repo history.
-data/raw/
-data/raw_es/
-data/raw_es_extended/
-data/raw_nq_extended/
-data/raw_rty_extended/
-data/raw_ym/
-data/raw_ym_extended/
 
 # Live/paper-trading runtime state - regenerated every run, not source, and changes
 # constantly (would be pure commit noise). Back these up separately if ever needed.
