@@ -2011,3 +2011,309 @@ def get_weekday_open_gap_signals_from_archive(min_gap_points=30, stop_points=40,
 
     return pd.DataFrame(results)
 
+
+
+def get_weekday_open_gap_signals_with_vol_regime_from_archive(min_gap_points=30, stop_points=40, target_points=80,
+                                                                  entry_time="08:30", session_end="16:00",
+                                                                  data_folder="data/raw_nq_extended",
+                                                                  atr_period=14, vol_lookback=60):
+    """Same trade definition as get_weekday_open_gap_signals_from_archive() (Entry 16's corrected
+    gap-continuation backtest), with one addition: a `vol_regime_pct` column giving each trade's
+    entry-day ATR as a percentile rank against the trailing `vol_lookback` sessions.
+
+    HYPOTHESIS BEING TESTED (2026-09-09, requested strategy candidate): gap-continuation edges are
+    generally a momentum/persistence effect - a gap that keeps going is order flow continuing in
+    one direction. That kind of persistence is usually stronger in higher-volatility, trending
+    regimes and weaker/noisier in low-vol chop, where gaps are more likely to just get faded back.
+    If true, filtering Entry 16's 468 trades (PF 1.22, just under the 1.3 bar) to the higher-vol
+    subset should show a cleaner edge than the unfiltered pool - not because of a re-fit stop/target
+    (same stop_points/target_points as Entry 16, no new degrees of freedom spent there), but because
+    of a real subset with a different underlying market condition. This is a filter, not a retune -
+    see gap_vol_regime_test.py for the actual test and results.
+
+    ATR is computed the same way as get_prior_day_break_signals_atr_from_archive() (RTH session true
+    range, rolling mean, shifted by 1 day so only information available BEFORE the entry bar is
+    used - no lookahead). The percentile rank is likewise only ever computed against days at or
+    before the current one within the trailing window, so it can't peek forward either.
+    """
+    files = glob.glob(os.path.join(data_folder, "*.csv"))
+    if not files:
+        raise FileNotFoundError(f"No archive files found in {data_folder}.")
+
+    all_days = [pd.read_csv(f, index_col="Datetime", parse_dates=True) for f in files]
+    history = pd.concat(all_days)
+    history = history[~history.index.duplicated(keep="first")]
+    history = history.sort_index()
+    history.index = pd.to_datetime(history.index, utc=True).tz_convert("America/New_York")
+    history["date"] = history.index.date
+
+    entry_t = pd.Timestamp(entry_time).time()
+    close_t = pd.Timestamp(session_end).time()
+
+    daily_close = history.groupby("date").agg(close=("Close", "last")).sort_index()
+    daily_close["prior_close"] = daily_close["close"].shift(1)
+
+    entry_bars = history[history.index.time == entry_t].groupby("date")["Open"].first().rename("entry_open")
+    daily = daily_close.join(entry_bars, how="inner")
+    daily["gap_points"] = daily["entry_open"] - daily["prior_close"]
+
+    # --- volatility regime: RTH session true range -> rolling ATR (lagged) -> rolling percentile rank ---
+    session_bars = history[(history.index.time >= entry_t) & (history.index.time <= close_t)]
+    session_stats = session_bars.groupby("date").agg(
+        session_high=("High", "max"), session_low=("Low", "min"), session_close=("Close", "last")
+    )
+    session_stats["prev_session_close"] = session_stats["session_close"].shift(1)
+
+    def session_true_range(row):
+        if pd.isna(row["prev_session_close"]):
+            return row["session_high"] - row["session_low"]
+        return max(
+            row["session_high"] - row["session_low"],
+            abs(row["session_high"] - row["prev_session_close"]),
+            abs(row["session_low"] - row["prev_session_close"])
+        )
+
+    session_stats["true_range"] = session_stats.apply(session_true_range, axis=1)
+    session_stats["atr"] = session_stats["true_range"].rolling(
+        atr_period, min_periods=max(5, atr_period // 2)
+    ).mean().shift(1)
+    session_stats["vol_regime_pct"] = session_stats["atr"].rolling(
+        vol_lookback, min_periods=max(10, vol_lookback // 3)
+    ).apply(lambda w: pd.Series(w).rank(pct=True).iloc[-1], raw=False)
+
+    daily = daily.join(session_stats[["vol_regime_pct"]])
+
+    results = []
+    for day in daily.index.tolist():
+        row = daily.loc[day]
+        if pd.isna(row["gap_points"]) or abs(row["gap_points"]) < min_gap_points:
+            continue
+
+        gap_up = row["gap_points"] > 0
+        signal = "LONG" if gap_up else "SHORT"
+
+        entry_price = row["entry_open"]
+        if signal == "LONG":
+            stop_price = entry_price - stop_points
+            target_price = entry_price + target_points
+        else:
+            stop_price = entry_price + stop_points
+            target_price = entry_price - target_points
+
+        day_bars = history[
+            (history["date"] == day)
+            & (history.index.time > entry_t)
+            & (history.index.time <= close_t)
+        ]
+
+        exit_price = None
+        exit_reason = None
+        for _, bar in day_bars.iterrows():
+            if signal == "LONG":
+                hit_stop = bar["Low"] <= stop_price
+                hit_target = bar["High"] >= target_price
+            else:
+                hit_stop = bar["High"] >= stop_price
+                hit_target = bar["Low"] <= target_price
+            if hit_stop:
+                exit_price, exit_reason = stop_price, "stop"
+                break
+            elif hit_target:
+                exit_price, exit_reason = target_price, "target"
+                break
+
+        if exit_price is None:
+            exit_price = day_bars.iloc[-1]["Close"] if len(day_bars) > 0 else entry_price
+            exit_reason = "eod"
+
+        results.append({
+            "date": day, "signal": signal, "gap_points": row["gap_points"],
+            "vol_regime_pct": row["vol_regime_pct"],
+            "entry_price": entry_price, "exit_price": exit_price, "exit_reason": exit_reason
+        })
+
+    return pd.DataFrame(results)
+
+
+def get_overnight_drift_signals_with_stop_from_archive(data_folder="data/raw_nq_extended", entry_time="08:30",
+                                                           session_close_time="16:00", direction="LONG",
+                                                           stop_points=100, weekday_filter=None):
+    """Entry 17's unconditional overnight drift (get_overnight_drift_signals_from_archive), extended
+    two ways, requested as a new strategy candidate (2026-09-09):
+
+    1. A real stop-loss, checked bar-by-bar across the actual overnight session (every bar from the
+       prior day's session_close_time through today's entry_time), not just entry vs. exit price.
+       Entry 17 had NO stop at all and showed a 645%-of-account max drawdown - unusable as-is
+       regardless of its otherwise-consistent walk-forward.
+    2. An optional `weekday_filter` (e.g. "Wednesday") to test whether the aggregate overnight-drift
+       edge is concentrated on specific weekdays, similar in spirit to Entry 14's independently-
+       discovered Wednesday RTH effect (get_day_of_week_signals_from_archive) - if the overnight
+       session ending in a Wednesday RTH open also shows a disproportionate edge, that's two
+       independent signals pointing the same direction, which is a meaningfully stronger claim than
+       either alone. `weekday_filter` matches on the EXIT day's name (the day whose open you're
+       trading into), matching how the RTH Wednesday effect is defined.
+
+    IMPORTANT: this filters by weekday post-hoc across all 5 weekdays in the research script - that
+    is multiple-hypothesis testing. Whatever day looks best in-sample must still hold up on a
+    genuine out-of-sample split and walk-forward before it means anything - see
+    overnight_drift_stop_test.py."""
+    files = glob.glob(os.path.join(data_folder, "*.csv"))
+    if not files:
+        raise FileNotFoundError(f"No archive files found in {data_folder}.")
+
+    all_days = [pd.read_csv(f, index_col="Datetime", parse_dates=True) for f in files]
+    history = pd.concat(all_days)
+    history = history[~history.index.duplicated(keep="first")]
+    history = history.sort_index()
+    history.index = pd.to_datetime(history.index, utc=True).tz_convert("America/New_York")
+    history["date"] = history.index.date
+
+    def get_price_at_time(target_date, target_time):
+        day_data = history[history["date"] == target_date]
+        bar = day_data[day_data.index.time == target_time]
+        return bar.iloc[0]["Close"] if not bar.empty else None
+
+    close_t = pd.Timestamp(session_close_time).time()
+    entry_t = pd.Timestamp(entry_time).time()
+
+    unique_dates = sorted(history["date"].unique())
+    results = []
+
+    for i in range(1, len(unique_dates)):
+        today = unique_dates[i]
+        prior_day = unique_dates[i - 1]
+
+        if weekday_filter is not None:
+            if pd.Timestamp(today).day_name() != weekday_filter:
+                continue
+
+        prior_close = get_price_at_time(prior_day, close_t)
+        todays_open_bar = history[(history["date"] == today) & (history.index.time == entry_t)]
+        if prior_close is None or todays_open_bar.empty:
+            continue
+
+        entry_price = prior_close
+        stop_price = entry_price - stop_points if direction == "LONG" else entry_price + stop_points
+
+        overnight_bars = history[
+            ((history["date"] == prior_day) & (history.index.time > close_t))
+            | ((history["date"] == today) & (history.index.time <= entry_t))
+        ]
+
+        exit_price = None
+        exit_reason = None
+        for _, bar in overnight_bars.iterrows():
+            hit_stop = bar["Low"] <= stop_price if direction == "LONG" else bar["High"] >= stop_price
+            if hit_stop:
+                exit_price, exit_reason = stop_price, "stop"
+                break
+
+        if exit_price is None:
+            exit_price = todays_open_bar.iloc[0]["Open"]
+            exit_reason = "open"
+
+        results.append({
+            "date": today, "entry_date": prior_day, "exit_date": today, "signal": direction,
+            "entry_price": entry_price, "exit_price": exit_price, "exit_reason": exit_reason,
+            "exit_weekday": pd.Timestamp(today).day_name()
+        })
+
+    return pd.DataFrame(results)
+
+
+def get_relative_momentum_rotation_signals_from_archive(lookback_days=5, entry_time="08:30",
+                                                            session_close_time="16:00", min_lead=0.0,
+                                                            symbols=None):
+    """NEW MECHANISM (2026-09-09, requested strategy candidate) - relative momentum / rotation
+    across the four index futures, distinct from every pairs strategy already tested. The pairs
+    book bets on MEAN REVERSION between two correlated series (and Entry 18 found the cointegration
+    evidence for that thesis is weak). This instead bets on MOMENTUM PERSISTING: each day, rank
+    NQ/ES/YM/RTY by their trailing `lookback_days` return (computed only through yesterday's close -
+    no lookahead), and go long whichever one led, held for that single RTH session.
+
+    This is long-only (not long-leader/short-laggard), so it carries real equity-index beta - it
+    will look better in a rising-market stretch almost by construction, not necessarily because
+    rotation itself is adding value. That's a real caveat, not a footnote: treat any positive
+    result here as suggestive of a market-neutral long/short version being worth building next,
+    not as proof this exact long-only form is tradeable on its own.
+
+    `min_lead` (in trailing-return percentage points) requires the leader's momentum to beat the
+    runner-up by at least this much before trading - default 0.0 trades every day regardless of how
+    close the ranking was; the research script also tests a nonzero margin.
+
+    Point values differ per instrument (MNQ=$2, MES=$5, MYM=$0.50, M2K=$5 - micro contracts), so
+    each day's dollar P&L is computed directly here. entry_price is set to 0.0 and exit_price to
+    that dollar P&L (signal is always "LONG"), so compute_points()/full_stats()/walk_forward_test()/
+    scorecard.run_scorecard() all reproduce the correct dollar figures automatically as long as you
+    always pass point_value=1 - real price levels are kept separately under raw_entry_price/
+    raw_exit_price for reference. Passing any point_value other than 1 will silently multiply every
+    dollar figure by that amount - don't."""
+    if symbols is None:
+        symbols = {
+            "NQ": ("data/raw_nq_extended", 2),    # MNQ
+            "ES": ("data/raw_es_extended", 5),    # MES
+            "YM": ("data/raw_ym_extended", 0.5),  # MYM
+            "RTY": ("data/raw_rty_extended", 5),  # M2K
+        }
+
+    entry_t = pd.Timestamp(entry_time).time()
+    close_t = pd.Timestamp(session_close_time).time()
+
+    per_symbol_daily = {}
+    for name, (folder, point_value) in symbols.items():
+        files = glob.glob(os.path.join(folder, "*.csv"))
+        if not files:
+            raise FileNotFoundError(f"No archive files found in {folder} (symbol {name}).")
+        all_days = [pd.read_csv(f, index_col="Datetime", parse_dates=True) for f in files]
+        hist = pd.concat(all_days)
+        hist = hist[~hist.index.duplicated(keep="first")]
+        hist = hist.sort_index()
+        hist.index = pd.to_datetime(hist.index, utc=True).tz_convert("America/New_York")
+        hist["date"] = hist.index.date
+
+        opens = hist[hist.index.time == entry_t].groupby("date")["Open"].first().rename("open")
+        closes = hist[hist.index.time == close_t].groupby("date")["Close"].first().rename("close")
+        daily = pd.concat([opens, closes], axis=1).dropna()
+        daily["prior_close"] = daily["close"].shift(1)
+        daily["trailing_return_pct"] = (daily["prior_close"] / daily["prior_close"].shift(lookback_days) - 1) * 100
+        daily["trailing_return_pct"] = daily["trailing_return_pct"].shift(1)  # lag: only know it as of yesterday
+        per_symbol_daily[name] = daily
+
+    common_dates = None
+    for name, daily in per_symbol_daily.items():
+        idx = daily.dropna(subset=["trailing_return_pct"]).index
+        common_dates = idx if common_dates is None else common_dates.intersection(idx)
+    common_dates = sorted(common_dates)
+
+    results = []
+    for day in common_dates:
+        momentum = {name: per_symbol_daily[name].loc[day, "trailing_return_pct"] for name in symbols}
+        ranked = sorted(momentum.items(), key=lambda kv: kv[1], reverse=True)
+        leader, leader_mom = ranked[0]
+        runner_up_mom = ranked[1][1]
+
+        if (leader_mom - runner_up_mom) < min_lead:
+            continue
+
+        row = per_symbol_daily[leader].loc[day]
+        point_value = symbols[leader][1]
+        raw_entry_price = row["open"]
+        raw_exit_price = row["close"]
+        dollars_pnl = (raw_exit_price - raw_entry_price) * point_value
+
+        # entry_price/exit_price are set to 0.0/dollars_pnl (NOT the real price levels - those are
+        # kept under raw_entry_price/raw_exit_price for reference) so that walk_forward_test() and
+        # scorecard.run_scorecard() - which both internally call compute_points(entry_col,exit_col)
+        # and expect a single consistent point_value - reproduce the correct dollar P&L for free.
+        # Since signal is always "LONG", compute_points gives points = exit_price - entry_price =
+        # dollars_pnl - 0.0 = dollars_pnl exactly. Always call full_stats/walk_forward/scorecard on
+        # this with point_value=1.
+        results.append({
+            "date": day, "leader": leader, "signal": "LONG",
+            "leader_momentum_pct": leader_mom, "lead_margin_pct": leader_mom - runner_up_mom,
+            "raw_entry_price": raw_entry_price, "raw_exit_price": raw_exit_price,
+            "entry_price": 0.0, "exit_price": dollars_pnl,
+            "points": dollars_pnl,  # already in DOLLARS - use point_value=1 everywhere
+        })
+
+    return pd.DataFrame(results)

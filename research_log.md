@@ -190,12 +190,75 @@ This log documents every strategy hypothesis tested, the method used, the result
   size and a faster kill-switch on the pairs trades rather than treating PF 2.0+ as proof of a
   permanent structural edge.
 
+## Entry 19: Relative Momentum Rotation (NQ / ES / YM / RTY)
+- **Hypothesis:** A genuinely different mechanism from the pairs book — instead of betting two
+  correlated indices mean-revert together (weakened by Entry 18's cointegration result), rank all
+  four index futures daily by trailing return and go long whichever is leading, betting momentum
+  persists for that session. Long-only by design, so it carries real equity-index beta as a known
+  confound.
+- **Method:** `get_relative_momentum_rotation_signals_from_archive()` — trailing return computed
+  only through the prior close (no lookahead), long the leader's RTH session. Swept
+  `lookback_days` in [3, 5, 10, 20] and, on the 5-day case, a `min_lead` margin requiring the
+  leader to be ahead of the runner-up by [0, 0.25, 0.5, 1.0] percentage points.
+- **Sample:** 630-647 trades depending on lookback.
+- **Result:** PF 0.90-1.00 across every lookback tested — never profitable. On the 5-day base
+  case, walk-forward was 0/4 windows profitable, and out-of-sample expectancy was negative.
+  Requiring a bigger momentum margin made results monotonically **worse** (PF 0.94 → 0.83 → 0.77
+  → 0.80 as min_lead rose from 0 to 1.0pp) — mild evidence pointing the opposite direction from
+  the hypothesis, not just noise.
+- **Verdict:** FAIL (2/5 scorecard)
+- **Reasoning:** No evidence this data supports single-day momentum persistence across these four
+  indices. The clean, monotonic degradation under a stricter margin filter is a genuine (if mild)
+  signal that leadership doesn't predict continuation here — not worth building a market-neutral
+  long/short variant of this specific construction.
+
+## Entry 20: Overnight Drift + Stop-Loss, Weekday Breakdown (and the Wednesday outlier investigation)
+- **Hypothesis:** Entry 17's overnight drift needs a real stop to be viable at all. Separately,
+  worth checking whether its aggregate edge concentrates on specific weekdays, given Entry 14's
+  independently-discovered Wednesday RTH effect.
+- **Method:** `get_overnight_drift_signals_with_stop_from_archive()` — bar-by-bar stop-loss
+  checked across the actual overnight session (not just entry vs. exit price). Swept stop_points
+  in [50, 75, 100, 150]; picked 100pt (matching the existing `get_day_of_week_stop_signals_from_archive`
+  convention, not the best-looking sweep result) and split the result by exit weekday.
+- **Sample:** 525 overnight sessions (2024-2026), 137 of them Wednesday.
+- **Result (all weekdays combined, the un-cherry-picked base case):** PF 1.13, expectancy
+  $11.21/trade gross ($4.71 net of realistic costs), 3/4 walk-forward windows profitable, but max
+  drawdown $3,824 (38.2% of a $10k account) — **fails the drawdown bar**. Median trade is actually
+  -$22 (loses more often than it wins) — the entire edge is carried by a small number of large
+  winners: the top 5 trades account for 92.2% of total P&L, the top 20 for 260.5% (trades outside
+  the top 20, taken together, lose money).
+- **Result (Wednesday-only, the best of the 5 weekdays tested):** Technically passes 5/5 on the
+  scorecard (PF 1.46, 13% drawdown, positive OOS) — but the single largest trade in the whole
+  dataset (798.5 pts / $1,597, 32% of this subset's total P&L) turned out to be the 2026-04-08
+  overnight session. Traced bar-by-bar in the raw archive and confirmed via web search: this was
+  the US-Iran ceasefire / Strait of Hormuz reopening announcement (evening of 2026-04-07), a real,
+  well-documented, one-off geopolitical event (Nasdaq cash closed +2.80% the next day, matching
+  this move) — not a data error, but also not a "Wednesday" phenomenon. That kind of event could
+  land on any weekday; it falling in this bucket looks incidental. With that one trade excluded,
+  the Wednesday subset (n=136) still shows PF 1.31, expectancy $24.82/trade gross, and a low 13%
+  drawdown — a genuinely encouraging *residual* result even without the outlier. But this is still
+  the best-performing of 5 weekday buckets tested, so a real multiple-comparisons concern remains
+  either way.
+- **Verdict:** All-weekdays combined = WATCH (3/5, fails profit factor and drawdown). Wednesday
+  subset = CAUTION / promising hypothesis, not yet validated — corroborates Entry 14's
+  independent Wednesday finding, but needs real forward-testing time, not further historical
+  re-slicing, before it means anything more than that.
+- **Reasoning:** A smaller-scale echo of the Entry 10 lesson: an exciting aggregate number was
+  partly manufactured by one rare, real event landing in a favorable bucket, not by a broad
+  repeatable pattern. Next step is forward-testing the 100pt-stop overnight hold in real time
+  (watching the Tuesday-close-to-Wednesday-open window in particular), not mining this same
+  history further for a cleaner cut.
+
 ---
 
 ## Current Status Summary (as of 2026-09-09)
 **Tier 1 — Live forward-testing:** Gap Continuation (re-rated WATCH per Entry 16, not the PASS
 Entry 10 implied — same live script, corrected backtest), NQ/ES Pairs, NQ/YM Pairs, ES/YM Pairs
 (PASS per Entries 9/13, but see Entry 18's cointegration caution)
-**Watching, not yet live:** Overnight Session Drift (Entry 17) — pending a stop-loss variant
+**Watching, not yet live:** Overnight Session Drift (Entry 17/20) — stop-loss variant now tested;
+all-weekdays version fails the scorecard on drawdown, but the Wednesday-specific subset is a
+genuine (if unproven) hypothesis worth forward-testing
+**Rejected today:** Relative Momentum Rotation (Entry 19) — no momentum-persistence edge found
+across NQ/ES/YM/RTY at a 1-day RTH hold
 **All pending:** 100+ trade validation threshold at their respective (corrected, where applicable) definitions
 **Validated for real capital:** None
