@@ -1,4 +1,5 @@
 from analysis_utils import compute_points, full_stats
+import trading_costs
 
 # Fixed, non-negotiable thresholds - the same bar for every strategy, every time
 MIN_TRADES = 100
@@ -6,9 +7,16 @@ MIN_OUT_OF_SAMPLE_TRADES = 20
 MAX_ACCEPTABLE_DRAWDOWN_PCT_OF_ACCOUNT = 30  # won't blow up a reasonably sized account
 MIN_PROFIT_FACTOR = 1.3
 MAX_OOS_EXPECTANCY_DROP_PCT = 50  # out-of-sample shouldn't be less than half of in-sample
+PARTIAL_VERDICT_THRESHOLD_PCT = 60  # need at least this % of checks passed for a PARTIAL verdict
 
 def run_scorecard(signals, strategy_name, entry_col="entry_price", exit_col="exit_price",
-                   account_size=10000, point_value=20, date_col="entry_date"):
+                   account_size=10000, point_value=20, date_col="entry_date",
+                   slippage_points=None, commission=None):
+    """slippage_points/commission override trading_costs.py's defaults for check 6 - leave as
+    None to use the shared SLIPPAGE_POINTS/COMMISSION_PER_TRADE constants everyone else uses, so
+    every strategy is judged against the same cost assumptions unless there's a specific reason
+    to deviate. Always pass the SAME point_value you used for the gross stats (e.g. 2 for MNQ) -
+    trading_costs.apply_costs() scales slippage in the same units as your points."""
     print("=" * 60)
     print(f"SCORECARD: {strategy_name}")
     print("=" * 60)
@@ -17,7 +25,7 @@ def run_scorecard(signals, strategy_name, entry_col="entry_price", exit_col="exi
     signals = signals.sort_values(date_col)
 
     checks_passed = 0
-    checks_total = 5
+    checks_total = 6
 
     # Check 1: Sample size
     n = len(signals)
@@ -35,9 +43,9 @@ def run_scorecard(signals, strategy_name, entry_col="entry_price", exit_col="exi
 
     overall_stats = full_stats(signals, point_value=point_value)
 
-    # Check 2: Profit factor
+    # Check 2: Profit factor (gross)
     pf = overall_stats["profit_factor"]
-    print(f"\n[2] Profit factor: {pf:.2f} (need {MIN_PROFIT_FACTOR}+)")
+    print(f"\n[2] Profit factor (gross): {pf:.2f} (need {MIN_PROFIT_FACTOR}+)")
     if pf >= MIN_PROFIT_FACTOR:
         print("    PASS")
         checks_passed += 1
@@ -84,11 +92,35 @@ def run_scorecard(signals, strategy_name, entry_col="entry_price", exit_col="exi
     else:
         print(f"\n[5] Out-of-sample expectancy: not enough data to check")
 
+    # Check 6: Cost-adjusted (net) profit factor. Added 2026-09-10 - every "PASSES SCORECARD"
+    # verdict before this point was gross-only. See research_log.md Entry 21: a strategy can
+    # clear checks 1-5 on paper and still not survive real slippage and commission.
+    slippage = trading_costs.SLIPPAGE_POINTS if slippage_points is None else slippage_points
+    comm = trading_costs.COMMISSION_PER_TRADE if commission is None else commission
+    net_dollars = [
+        trading_costs.apply_costs(p, point_value=point_value, slippage_points=slippage, commission=comm)
+        for p in signals["points"]
+    ]
+    net_wins = sum(d for d in net_dollars if d > 0)
+    net_losses = abs(sum(d for d in net_dollars if d <= 0))
+    net_pf = net_wins / net_losses if net_losses > 0 else float("inf")
+    net_expectancy = sum(net_dollars) / len(net_dollars)
+
+    print(f"\n[6] Cost-adjusted profit factor: {net_pf:.2f} (need {MIN_PROFIT_FACTOR}+; gross was {pf:.2f})")
+    print(f"    Cost model: {slippage}pt slippage + ${comm} commission per trade, at point_value={point_value}")
+    print(f"    Net expectancy: ${net_expectancy:.2f}/trade (gross was ${overall_stats['expectancy_dollars']:.2f}/trade)")
+    if net_pf >= MIN_PROFIT_FACTOR:
+        print("    PASS")
+        checks_passed += 1
+    else:
+        print("    FAIL - the edge doesn't survive realistic trading costs")
+
     print(f"\n{'='*60}")
     print(f"OVERALL: {checks_passed}/{checks_total} checks passed")
+    pct_passed = (checks_passed / checks_total) * 100
     if checks_passed == checks_total:
         print("VERDICT: PASSES SCORECARD - candidate for continued live validation")
-    elif checks_passed >= 3:
+    elif pct_passed >= PARTIAL_VERDICT_THRESHOLD_PCT:
         print("VERDICT: PARTIAL - promising but not yet trustworthy, keep watching")
     else:
         print("VERDICT: FAIL - not currently a viable strategy")
