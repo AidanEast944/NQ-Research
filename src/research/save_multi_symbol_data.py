@@ -7,6 +7,11 @@ SYMBOLS = {
     "CL=F": "data/raw_cl",  # WTI Crude Oil - added 2026-09-10 as an independent-instrument
                               # candidate (see research_log.md) - a genuinely different risk
                               # driver (energy supply/demand) than the equity index book.
+                              # REJECTED per Entry 22 (outlier-dependent) - kept accumulating in
+                              # case a future fixed-stop version is worth revisiting.
+    "GC=F": "data/raw_gc",  # Gold - added 2026-09-10 as the second independent-instrument
+                              # candidate (Entry 24/25) - building intraday history day by day for
+                              # a future stop-loss version once enough accumulates, same as CL=F.
 }
 
 for ticker_symbol, save_folder in SYMBOLS.items():

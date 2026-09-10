@@ -2376,3 +2376,76 @@ def get_crude_oil_gap_signals_from_history(min_gap_pct=1.0, direction="continuat
         })
 
     return pd.DataFrame(results)
+
+
+def get_gold_gap_signals_with_stop_from_history(min_gap_pct=1.0, stop_pct=0.5, target_pct=1.0,
+                                                   direction="continuation",
+                                                   data_file="data/raw_gc_daily_history.csv"):
+    """SECOND INDEPENDENT-INSTRUMENT CANDIDATE (2026-09-10) - gold (COMEX GC=F), chosen after
+    Entry 22 rejected crude oil for being structurally exposed to single-trade domination (no
+    fixed stop/target, enter-open/exit-close only). This function is designed from the start with
+    a FIXED, BOUNDED stop/target - Entry 21's lesson was that a fixed stop/target structurally
+    caps how much any one trade can dominate a result, and that lesson is applied here up front
+    rather than discovered after the fact.
+
+    Like crude oil, gap size AND the stop/target distance are PERCENTAGES of price, not fixed
+    dollar amounts - gold has ranged from roughly $250/oz (2000) to $2700+/oz (2026), so a fixed
+    $15 stop meaningful at $2000/oz would be a rounding error at $250/oz or enormous relative
+    risk the other direction. Percentage terms scale naturally across that range.
+
+    IMPORTANT METHODOLOGY NOTE: this uses daily OHLC bars, which show the day's High/Low but not
+    the ORDER in which price levels were touched intraday. If both the stop and target would have
+    been hit on the same day, this function conservatively assumes the STOP was hit first (the
+    worse outcome) rather than guessing favorably - this avoids overstating results due to
+    unknown intraday sequencing. This is a deliberately conservative assumption, not a validated
+    fact about what actually happened; a real intraday archive (once data/raw_gc/ has enough
+    history) would resolve this ambiguity properly instead of assuming it away.
+
+    direction="continuation": bet the gap direction continues (equity-strategy mechanism).
+    direction="reversion": bet the day fades back toward the prior close - gold has real,
+    documented reversion dynamics around COMEX delivery/inventory dynamics distinct from equity
+    momentum, so this is tested as a genuinely open question, not assumed."""
+    df = pd.read_csv(data_file, index_col="Date", parse_dates=True)
+    df = df.sort_index()
+    df["prior_close"] = df["Close"].shift(1)
+    df["gap_pct"] = (df["Open"] - df["prior_close"]) / df["prior_close"].abs() * 100
+
+    results = []
+    for day, row in df.iterrows():
+        if pd.isna(row["gap_pct"]) or abs(row["gap_pct"]) < min_gap_pct:
+            continue
+
+        gap_up = row["gap_pct"] > 0
+        if direction == "continuation":
+            signal = "LONG" if gap_up else "SHORT"
+        elif direction == "reversion":
+            signal = "SHORT" if gap_up else "LONG"
+        else:
+            raise ValueError(f"direction must be 'continuation' or 'reversion', got {direction!r}")
+
+        entry_price = row["Open"]
+        if signal == "LONG":
+            stop_price = entry_price * (1 - stop_pct / 100)
+            target_price = entry_price * (1 + target_pct / 100)
+            hit_stop = row["Low"] <= stop_price
+            hit_target = row["High"] >= target_price
+        else:
+            stop_price = entry_price * (1 + stop_pct / 100)
+            target_price = entry_price * (1 - target_pct / 100)
+            hit_stop = row["High"] >= stop_price
+            hit_target = row["Low"] <= target_price
+
+        if hit_stop:
+            # Conservative: stop wins if both were technically touched this day (see docstring).
+            exit_price, exit_reason = stop_price, "stop"
+        elif hit_target:
+            exit_price, exit_reason = target_price, "target"
+        else:
+            exit_price, exit_reason = row["Close"], "eod"
+
+        results.append({
+            "date": day.date(), "signal": signal, "gap_pct": row["gap_pct"],
+            "entry_price": entry_price, "exit_price": exit_price, "exit_reason": exit_reason,
+        })
+
+    return pd.DataFrame(results)

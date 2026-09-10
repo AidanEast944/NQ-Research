@@ -458,18 +458,26 @@ still misses the 1.3 bar), NQ/ES Pairs, NQ/YM Pairs, ES/YM Pairs (re-validated W
 cost-aware and outlier-checked now, still short of the 100-trade/20-OOS-trade bar; Entry 18's
 cointegration caution still stands as a caveat on the underlying mechanism; now risk-managed via
 Entry 24's wiring, matching the gap strategy's existing protection)
+**Flagship candidate:** Volume-Confirmed Gap Continuation (Entry 25) — the project's first outright
+6/6 scorecard PASS, cost-adjusted PF 1.39, 4/4 improving walk-forward windows, structurally immune
+to single-trade domination (fixed 40/80 stop/target). Still backtest-only - not yet forward-tested
+live, and an open decision remains on whether to point the live `gap_forward_check.py` at this
+definition. Not yet "validated for real capital" under this project's two-step bar.
 **Watching, not yet live:** Overnight Session Drift (Entry 17/20) — stop-loss variant now tested;
 all-weekdays version fails the scorecard on drawdown, but the Wednesday-specific subset is a
 genuine (if unproven) hypothesis worth forward-testing
 **Rejected:** Relative Momentum Rotation (Entry 19) — no momentum-persistence edge found across
 NQ/ES/YM/RTY at a 1-day RTH hold. Crude Oil Gap Continuation (Entry 22) — outlier-dependent on the
-2020-04-21 negative-oil-price anomaly; edge vanishes once the top 3 trades are excluded.
-**Second independent-asset-class candidate search:** 0 for 1 so far (crude oil gap continuation
-rejected in Entry 22). Deferred: the deeper intraday Databento crude-oil archive
-(`~/.databento/GLBX.MDP3/CL_c_0/`) was not pulled for this pass (chose the free yfinance daily
-history instead) and remains a possible upgrade if intraday-resolution crude oil work is wanted
-later — though a fixed-stop structure, not just finer data, is what would actually address the
-outlier-domination problem found here.
+2020-04-21 negative-oil-price anomaly; edge vanishes once the top 3 trades are excluded. Gold Gap,
+Fixed Stop/Target (Entry 26) — no edge found across an 18-combination sweep (both directions, 3 gap
+thresholds, 3 stop/target ratios); best cut in the whole sweep still fell short of the 1.3 bar.
+**Second independent-asset-class candidate search:** 0 for 2 (crude oil, Entry 22; gold, Entry 26).
+Deferred: the deeper intraday Databento crude-oil archive (`~/.databento/GLBX.MDP3/CL_c_0/`) was
+not pulled for either pass (chose free yfinance daily history instead) and remains a possible
+upgrade later - though for crude oil specifically, a fixed-stop structure (not just finer data) is
+what would actually address the outlier-domination problem found there. For gold, worth considering
+ATR-relative (volatility-scaled) sizing instead of flat percentages before concluding daily-gap
+mechanics categorically don't transfer to commodities/metals.
 **Process note:** the standardized scorecard (scorecard.py) now includes a cost-adjusted check
 (Check 6, added after Entry 21) with per-instrument `slippage_points`/`commission` overrides, and
 `walk_forward.py` now respects a `point_value` override (Entry 23) instead of silently defaulting
@@ -478,5 +486,97 @@ that in mind until re-run - the pairs book (Entry 23) and the crude oil work (En
 both re-validated against the fixed tooling; the gap/overnight-drift book (Entries 16/17/20/21)
 always used point_value correctly since MNQ's point_value=2 was passed explicitly throughout.
 **All pending:** 100+ trade validation threshold at their respective (corrected, where applicable)
-definitions. volume_confirmed_gap_test.py (Entry 24) is unblocked but not yet run.
+definitions.
 **Validated for real capital:** None
+
+---
+
+## Entry 25: Volume-Confirmed Gap Continuation — First Outright 6/6 PASS in the Project
+- **Hypothesis:** Now-corrected version of the test volume_confirmed_gap_test.py was meant to run
+  (Entry 24 fixed the script; this is the first real result from it). Same as Entry 16's
+  gap-continuation edge, filtered to only fire when the entry-time bar's opening volume is above
+  its trailing 20-day average - the idea being a gap accompanied by real participation is more
+  likely to be genuine order flow than a gap on thin volume.
+- **Method:** `get_weekday_open_gap_signals_with_volume_from_archive()`, same stop/target (40/80
+  pts) and MNQ sizing as Entry 16, swept volume-ratio thresholds [1.0x, 1.2x, 1.5x] across both
+  continuation and reversion. Continuation improved monotonically as the threshold rose (PF 1.40 →
+  1.57 → 1.88, on shrinking samples of 175 → 132 → 93 trades) - picked the MIDDLE cut (1.2x, 132
+  trades) rather than the best-looking one (1.5x, PF 1.88, 93 trades), the same anti-cherry-picking
+  principle used for every other threshold sweep in this project, since picking the most extreme
+  cut off a monotonic sweep is close to picking the best of several looks at shrinking data.
+- **Sample:** 132 trades (in-sample 92, out-of-sample 40).
+- **Result:** 38.7% baseline win rate rising to 43.9% at this threshold, gross PF 1.57, net (cost-
+  adjusted) PF **1.39** - clears the 1.3 bar on a cost-adjusted basis, not just gross. Expectancy
+  $25.45/trade gross, $18.95/trade net. OOS expectancy ($34.00) again *higher* than in-sample
+  ($21.74), same reassuring anti-overfitting pattern seen in Entry 16 and Entry 21. **4 of 4
+  walk-forward windows profitable**, each one stronger than the last (PF 1.14 → 1.67 → 1.47 →
+  2.12) - consistent, not just a single lucky window. Structurally bounded per Entry 21's lesson:
+  avg win is essentially always exactly 80 pts and avg loss exactly -40 pts across every subset
+  shown, confirming this inherits Entry 16's fixed stop/target and is not vulnerable to the kind of
+  single-trade domination that sank Entries 20 and 22 - no separate outlier check needed given that
+  structural guarantee (unlike the unbounded strategies, where the check was the only way to know).
+  **Standardized scorecard: 6/6 - the first outright PASS (not PARTIAL/WATCH) in the project.**
+- **Verdict:** PASS on the backtest, real methodological caveat attached. This is genuinely the
+  strongest single result in the project's history - clears every check including cost-adjustment,
+  on a real sample size, with consistent walk-forward improvement and no outlier-domination
+  vulnerability by construction. The caveat: the threshold itself came from a 3-way sweep with a
+  monotonic improve-with-smaller-sample pattern, which is exactly the shape you'd see from EITHER a
+  real "more volume = more genuine continuation" mechanism (economically plausible) OR mild
+  selection luck on a shrinking sample - picking the middle cut instead of the best one mitigates
+  but does not eliminate this. A "PASSES SCORECARD" verdict on the backtest is not the same as
+  "validated for real capital" per this project's standing two-step bar (backtest evidence, then
+  live forward-validation) - the honest next step is forward-testing THIS specific calibration
+  (1.2x) live, the same as every other WATCH-tier strategy, not skipping straight to deployment.
+- **Open decision, not yet made:** whether to point `gap_forward_check.py` (the live script) at
+  this volume-confirmed definition instead of Entry 16's unfiltered one, run it as a separate
+  parallel forward-test, or leave live tracking as-is until more forward data accumulates. This is
+  a real choice with real tradeoffs (this filter looks meaningfully better on the backtest, but
+  changing what's live-tracked resets the forward-testing clock) that should be made deliberately,
+  not automatically.
+- **Reasoning:** The strongest evidence yet that gap-continuation has a real, exploitable core
+  (Entry 16) with real, non-spurious refinements available (Entry 21's vol-regime filter, and now
+  this) - each incremental filter has been checked for the specific failure modes (confounds,
+  outliers, costs) that killed other candidates, and each has survived. Worth treating as the
+  flagship candidate in the project, still short of real-capital status only because "passes every
+  backtest check" and "proven in live, unseen conditions" are deliberately different bars here.
+
+---
+
+## Entry 26: Gold Gap, Fixed Stop/Target — Rejected, No Edge Found Across a Broad Sweep
+- **Hypothesis:** Gold (COMEX GC=F), the second independent-asset-class candidate after Entry 22
+  rejected crude oil, built with a FIXED stop/target from the start this time (Entry 21's lesson
+  applied up front, not discovered after a failure) so single-trade domination is structurally
+  impossible regardless of what the data shows.
+- **Method:** `get_gold_gap_signals_with_stop_from_history()` - 26 years of free daily history
+  (2000-2026, 6530 bars), swept BOTH continuation and reversion across 3 gap thresholds (0.5%,
+  1.0%, 1.5%) and 3 stop/target combinations ([0.5%/1.0%], [0.5%/0.75%], [1.0%/2.0%]) - 18
+  combinations total, deliberately broad given no prior basis for picking one.
+- **Sample:** 237-1763 trades per combination depending on threshold.
+- **Result:** No combination shows a real edge. Profit factors across the full sweep cluster
+  between roughly 0.68 and 1.29, mostly below the 1.3 bar; the single best-looking cut in the
+  entire sweep (reversion, 1.5% gap, 0.5%/1.0% stop-target) reaches only PF 1.29 on 237 trades -
+  still short of the bar, on the smallest sample tested. The script's own placeholder "final pick"
+  (continuation, 1.0% gap, 0.5%/1.0% stop-target - left un-updated after the sweep, a mistake worth
+  owning rather than glossing over) scored worse still: gross PF 0.96, net (cost-adjusted) PF 0.83,
+  3/6 on the standardized scorecard, FAIL. Its walk-forward was 1 of 4 windows profitable (windows
+  1-3, spanning 2000-2019, were all net losers; window 4, 2019-2026, was profitable) - notably,
+  2019-2026 is also gold's biggest secular bull run in this dataset, so that one profitable window
+  is plausibly just directional beta to a rising gold market riding along with a LONG-biased
+  continuation signal, not evidence of a real gap-specific mechanism (the same kind of confound
+  Entry 21 checked for and ruled out in its own case - not required here since the aggregate result
+  already fails decisively regardless). The outlier-concentration check's percentages are not
+  meaningful for this combination (total P&L is already negative, so "top N trades as % of a
+  negative total" produces confusing negative/over-100% figures) - a script gap worth fixing before
+  reuse, but moot here since a strategy with negative expectancy doesn't need an outlier check to
+  be rejected.
+- **Verdict:** FAIL - reject gold gap trading (this formulation) as a strategy candidate.
+- **Reasoning:** This is a clean, broad rejection (Entry 19's shape - no edge across many
+  parameter combinations - not Entry 20/22's shape of one outlier-driven false positive), which is
+  actually a reassuring kind of negative result: gold gaps just don't show the same
+  momentum-continuation OR mean-reversion tendency NQ/ES/YM's opening gaps do, at either
+  percentage-based threshold tested. Second independent-asset-class search is now 0-for-2 (crude
+  oil, Entry 22; gold, Entry 26). Worth noting for any future attempt: both rejected candidates
+  used PERCENTAGE-based gap/stop/target sizing because of decades of wide price-level history -
+  worth considering whether an ATR-relative (volatility-scaled) sizing, rather than a flat
+  percentage, might behave differently before concluding daily-gap mechanics categorically don't
+  transfer to commodities/metals.
