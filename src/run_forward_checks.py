@@ -27,7 +27,8 @@ SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 # src/data/... and crash inside risk_limits.py's save_risk_state() before place_order() was ever
 # reached - no trade data was corrupted (it crashed too early for that), it just never ran.
 REPO_ROOT = os.path.dirname(SRC_DIR)
-SCRIPTS = ["gap_forward_check.py", "volume_confirmed_gap_forward_check.py"]
+SCRIPTS = ["gap_forward_check.py", "volume_confirmed_gap_forward_check.py",
+           "generate_dashboard.py"]  # regenerates results/dashboard.html with the latest state
 
 
 def notify(title, message):
