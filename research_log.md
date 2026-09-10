@@ -813,3 +813,115 @@ definitions.
   morning right after the forward checks run - genuinely live, no manual step, and (like
   everything else in this automation) entirely local to the user's machine.
 - **Verdict:** N/A - infrastructure, not a strategy result.
+
+---
+
+## Entry 32: Found a Pre-Existing Automation System I Didn't Know About, Fixed a Real Live-Trade-Recording Bug, and Corrected My Own Dashboard Mistake
+- **What happened:** After Entry 30/31 (automating the unfiltered gap + volume-confirmed gap
+  tracks via my own new `launchd` job and rebuilding the dashboard), the user asked to add the new
+  tracker to their *existing* dashboard for their *other* strategies. I didn't know those existed.
+  Investigating properly (by content, not by mtimes - see below) surfaced a full pre-existing
+  automated system already running on this Mac: 11 `com.nqresearch.*` launchd jobs covering Fade
+  (Entry 2), Trend Following (Entry 6, retired), the original single-symbol Gap tracker
+  (`gap_forward_check.py`/`forward_check_signal.py` - separate from my newer
+  `volume_confirmed_gap_forward_check.py`), all three pairs (NQ/ES, NQ/YM, ES/YM - Entries
+  9/13/23/24), a daily data archiver, a weekly scorecard, and the original dashboard generator.
+  None of this was new work from this session - it predates it - I had simply never been shown or
+  asked about it before, and my own automation (Entry 30) was added on top without knowing it was
+  there.
+- **My mistake, corrected by the user:** My first pass at "add this to the dashboard" (the Entry 31
+  writeup) judged Fade's, Trend's, and the old-style pairs' state files as abandoned, based on
+  matching file-modification timestamps seen through this session's mounted view of the folder -
+  which turned out to be a single git-sync timestamp shared by many unrelated files, not a real
+  staleness signal. I rewrote `generate_dashboard.py` to drop all three, which was wrong - Fade has
+  a real $11,800 balance and 6 closed trades, Trend is intentionally retired but still being
+  managed daily, and the pairs book has actually been live since ~2026-09-03. The user caught this
+  directly ("wait i already have this but for my other strategies, can you just add this to that").
+  Lesson applied here and going forward: content (balances, `trade_history`, `last_run_date`
+  fields, and which scripts still write to a file) is the only reliable signal for what's active in
+  this environment - never mtimes seen through the device mount.
+- **Real bugs found and fixed, once the actual system was understood:**
+  1. **Log-path collision.** My own `com.nq-research.forward-check.plist` wrote to
+     `data/forward_check_log.txt`/`data/forward_check_errors.txt` - identical paths to the
+     pre-existing `com.nqresearch.forwardcheck` job's logs. Fixed by retiring my job entirely (see
+     #2) rather than renaming around it.
+  2. **Duplicate scheduling.** The pre-existing `com.nqresearch.gapforward` job (5:37 AM Pacific)
+     already runs `gap_forward_check.py` daily. My own job (6:35 AM Pacific, via
+     `run_forward_checks.py`) was running it a second time. This is very likely the real
+     explanation for the mystery duplicate `eod_pending` entry found and "fixed" by hand in
+     Entry 29 - not a one-off manual double-run as assumed at the time, but this exact collision
+     happening automatically every weekday. Fixed by deleting `run_forward_checks.py` and its
+     plist (`launchd/com.nq-research.forward-check.plist`) entirely - `gap_forward_check.py` now
+     runs solely under the pre-existing `com.nqresearch.gapforward` job, and my automation only
+     covers what didn't already have a job: the two new volume-confirmed threshold tracks and the
+     new resolve steps below.
+  3. **Structural bug: no real end-of-day resolve step, for BOTH `gap_forward_check.py` and my own
+     `volume_confirmed_gap_forward_check.py`.** Both scripts tried to open AND resolve a trade in
+     one run. `com.nqresearch.gapforward` fires at 5:37 AM Pacific - only ~7 minutes after the
+     8:30 AM Eastern entry bar - so there was essentially no real price history yet to check
+     stop/target against. The scripts fell through to an `eod_pending`/0-point placeholder almost
+     every day, and since nothing ever re-checked it, that placeholder became the *permanent*
+     record of what should have been a real win or loss. Confirmed against real evidence: the
+     orphaned `data/gap_forward_state.json` shows exactly this pattern for Sept 3 and Sept 4.
+     **Fix (approved by the user):** split both scripts into an open-only step and a new,
+     separate resolve step that runs after market close and walks the full day's bars - the same
+     pattern `fade_paper_check.py`/`fade_paper_resolve.py` already used correctly.
+     - `gap_forward_check.py` - now open-only (places the order, does nothing else). Skips a day
+       already opened/processed, so it's still safe to also run by hand.
+     - `gap_forward_resolve.py` (new) - loads today's open gap position, walks 08:30-16:00 ET
+       bars for stop/target/eod, closes it, records the result to `risk_limits.py`, sends a
+       best-effort macOS notification.
+     - `volume_confirmed_gap_forward_check.py` - now open-only for both the 1.2x and 1.5x tracks
+       independently (each has its own account/risk-state files, unchanged from Entry 27).
+     - `volume_confirmed_gap_resolve.py` (new) - same resolve pattern, for both thresholds.
+     - New `launchd` jobs (installed by the user, not yet applied to the real Mac as of writing
+       this entry): `com.nqresearch.gapresolve` (17:05 PT), `com.nqresearch.volumegapcheck`
+       (5:38 AM PT), `com.nqresearch.volumegapresolve` (17:07 PT) - all with their own,
+       non-colliding log paths.
+  4. **Broken dashboard plist reference - caused by my own earlier deletion.** Entry 31 deleted
+     `generate_dashboard_auto.py` as a believed-dead duplicate. It wasn't dead - the pre-existing
+     `com.nqresearch.dashboard` plist's `ProgramArguments` pointed directly at it, so that job has
+     been failing since. Fixed: `launchd/com.nqresearch.dashboard.plist` now points at
+     `generate_dashboard.py` (the one file, not two), and moved from 14:15 to 17:15 Pacific so it
+     regenerates after all of the day's resolve jobs have actually run. The user still needs to
+     copy this corrected plist over the real one in `~/Library/LaunchAgents` and reload it (see
+     instructions given in chat).
+  5. **Data-integrity gap: an ES/YM pairs position open since 2026-09-09 with no matching
+     PaperBroker record at all.** `data/pairs_esym_forward_state.json` showed an open SHORT
+     ES/LONG YM position, but `data/pairs_paper_account.json` (which `PaperBroker.place_order()`
+     should have created) didn't exist. Root cause, confirmed by comparing against git history:
+     this position was opened on 2026-09-09 by the *pre-risk-wiring* version of
+     `generic_pairs_forward_check.py` (commit `532772b`), which recorded positions only to the
+     state JSON and never called into `PaperBroker` at all - the log line's format
+     (`[ES/YM] OPENED: SHORT ES=F / LONG YM=F (z-score 2.04)`, no contract counts, no "proposed
+     risk") matches that old code exactly. The very next day, commit `d0b6e5a` (Entry 24) deployed
+     the risk/broker-wired version - but by then the position already looked "open" in state, so
+     the new code takes its position-*management* branch, not its opening branch, and tries to
+     find this position's legs in `broker.positions` - where they never existed. Left to run
+     as-is, the first time this position's exit condition (reversion / z-stop / 15-day time-stop)
+     actually triggers, that lookup (`next(p for p in broker.positions if ...)`) would raise an
+     unhandled `StopIteration` and crash the job, leaving the state JSON stuck open forever.
+     **Fix:** `generic_pairs_forward_check.py`'s close logic now looks up each leg defensively
+     (returns `None` instead of crashing if missing). If either leg has no broker record, the
+     position is still closed out of state cleanly, logged with an explicit `WARNING`, and tagged
+     `"orphaned_no_broker_record": true` in `state["history"]` - but **no P&L is fabricated or
+     recorded** for it, and `risk_limits.record_trade_result()` is deliberately NOT called, since
+     there's no reliable entry price on record to compute one honestly. This is a one-time
+     reconciliation for this specific pre-existing position; every position opened by the current
+     code goes through the broker on both legs from the start, so this fallback path shouldn't
+     fire again under normal operation. Also surfaced directly on the dashboard (see below) rather
+     than only in a log file, since the position is still open as of this writing and the fix
+     hasn't run against it yet.
+- **Dashboard rebuilt a second time**, this time correctly: `generate_dashboard.py` now shows all
+  eight currently-active tracks - unfiltered Gap, both Volume-Confirmed thresholds, Fade, Trend
+  (explicitly marked RETIRED, with a staleness warning since it hasn't run in 6 days while still
+  holding an open position - `com.nqresearch.trendforward` is worth the user checking), and all
+  three pairs (each showing its own z-score state plus the shared account, with the ES/YM
+  inconsistency above surfaced directly as an on-panel warning, not hidden). Also fixed a real
+  equity-curve scaling issue while rebuilding it: Fade's `trade_history` entries predate the
+  `point_value_used` field, so the chart's fallback now uses each *track's own* actual contract
+  size (20 for Fade's full-size NQ, 2 for the MNQ-sized tracks) instead of one shared guess, which
+  would have silently mis-scaled whichever track didn't match it.
+- **Verdict:** N/A - infrastructure/data-integrity fixes, not a strategy result. No strategy's
+  backtest conclusions from prior entries are affected by anything in this entry - this was all
+  about how live/paper results get recorded and displayed, not what the strategies do.

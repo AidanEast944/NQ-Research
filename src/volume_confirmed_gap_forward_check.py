@@ -1,32 +1,31 @@
 """
-Live forward-test for the volume-confirmed gap continuation strategy (Entry 25/27), run as a
-PARALLEL track alongside the currently-live, unfiltered gap_forward_check.py - NOT a replacement.
-Whether to ever redirect gap_forward_check.py itself at this definition remains an explicitly open
-decision (see research_log.md Entry 25/27) and is NOT done here.
+Live forward-test OPEN step for the volume-confirmed gap continuation strategy (Entry 25/27).
+Runs as a parallel track alongside the unfiltered gap strategy - does NOT replace it. Whether to
+ever redirect the unfiltered gap tracking at this definition remains an explicitly open decision,
+not made here.
 
-Same entry mechanics as gap_forward_check.py (08:30 ET open, same-day 40pt stop / 80pt target,
-30pt minimum gap, MNQ micro sizing), with one added filter: the 08:30 opening-bar volume must be
-at least the threshold multiple of its own trailing 20-day average - matching
+OPEN-ONLY, matching gap_forward_check.py's 2026-09-10 fix (Entry 32) - a trade opened here is
+resolved later in the day by volume_confirmed_gap_resolve.py, once the full day's price action is
+available. The original single-run design (open + immediately try to resolve within the same
+execution) almost never actually saw the real outcome, since it ran too soon after the entry bar
+to have any meaningful price history to check against.
+
+Same entry mechanics as gap_forward_check.py (08:30 ET open, 30pt minimum gap, 40pt stop / 80pt
+target, MNQ micro sizing), with an added filter: the 08:30 opening-bar volume must be at least the
+threshold multiple of its own trailing 20-day average - matching
 get_weekday_open_gap_signals_with_volume_from_archive()'s definition in strategy.py.
 
-Runs BOTH thresholds validated in Entry 27 Part 5 as independent, separately-tracked forward tests:
-  - 1.2x: the original full-sample-hindsight choice (Entry 25) - PF 1.39 cost-adjusted backtest
-  - 1.5x: the honest out-of-time-selected choice (Entry 27 Part 5) - PF 3.78 on genuinely unseen
-          out-of-sample backtest data
-
-Each threshold gets its OWN PaperBroker account file and risk_limits state file, kept separate
-from each other AND from gap_forward_check.py's own state, since the volume-confirmed signal is a
-strict subset of the unfiltered gap signal and sharing state would conflate/double-count results.
-
-Needs more intraday history than gap_forward_check.py's 5-day pull, since the 20-day trailing
-opening-volume average requires ~20 prior trading days of 08:30 bars.
+Tracks BOTH thresholds validated in Entry 27 Part 5, independently: 1.2x (Entry 25, full-sample
+hindsight) and 1.5x (Entry 27 Part 5, honest out-of-time selection). Each threshold has its own
+PaperBroker account file and risk_limits state file, fully isolated from each other and from the
+unfiltered gap strategy's state.
 """
 import sys
 import yfinance as yf
 import pandas as pd
 from datetime import date
 from paper_broker import PaperBroker
-from risk_limits import check_trade_allowed, record_trade_result
+from risk_limits import check_trade_allowed
 
 MIN_GAP_POINTS = 30
 STOP_POINTS = 40
@@ -34,7 +33,6 @@ TARGET_POINTS = 80
 POINT_VALUE = 2  # MNQ micro contract
 VOLUME_LOOKBACK = 20
 ENTRY_TIME = "08:30"
-SESSION_END = "16:00"
 
 THRESHOLDS = {
     "1.2x": {
@@ -74,7 +72,6 @@ prior_day_bars = prior_days[prior_days["date"] == most_recent_day]
 prior_close = prior_day_bars.iloc[-1]["Close"]
 
 entry_t = pd.Timestamp(ENTRY_TIME).time()
-close_t = pd.Timestamp(SESSION_END).time()
 
 open_bar = today_bars[today_bars.index.time == entry_t]
 if open_bar.empty:
@@ -85,8 +82,6 @@ open_price = open_bar.iloc[0]["Open"]
 today_entry_volume = open_bar.iloc[0]["Volume"]
 gap_points = open_price - prior_close
 
-# Trailing 20-day average of the 08:30 opening-bar volume, using only PRIOR days (no lookahead) -
-# matches get_weekday_open_gap_signals_with_volume_from_archive()'s rolling().shift(1) logic.
 prior_entry_bars = prior_days[prior_days.index.time == entry_t].groupby("date")["Volume"].first()
 prior_entry_bars = prior_entry_bars.sort_index()
 
@@ -111,33 +106,6 @@ entry_price = open_price
 stop_price = entry_price - STOP_POINTS if signal == "LONG" else entry_price + STOP_POINTS
 target_price = entry_price + TARGET_POINTS if signal == "LONG" else entry_price - TARGET_POINTS
 
-# Entry/exit mechanics are identical for every threshold - only whether a given track TAKES the
-# trade differs - so this is computed once and reused below.
-day_bars = today_bars[
-    (today_bars.index.time > entry_t)
-    & (today_bars.index.time <= close_t)
-]
-
-exit_price = None
-exit_reason = None
-for _, bar in day_bars.iterrows():
-    if signal == "LONG":
-        hit_stop = bar["Low"] <= stop_price
-        hit_target = bar["High"] >= target_price
-    else:
-        hit_stop = bar["High"] >= stop_price
-        hit_target = bar["Low"] <= target_price
-    if hit_stop:
-        exit_price, exit_reason = stop_price, "stop"
-        break
-    elif hit_target:
-        exit_price, exit_reason = target_price, "target"
-        break
-
-if exit_price is None:
-    exit_price = day_bars.iloc[-1]["Close"] if len(day_bars) > 0 else entry_price
-    exit_reason = "eod_pending"
-
 for label, cfg in THRESHOLDS.items():
     print(f"\n--- Threshold {label} ---")
     if volume_ratio < cfg["value"]:
@@ -146,19 +114,15 @@ for label, cfg in THRESHOLDS.items():
 
     broker = PaperBroker(starting_balance=10000, state_file=cfg["account_file"])
 
-    # Checks trade_history too, not just open positions - same reasoning and same bug as
-    # gap_forward_check.py's identical fix (found live 2026-09-10): positions is always empty by
-    # the time this runs, since each script execution opens AND closes a position in one pass.
     already_processed_today = any(
         t.get("entry_date") == str(today) for t in broker.trade_history
     ) or any(
         p.get("entry_date") == str(today) for p in broker.positions
     )
     if already_processed_today:
-        print(f"Already processed a {label} signal for {today}. Skipping to avoid a duplicate trade record.")
+        print(f"Already opened/processed a {label} signal for {today}. Skipping to avoid a duplicate.")
         continue
 
-    # --- RISK CIRCUIT BREAKER CHECK, using this track's OWN state, isolated from the others ---
     proposed_risk_dollars = STOP_POINTS * POINT_VALUE
     current_open_positions = len(broker.positions)
 
@@ -172,9 +136,8 @@ for label, cfg in THRESHOLDS.items():
     if not allowed:
         print(f"TRADE BLOCKED BY RISK LIMITS: {reason}")
         continue
-    # --- END RISK CHECK ---
 
-    trade = broker.place_order(
+    broker.place_order(
         symbol="MNQ",
         direction=signal,
         entry_price=entry_price,
@@ -183,10 +146,5 @@ for label, cfg in THRESHOLDS.items():
         entry_date=str(today)
     )
 
-    broker.close_position(trade, exit_price, reason=exit_reason, point_value=POINT_VALUE)
-
-    points = (exit_price - entry_price) if signal == "LONG" else (entry_price - exit_price)
-    record_trade_result(points * POINT_VALUE, state_file=cfg["risk_state_file"])
-
-    print(f"{label}: {signal} entry {entry_price:.2f}, exit {exit_price:.2f} ({exit_reason}), "
-          f"volume_ratio={volume_ratio:.2f}x -> Balance: ${broker.balance:,.2f}")
+    print(f"{label}: position opened (volume_ratio={volume_ratio:.2f}x) - "
+          f"will be resolved end of day by volume_confirmed_gap_resolve.py.")

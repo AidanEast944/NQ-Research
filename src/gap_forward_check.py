@@ -3,13 +3,21 @@ import yfinance as yf
 import pandas as pd
 from datetime import date
 from paper_broker import PaperBroker
-from risk_limits import check_trade_allowed, record_trade_result
+from risk_limits import check_trade_allowed
 
 MIN_GAP_POINTS = 30
 STOP_POINTS = 40
 TARGET_POINTS = 80
 POINT_VALUE = 2  # MNQ micro contract
 STATE_FILE = "data/gap_paper_account.json"
+
+# OPEN-ONLY - this used to open AND resolve a trade in one run, which meant it was almost never
+# actually run late enough in the day to see the real stop/target outcome (this job fires 7
+# minutes after the entry bar) - it just fell through to an "eod_pending"/0-point placeholder
+# almost every day, and since nothing ever re-checked it, that placeholder became the permanent
+# record. Split into this (open) + gap_forward_resolve.py (resolve, run after market close),
+# matching fade_paper_check.py/fade_paper_resolve.py's already-correct pattern. Found and fixed
+# 2026-09-10 - see research_log.md Entry 32.
 
 nq = yf.Ticker("NQ=F")
 history = nq.history(period="5d", interval="15m")
@@ -45,17 +53,15 @@ gap_points = open_price - prior_close
 
 broker = PaperBroker(starting_balance=10000, state_file=STATE_FILE)
 
-# Checks trade_history, not just open positions - place_order()+close_position() run
-# back-to-back within a single script execution, so `positions` is always empty by the time this
-# check runs. Checking only positions never catches a same-day re-run (bug found live on
-# 2026-09-10: running this script twice on the same day recorded the same gap trade twice).
+# Checks trade_history too, not just open positions - see research_log.md Entry 29. Also blocks
+# opening a second position while one from today is already open and awaiting resolve.
 already_processed_today = any(
     t.get("entry_date") == str(today) for t in broker.trade_history
 ) or any(
     p.get("entry_date") == str(today) for p in broker.positions
 )
 if already_processed_today:
-    print(f"Already processed a gap signal for {today}. Skipping to avoid a duplicate trade record.")
+    print(f"Already opened/processed a gap signal for {today}. Skipping to avoid a duplicate.")
     sys.exit()
 
 print(f"Prior close: {prior_close}, Today's open: {open_price}, Gap: {gap_points:.2f} points")
@@ -84,32 +90,7 @@ if not allowed:
     sys.exit()
 # --- END RISK CHECK ---
 
-day_bars = today_bars[
-    (today_bars.index.time > pd.Timestamp("08:30").time())
-    & (today_bars.index.time <= pd.Timestamp("16:00").time())
-]
-
-exit_price = None
-exit_reason = None
-for _, bar in day_bars.iterrows():
-    if signal == "LONG":
-        hit_stop = bar["Low"] <= stop_price
-        hit_target = bar["High"] >= target_price
-    else:
-        hit_stop = bar["High"] >= stop_price
-        hit_target = bar["Low"] <= target_price
-    if hit_stop:
-        exit_price, exit_reason = stop_price, "stop"
-        break
-    elif hit_target:
-        exit_price, exit_reason = target_price, "target"
-        break
-
-if exit_price is None:
-    exit_price = day_bars.iloc[-1]["Close"] if len(day_bars) > 0 else entry_price
-    exit_reason = "eod_pending"
-
-trade = broker.place_order(
+broker.place_order(
     symbol="MNQ",
     direction=signal,
     entry_price=entry_price,
@@ -118,11 +99,4 @@ trade = broker.place_order(
     entry_date=str(today)
 )
 
-# point_value=POINT_VALUE is the fix: without it, PaperBroker defaulted to $20/pt (full NQ)
-# regardless of the MNQ symbol above, overstating every fill on this account by 10x.
-broker.close_position(trade, exit_price, reason=exit_reason, point_value=POINT_VALUE)
-
-points = (exit_price - entry_price) if signal == "LONG" else (entry_price - exit_price)
-record_trade_result(points * POINT_VALUE)
-
-print(f"Balance: ${broker.balance:,.2f}")
+print(f"Position opened - will be resolved end of day by gap_forward_resolve.py.")

@@ -150,21 +150,44 @@ def run_pairs_check(symbol_a, symbol_b, state_file, label, tag_a, tag_b,
             exit_reason = "time_stop"
 
         if exit_reason:
-            a_leg = next(p for p in broker.positions if p["symbol"] == tag_a and p["entry_date"] == entry_date_str)
-            b_leg = next(p for p in broker.positions if p["symbol"] == tag_b and p["entry_date"] == entry_date_str)
+            a_leg = next((p for p in broker.positions if p["symbol"] == tag_a and p["entry_date"] == entry_date_str), None)
+            b_leg = next((p for p in broker.positions if p["symbol"] == tag_b and p["entry_date"] == entry_date_str), None)
 
-            broker.close_position(a_leg, current_a_price, reason=exit_reason, point_value=point_value_a * contracts_a)
-            broker.close_position(b_leg, current_b_price, reason=exit_reason, point_value=point_value_b * contracts_b)
+            if a_leg is None or b_leg is None:
+                # This position predates the risk/broker wiring (research_log.md Entry 24, deployed
+                # 2026-09-10) - it was opened by an older version of this script that only wrote to
+                # this state file, never through PaperBroker.place_order(). There's no reliable entry
+                # price on record for the missing leg(s), so rather than fabricate one, this closes
+                # the position out of state WITHOUT recording a P&L or touching the risk circuit
+                # breaker, flagged loudly so it isn't silently lost. One-time reconciliation for this
+                # specific pre-existing position - every position opened from here forward goes
+                # through the broker on both legs. See research_log.md Entry 32.
+                missing = ("A" if a_leg is None else "") + ("B" if b_leg is None else "")
+                print(f"[{label}] WARNING: closing ({exit_reason}) a position with no matching "
+                      f"PaperBroker record (missing leg: {missing}) - opened {entry_date_str}, "
+                      f"before the broker/risk wiring went live. No P&L recorded for this trade - "
+                      f"flagging instead of guessing a number.")
+                if a_leg is not None:
+                    broker.close_position(a_leg, current_a_price, reason=exit_reason, point_value=point_value_a * contracts_a)
+                if b_leg is not None:
+                    broker.close_position(b_leg, current_b_price, reason=exit_reason, point_value=point_value_b * contracts_b)
 
-            a_points = (current_a_price - a_leg["entry_price"]) if a_leg["direction"] == "LONG" else (a_leg["entry_price"] - current_a_price)
-            b_points = (current_b_price - b_leg["entry_price"]) if b_leg["direction"] == "LONG" else (b_leg["entry_price"] - current_b_price)
-            trade_pnl = a_points * point_value_a * contracts_a + b_points * point_value_b * contracts_b
-            risk_limits.record_trade_result(trade_pnl, state_file=PAIRS_RISK_STATE_FILE)
+                state["history"].append({**state["position"], "exit_date": str(today), "exit_z": current_z,
+                                           "exit_reason": exit_reason, "trade_pnl": None,
+                                           "orphaned_no_broker_record": True})
+            else:
+                broker.close_position(a_leg, current_a_price, reason=exit_reason, point_value=point_value_a * contracts_a)
+                broker.close_position(b_leg, current_b_price, reason=exit_reason, point_value=point_value_b * contracts_b)
 
-            print(f"[{label}] Position CLOSED ({exit_reason}): entered z={entry_z:.2f}, now z={current_z:.2f}, "
-                  f"trade P&L ${trade_pnl:+,.2f}, balance now ${broker.balance:,.2f}")
-            state["history"].append({**state["position"], "exit_date": str(today), "exit_z": current_z,
-                                       "exit_reason": exit_reason, "trade_pnl": trade_pnl})
+                a_points = (current_a_price - a_leg["entry_price"]) if a_leg["direction"] == "LONG" else (a_leg["entry_price"] - current_a_price)
+                b_points = (current_b_price - b_leg["entry_price"]) if b_leg["direction"] == "LONG" else (b_leg["entry_price"] - current_b_price)
+                trade_pnl = a_points * point_value_a * contracts_a + b_points * point_value_b * contracts_b
+                risk_limits.record_trade_result(trade_pnl, state_file=PAIRS_RISK_STATE_FILE)
+
+                print(f"[{label}] Position CLOSED ({exit_reason}): entered z={entry_z:.2f}, now z={current_z:.2f}, "
+                      f"trade P&L ${trade_pnl:+,.2f}, balance now ${broker.balance:,.2f}")
+                state["history"].append({**state["position"], "exit_date": str(today), "exit_z": current_z,
+                                           "exit_reason": exit_reason, "trade_pnl": trade_pnl})
             state["position"] = None
         else:
             held_str = f", held {days_held}d" if days_held is not None else ""
