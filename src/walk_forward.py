@@ -1,6 +1,13 @@
 from analysis_utils import compute_points, full_stats, print_stats
 
-def walk_forward_test(signals, strategy_name, num_windows=4, entry_col="entry_price", exit_col="exit_price", date_col="entry_date"):
+def walk_forward_test(signals, strategy_name, num_windows=4, entry_col="entry_price", exit_col="exit_price",
+                       date_col="entry_date", point_value=20):
+    """point_value defaults to 20 (NQ) for backward compatibility with existing callers that never
+    passed it. Always pass the SAME point_value you use for full_stats()/scorecard.run_scorecard()
+    on this same signal set - added 2026-09-10 after finding this function silently used the
+    default (20) regardless of what callers intended, which would have quietly mis-scaled every
+    dollar figure printed here for any non-NQ-point-value signal set (e.g. point_value=1 signals
+    like Relative Momentum Rotation or the pairs strategies)."""
     print("=" * 60)
     print(f"WALK-FORWARD TEST: {strategy_name}")
     print("=" * 60)
@@ -12,7 +19,7 @@ def walk_forward_test(signals, strategy_name, num_windows=4, entry_col="entry_pr
     if n < num_windows * 5:
         print(f"\nOnly {n} trades total - too few to split into {num_windows} meaningful windows.")
         print("Reporting overall stats instead:\n")
-        print_stats(full_stats(signals))
+        print_stats(full_stats(signals, point_value=point_value))
         return
 
     window_size = n // num_windows
@@ -27,7 +34,7 @@ def walk_forward_test(signals, strategy_name, num_windows=4, entry_col="entry_pr
         start = w * window_size
         end = start + window_size if w < num_windows - 1 else n
         window = signals.iloc[start:end]
-        stats = full_stats(window, label=f"Window {w+1}")
+        stats = full_stats(window, label=f"Window {w+1}", point_value=point_value)
         window_results.append(stats)
 
         print(f"--- Window {w+1} ({window[date_col].min()} to {window[date_col].max()}) ---")

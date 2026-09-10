@@ -340,14 +340,72 @@ This log documents every strategy hypothesis tested, the method used, the result
   daily-frequency crude oil work: data-quality carve-outs around the April 2020 negative-price
   event need to consider the surrounding days, not just the exact anomalous rows.
 
+## Entry 23: Pairs Book (NQ/ES, NQ/YM, ES/YM) Re-Validated: Micro Sizing, Real 2-Leg Costs, Outlier Check
+- **Hypothesis/purpose:** Entries 9 and 13's original "PASS" verdicts came from `pairs_scorecard.py`,
+  a hand-rolled, one-off scorecard that reimplements 5 of the 6 standard checks directly on the
+  `pnl_dollars` column - it never called `scorecard.py` at all, so those verdicts predate AND
+  bypass the Check 6 cost-adjustment fix (Entry 21). The pairs book has never actually been judged
+  against realistic 2-leg trading costs, nor checked for outlier concentration the way every other
+  strategy this month has been.
+- **Method:** `pairs_scorecard_v2.py` (new) re-runs all three pairs at MICRO sizing (MNQ/MES/MYM -
+  exactly 1/10th of the full-size dollar P&L `get_pairs_trading_signals_from_archive()` /
+  `get_generic_pairs_signals_from_archive()` produce, matching this project's micro-first
+  convention) through the real `scorecard.run_scorecard()`, using a 2-LEG cost model (both legs'
+  slippage + both legs' commission, since a pairs trade is really two simultaneous trades) built
+  from this project's existing 1.0pt-slippage/$4.50-commission convention applied per-leg at each
+  leg's own micro point value: NQ/ES = $16.00/trade, NQ/YM = $11.50/trade, ES/YM = $14.50/trade
+  round-trip (estimates, not verified against real broker fills for a 2-leg spread order).
+  Building this also surfaced and fixed a real bug in `walk_forward.py`: it silently ignored
+  whatever `point_value` a caller passed and always used the NQ default (20) internally for its
+  window-by-window dollar figures - harmless for point_value=20 callers, but would have silently
+  under/over-stated every window's dollars for point_value=1 signal sets (Relative Momentum
+  Rotation, and now pairs). Fixed by adding a real `point_value` parameter (default 20, backward
+  compatible). Entry 19's FAIL verdict is unaffected (sign of each window's profitability doesn't
+  change under uniform rescaling).
+  NQ/YM's walk-forward output showed a window with profit factor 107.53 (avg loss only -$23.79 vs
+  avg win $730.96, in 9 trades) - the same lopsided shape that turned out to be the whole story
+  for Entry 20's Wednesday result and Entry 22's crude oil result. Built `pairs_outlier_check.py`
+  to check top-1/3/5-winning-trade concentration and re-computed stats with the top 1 and top 3
+  trades excluded, on all three pairs (not just NQ/YM), to avoid missing a quieter version of the
+  same problem in the other two.
+- **Sample:** 39 trades (NQ/ES), 37 (NQ/YM), 38 (ES/YM).
+- **Result:** All three clear the outlier-concentration bar cleanly - a real difference from the
+  two rejected results this month:
+  - NQ/ES: top 3 trades = 46.7% of total P&L; excluding them, PF 2.16 → 1.81, still comfortably
+    above 1.3. 4/4 walk-forward windows profitable, no wild window-to-window swings.
+  - NQ/YM: top 3 trades = 40.0% of total P&L; excluding them, PF drops to 1.75, still solidly
+    above 1.3. The suspicious window-3 result turns out NOT to be one dominant trade - it's a
+    window where the LOSERS happened to be unusually small (avg loss -$23.79), while the top 3
+    trades overall are spread across three different dates, none of which single-handedly define
+    the result. Real, if worth continued monitoring for whether that loss-size pattern repeats.
+  - ES/YM: top 3 trades = 46.1% of total P&L; excluding them, PF drops furthest of the three (1.97
+    gross → 1.52), the thinnest remaining margin above the 1.3 bar, though still a PASS.
+  Cost-adjusted (net) profit factors at micro sizing: NQ/ES 2.33, NQ/YM 2.19, ES/YM 1.76 - all
+  clear 1.3 with room, even before removing any outliers. All three: 4/6 on the standardized
+  scorecard, failing only sample size (37-39 vs. 100) and out-of-sample sample size (12 vs. 20) -
+  both pure function-of-time gates, not evidence against the edge.
+- **Verdict:** WATCH (upgraded confidence) for all three - genuinely stress-tested now (cost model,
+  outlier concentration) and still standing, unlike Entries 20 and 22. Not yet PASS: still gated
+  by the 100-trade / 20-trade-OOS thresholds, and Entry 18's cointegration caution (none of the
+  three show formal statistical cointegration) still applies as a standing caveat on *why* this
+  works, even though *whether* it currently works now has better evidence behind it than before
+  this entry. ES/YM is the one to watch most closely given its thinner cost-adjusted and
+  outlier-adjusted margins - not because anything wrong was found, but because it has the least
+  room for slippage-model error before falling under the bar.
+- **Reasoning:** This is the first time in the search-for-new-strategies push that a "looks clean"
+  result actually survived the full scrutiny (costs + outliers) rather than collapsing under it -
+  worth noting explicitly since Entries 20 and 22 both failed this exact same battery of checks.
+  The pairs book remains the strongest live candidate in the project, now on firmer ground than
+  the original Entry 9/13 verdicts, which were never actually cost-checked.
+
 ---
 
 ## Current Status Summary (as of 2026-09-10)
 **Tier 1 — Live forward-testing:** Gap Continuation (re-rated WATCH per Entry 16, refined by
 Entry 21's volatility-regime filter — real, evidence-backed improvement, but net-of-cost PF 1.17
-still misses the 1.3 bar), NQ/ES Pairs, NQ/YM Pairs, ES/YM Pairs (PASS per Entries 9/13, but see
-Entry 18's cointegration caution — these have not yet been re-run through the fixed 6-check
-cost-aware scorecard)
+still misses the 1.3 bar), NQ/ES Pairs, NQ/YM Pairs, ES/YM Pairs (re-validated WATCH per Entry 23 -
+cost-aware and outlier-checked now, still short of the 100-trade/20-OOS-trade bar; Entry 18's
+cointegration caution still stands as a caveat on the underlying mechanism)
 **Watching, not yet live:** Overnight Session Drift (Entry 17/20) — stop-loss variant now tested;
 all-weekdays version fails the scorecard on drawdown, but the Wednesday-specific subset is a
 genuine (if unproven) hypothesis worth forward-testing
@@ -361,9 +419,11 @@ history instead) and remains a possible upgrade if intraday-resolution crude oil
 later — though a fixed-stop structure, not just finer data, is what would actually address the
 outlier-domination problem found here.
 **Process note:** the standardized scorecard (scorecard.py) now includes a cost-adjusted check
-(Check 6, added after Entry 21) with per-instrument `slippage_points`/`commission` overrides — this
-is what caught the crude-oil cost-model unit mismatch above on its first use outside the equity
-index book. Every "PASSES SCORECARD" verdict from before this fix should be treated as gross-only
-until re-run.
+(Check 6, added after Entry 21) with per-instrument `slippage_points`/`commission` overrides, and
+`walk_forward.py` now respects a `point_value` override (Entry 23) instead of silently defaulting
+to 20. Every verdict from before these fixes that used a non-NQ point value should be treated with
+that in mind until re-run - the pairs book (Entry 23) and the crude oil work (Entry 22) are now
+both re-validated against the fixed tooling; the gap/overnight-drift book (Entries 16/17/20/21)
+always used point_value correctly since MNQ's point_value=2 was passed explicitly throughout.
 **All pending:** 100+ trade validation threshold at their respective (corrected, where applicable) definitions
 **Validated for real capital:** None
