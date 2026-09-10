@@ -692,3 +692,39 @@ definitions.
   pure "no signal" evidence without considering this. No code change made in response to this - the
   practical mitigation is running both scripts within an hour or two of the 09:30 ET / 08:30 CT
   open rather than checking again late at night, which is also the cadence they were designed for.
+
+
+---
+
+## Entry 29: First Live Trade Recorded + Same-Day Duplicate-Trade Bug Found and Fixed
+- **First live result (both tracks):** On 2026-09-10, NQ gapped -195.50 points at the open (well
+  above the 30pt minimum) on 08:30 opening-bar volume of 3.22x its trailing 20-day average - far
+  above both the 1.2x and 1.5x thresholds, so `gap_forward_check.py` and BOTH volume-confirmed
+  tracks took the identical SHORT trade. All three hit the 80pt target (not the 40pt stop):
+  gap_forward_check.py balance $9,200 -> $9,360 (+$160); both volume-confirmed tracks (fresh
+  accounts) $10,000 -> $10,160 (+$160 each). This is one trade, not a result, and today's gap was
+  so far above either threshold that it doesn't yet distinguish 1.2x from 1.5x - that only happens
+  on a day where the ratio lands between them. Recorded honestly as a single, early, directionally
+  positive data point, nothing more.
+- **Bug found and fixed:** Running `gap_forward_check.py` twice on the same day produced TWO
+  trade_history entries for 2026-09-10 with identical entry/stop/target - the first run (before
+  enough of the day's bars existed) recorded `eod_pending`/0 points, the second (this session,
+  after the target had actually been hit) recorded the real `target`/+80 points. Root cause: the
+  "already traded today" guard in both `gap_forward_check.py` and the new
+  `volume_confirmed_gap_forward_check.py` checked `broker.positions` (currently-OPEN positions),
+  but `PaperBroker.close_position()` immediately removes a position from `positions` and moves it
+  to `trade_history` in the same call - and both scripts open AND close a trade within one
+  execution. So `positions` is ALWAYS empty by the time the guard runs, meaning it could never
+  actually catch a same-day re-run; it was checking the one list guaranteed never to have
+  anything in it at that point. Fixed in both scripts by checking `trade_history` (in addition to
+  `positions`, for extra safety) for an existing entry on today's date. The duplicate 0-point
+  ghost entry in `data/gap_paper_account.json` was removed (balance unaffected - it had
+  contributed $0 - but left uncorrected it would have silently inflated future trade counts).
+  This was a real latent defect in the live-tracking infrastructure discovered through actual use,
+  not a hypothetical - worth being explicit that it existed in `gap_forward_check.py` (the
+  currently-live script) the whole time, not something introduced by the new parallel track;
+  it just took two same-day runs to surface it.
+- **Verdict:** N/A for the strategy - this is an infrastructure fix and a status update, not a
+  new strategy result. Both scripts are now safe to run more than once on the same day without
+  corrupting the record (later runs on a day already processed will just report "already processed
+  and skip).

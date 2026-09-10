@@ -45,9 +45,17 @@ gap_points = open_price - prior_close
 
 broker = PaperBroker(starting_balance=10000, state_file=STATE_FILE)
 
-already_open_today = any(p.get("entry_date") == str(today) for p in broker.positions)
-if already_open_today:
-    print(f"Already have an open gap position for {today}. Skipping.")
+# Checks trade_history, not just open positions - place_order()+close_position() run
+# back-to-back within a single script execution, so `positions` is always empty by the time this
+# check runs. Checking only positions never catches a same-day re-run (bug found live on
+# 2026-09-10: running this script twice on the same day recorded the same gap trade twice).
+already_processed_today = any(
+    t.get("entry_date") == str(today) for t in broker.trade_history
+) or any(
+    p.get("entry_date") == str(today) for p in broker.positions
+)
+if already_processed_today:
+    print(f"Already processed a gap signal for {today}. Skipping to avoid a duplicate trade record.")
     sys.exit()
 
 print(f"Prior close: {prior_close}, Today's open: {open_price}, Gap: {gap_points:.2f} points")

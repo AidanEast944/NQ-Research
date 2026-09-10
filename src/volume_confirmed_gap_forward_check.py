@@ -146,9 +146,16 @@ for label, cfg in THRESHOLDS.items():
 
     broker = PaperBroker(starting_balance=10000, state_file=cfg["account_file"])
 
-    already_open_today = any(p.get("entry_date") == str(today) for p in broker.positions)
-    if already_open_today:
-        print(f"Already have an open {label} position for {today}. Skipping.")
+    # Checks trade_history too, not just open positions - same reasoning and same bug as
+    # gap_forward_check.py's identical fix (found live 2026-09-10): positions is always empty by
+    # the time this runs, since each script execution opens AND closes a position in one pass.
+    already_processed_today = any(
+        t.get("entry_date") == str(today) for t in broker.trade_history
+    ) or any(
+        p.get("entry_date") == str(today) for p in broker.positions
+    )
+    if already_processed_today:
+        print(f"Already processed a {label} signal for {today}. Skipping to avoid a duplicate trade record.")
         continue
 
     # --- RISK CIRCUIT BREAKER CHECK, using this track's OWN state, isolated from the others ---
