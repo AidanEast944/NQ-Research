@@ -466,10 +466,12 @@ robust to volume-lookback choice, and — the strongest evidence in the project 
 27 Part 5: PF 3.78 out-of-time vs. PF 2.00 for the original hindsight-chosen threshold on the same
 holdout). One real caveat remains: a modest shared time trend with the unfiltered baseline (Entry
 27 Part 2), suggesting part of the edge may ride a favorable recent regime rather than being purely
-timeless. Recommended next step: live forward-testing of this definition. Still backtest-only -
-not yet forward-tested live, and an open decision remains on whether to point the live
-`gap_forward_check.py` at this definition. Not yet "validated for real capital" under this
-project's two-step bar.
+timeless. Live forward-testing STARTED per Entry 28: `volume_confirmed_gap_forward_check.py`
+now runs as a parallel track alongside `gap_forward_check.py`, tracking both the 1.2x and 1.5x
+thresholds independently with fully separate paper-account/risk-state files. Zero live trades
+recorded yet - the clock has just started, not a result. An open decision remains on whether to
+ever point the live `gap_forward_check.py` at this definition. Not yet "validated for real
+capital" under this project's two-step bar.
 **Watching, not yet live:** Overnight Session Drift (Entry 17/20) — stop-loss variant now tested;
 all-weekdays version fails the scorecard on drawdown, but the Wednesday-specific subset is a
 genuine (if unproven) hypothesis worth forward-testing
@@ -642,3 +644,35 @@ definitions.
   scrutinized), this one got MORE convincing under scrutiny, not less. The single strongest piece of
   evidence in the whole project to date is Part 5: a threshold chosen without hindsight performed
   better, not worse, on genuinely unseen data.
+
+---
+
+## Entry 28: Volume-Confirmed Gap — Live Forward-Test Started (Parallel Track)
+- **What:** Built `volume_confirmed_gap_forward_check.py`, a live, same-day forward-test of the
+  volume-confirmed gap continuation definition validated in Entries 25/27. Runs as a PARALLEL
+  track alongside the currently-live, unfiltered `gap_forward_check.py` - it does NOT replace or
+  disturb it. Whether to eventually redirect `gap_forward_check.py` itself at this definition
+  remains an explicitly open decision, not made here or automatically.
+- **Method:** Same entry mechanics as `gap_forward_check.py` (08:30 ET open, 30pt minimum gap,
+  40pt stop / 80pt target, MNQ micro sizing), with the added volume filter from
+  `get_weekday_open_gap_signals_with_volume_from_archive()`: today's 08:30 opening-bar volume vs.
+  its own trailing 20-day average (computed from prior days only, no lookahead). Pulls a 60-day
+  15-minute NQ=F window (vs. the unfiltered script's 5-day pull) since the trailing volume average
+  needs more history than gap detection alone.
+- **Tracks BOTH thresholds validated in Entry 27 Part 5, independently:** 1.2x (the original
+  full-sample-hindsight choice, Entry 25 - cost-adjusted PF 1.39 backtest) and 1.5x (the honest,
+  blind out-of-time-selected choice, Entry 27 Part 5 - PF 3.78 on genuinely unseen backtest data).
+  Each threshold has its OWN `PaperBroker` account file (`data/volume_gap_1_2x_paper_account.json`,
+  `data/volume_gap_1_5x_paper_account.json`) and its OWN `risk_limits.py` state file
+  (`data/volume_gap_1_2x_risk_limits_state.json`, `data/volume_gap_1_5x_risk_limits_state.json`),
+  fully isolated from each other and from `gap_forward_check.py`'s own state - since the
+  volume-confirmed signal is a strict subset of the unfiltered gap signal, sharing state would
+  conflate or double-count results across strategies.
+- **Status:** Zero live trades so far - this is the script's creation, not a result. This is the
+  start of the clock on the second half of this project's two-step bar (rigorous backtest evidence
+  is necessary but not sufficient; live forward-validation on genuinely unseen data is separate and
+  comes next). Run manually alongside `gap_forward_check.py` each trading day; not yet automated
+  (per the user's decision this session not to automate the daily data fetch, given this sandbox's
+  network egress restrictions - the user will run it manually).
+- **Verdict:** N/A - not a strategy result, a forward-test launch. Revisit after enough live
+  trading days have accumulated to say anything about either threshold's live performance.

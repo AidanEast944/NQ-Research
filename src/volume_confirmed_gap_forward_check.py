@@ -1,0 +1,185 @@
+"""
+Live forward-test for the volume-confirmed gap continuation strategy (Entry 25/27), run as a
+PARALLEL track alongside the currently-live, unfiltered gap_forward_check.py - NOT a replacement.
+Whether to ever redirect gap_forward_check.py itself at this definition remains an explicitly open
+decision (see research_log.md Entry 25/27) and is NOT done here.
+
+Same entry mechanics as gap_forward_check.py (08:30 ET open, same-day 40pt stop / 80pt target,
+30pt minimum gap, MNQ micro sizing), with one added filter: the 08:30 opening-bar volume must be
+at least the threshold multiple of its own trailing 20-day average - matching
+get_weekday_open_gap_signals_with_volume_from_archive()'s definition in strategy.py.
+
+Runs BOTH thresholds validated in Entry 27 Part 5 as independent, separately-tracked forward tests:
+  - 1.2x: the original full-sample-hindsight choice (Entry 25) - PF 1.39 cost-adjusted backtest
+  - 1.5x: the honest out-of-time-selected choice (Entry 27 Part 5) - PF 3.78 on genuinely unseen
+          out-of-sample backtest data
+
+Each threshold gets its OWN PaperBroker account file and risk_limits state file, kept separate
+from each other AND from gap_forward_check.py's own state, since the volume-confirmed signal is a
+strict subset of the unfiltered gap signal and sharing state would conflate/double-count results.
+
+Needs more intraday history than gap_forward_check.py's 5-day pull, since the 20-day trailing
+opening-volume average requires ~20 prior trading days of 08:30 bars.
+"""
+import sys
+import yfinance as yf
+import pandas as pd
+from datetime import date
+from paper_broker import PaperBroker
+from risk_limits import check_trade_allowed, record_trade_result
+
+MIN_GAP_POINTS = 30
+STOP_POINTS = 40
+TARGET_POINTS = 80
+POINT_VALUE = 2  # MNQ micro contract
+VOLUME_LOOKBACK = 20
+ENTRY_TIME = "08:30"
+SESSION_END = "16:00"
+
+THRESHOLDS = {
+    "1.2x": {
+        "value": 1.2,
+        "account_file": "data/volume_gap_1_2x_paper_account.json",
+        "risk_state_file": "data/volume_gap_1_2x_risk_limits_state.json",
+    },
+    "1.5x": {
+        "value": 1.5,
+        "account_file": "data/volume_gap_1_5x_paper_account.json",
+        "risk_state_file": "data/volume_gap_1_5x_risk_limits_state.json",
+    },
+}
+
+nq = yf.Ticker("NQ=F")
+history = nq.history(period="60d", interval="15m")
+
+if history.empty:
+    print("WARNING: No data returned. Skipping.")
+    sys.exit()
+
+history["date"] = history.index.date
+today = date.today()
+today_bars = history[history["date"] == today]
+
+if today_bars.empty:
+    print(f"No data yet for {today}.")
+    sys.exit()
+
+prior_days = history[history["date"] < today]
+if prior_days.empty:
+    print("Not enough history.")
+    sys.exit()
+
+most_recent_day = prior_days["date"].max()
+prior_day_bars = prior_days[prior_days["date"] == most_recent_day]
+prior_close = prior_day_bars.iloc[-1]["Close"]
+
+entry_t = pd.Timestamp(ENTRY_TIME).time()
+close_t = pd.Timestamp(SESSION_END).time()
+
+open_bar = today_bars[today_bars.index.time == entry_t]
+if open_bar.empty:
+    print(f"No {ENTRY_TIME} candle yet for {today}.")
+    sys.exit()
+
+open_price = open_bar.iloc[0]["Open"]
+today_entry_volume = open_bar.iloc[0]["Volume"]
+gap_points = open_price - prior_close
+
+# Trailing 20-day average of the 08:30 opening-bar volume, using only PRIOR days (no lookahead) -
+# matches get_weekday_open_gap_signals_with_volume_from_archive()'s rolling().shift(1) logic.
+prior_entry_bars = prior_days[prior_days.index.time == entry_t].groupby("date")["Volume"].first()
+prior_entry_bars = prior_entry_bars.sort_index()
+
+if len(prior_entry_bars) < max(5, VOLUME_LOOKBACK // 2):
+    print(f"Not enough prior {ENTRY_TIME} bars ({len(prior_entry_bars)}) to compute a trustworthy "
+          f"{VOLUME_LOOKBACK}-day trailing volume average yet. Skipping.")
+    sys.exit()
+
+trailing_avg_volume = prior_entry_bars.tail(VOLUME_LOOKBACK).mean()
+volume_ratio = today_entry_volume / trailing_avg_volume if trailing_avg_volume else float("nan")
+
+print(f"Prior close: {prior_close}, Today's open: {open_price}, Gap: {gap_points:.2f} points")
+print(f"Today's {ENTRY_TIME} volume: {today_entry_volume:,.0f}, trailing {VOLUME_LOOKBACK}-day avg: "
+      f"{trailing_avg_volume:,.0f}, ratio: {volume_ratio:.2f}x")
+
+if abs(gap_points) < MIN_GAP_POINTS:
+    print(f"Gap too small ({gap_points:.2f} pts) - no signal for any threshold today.")
+    sys.exit()
+
+signal = "LONG" if gap_points > 0 else "SHORT"
+entry_price = open_price
+stop_price = entry_price - STOP_POINTS if signal == "LONG" else entry_price + STOP_POINTS
+target_price = entry_price + TARGET_POINTS if signal == "LONG" else entry_price - TARGET_POINTS
+
+# Entry/exit mechanics are identical for every threshold - only whether a given track TAKES the
+# trade differs - so this is computed once and reused below.
+day_bars = today_bars[
+    (today_bars.index.time > entry_t)
+    & (today_bars.index.time <= close_t)
+]
+
+exit_price = None
+exit_reason = None
+for _, bar in day_bars.iterrows():
+    if signal == "LONG":
+        hit_stop = bar["Low"] <= stop_price
+        hit_target = bar["High"] >= target_price
+    else:
+        hit_stop = bar["High"] >= stop_price
+        hit_target = bar["Low"] <= target_price
+    if hit_stop:
+        exit_price, exit_reason = stop_price, "stop"
+        break
+    elif hit_target:
+        exit_price, exit_reason = target_price, "target"
+        break
+
+if exit_price is None:
+    exit_price = day_bars.iloc[-1]["Close"] if len(day_bars) > 0 else entry_price
+    exit_reason = "eod_pending"
+
+for label, cfg in THRESHOLDS.items():
+    print(f"\n--- Threshold {label} ---")
+    if volume_ratio < cfg["value"]:
+        print(f"Volume ratio {volume_ratio:.2f}x < {cfg['value']}x threshold - no trade for this track today.")
+        continue
+
+    broker = PaperBroker(starting_balance=10000, state_file=cfg["account_file"])
+
+    already_open_today = any(p.get("entry_date") == str(today) for p in broker.positions)
+    if already_open_today:
+        print(f"Already have an open {label} position for {today}. Skipping.")
+        continue
+
+    # --- RISK CIRCUIT BREAKER CHECK, using this track's OWN state, isolated from the others ---
+    proposed_risk_dollars = STOP_POINTS * POINT_VALUE
+    current_open_positions = len(broker.positions)
+
+    allowed, reason = check_trade_allowed(
+        account_balance=broker.balance,
+        proposed_risk_dollars=proposed_risk_dollars,
+        current_open_positions=current_open_positions,
+        state_file=cfg["risk_state_file"],
+    )
+
+    if not allowed:
+        print(f"TRADE BLOCKED BY RISK LIMITS: {reason}")
+        continue
+    # --- END RISK CHECK ---
+
+    trade = broker.place_order(
+        symbol="MNQ",
+        direction=signal,
+        entry_price=entry_price,
+        stop_price=stop_price,
+        target_price=target_price,
+        entry_date=str(today)
+    )
+
+    broker.close_position(trade, exit_price, reason=exit_reason, point_value=POINT_VALUE)
+
+    points = (exit_price - entry_price) if signal == "LONG" else (entry_price - exit_price)
+    record_trade_result(points * POINT_VALUE, state_file=cfg["risk_state_file"])
+
+    print(f"{label}: {signal} entry {entry_price:.2f}, exit {exit_price:.2f} ({exit_reason}), "
+          f"volume_ratio={volume_ratio:.2f}x -> Balance: ${broker.balance:,.2f}")
