@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.nq-research.forward-check</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/aidaneast/nq-research/venv/bin/python3</string>
+        <string>/Users/aidaneast/nq-research/src/run_forward_checks.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/aidaneast/nq-research/src</string>
+
+    <!-- Weekdays only (Mon=1 ... Fri=5), 6:35 AM Pacific - a few minutes after the 9:30 AM
+         Eastern cash-market open, giving Yahoo's feed a little buffer to have the 08:30 CT/9:30 ET
+         opening bar available (see research_log.md Entry 28's backfill-lag note). launchd reads
+         Hour/Minute in this Mac's LOCAL system clock, so no timezone conversion is needed here -
+         if you ever change your Mac's time zone, this schedule moves with it automatically. -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>35</integer></dict>
+        <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>35</integer></dict>
+        <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>35</integer></dict>
+        <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>35</integer></dict>
+        <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>6</integer><key>Minute</key><integer>35</integer></dict>
+    </array>
+
+    <key>StandardOutPath</key>
+    <string>/Users/aidaneast/nq-research/data/forward_check_log.txt</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/aidaneast/nq-research/data/forward_check_errors.txt</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>

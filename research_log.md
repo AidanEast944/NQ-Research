@@ -728,3 +728,38 @@ definitions.
   new strategy result. Both scripts are now safe to run more than once on the same day without
   corrupting the record (later runs on a day already processed will just report "already processed
   and skip).
+
+
+---
+
+## Entry 30: Daily Forward-Test Automation via launchd (Local, No Cloud/Claude at Runtime)
+- **What:** Automated the daily manual run of both live forward-test scripts using macOS's native
+  `launchd` scheduler, after the user explicitly asked to automate while keeping their data
+  private. Chosen specifically because it keeps every part of the daily execution - the Python
+  process, the yfinance network call, and all trade/account data - entirely on the user's own
+  machine, using its own network connection. Nothing about this automation routes through Cowork,
+  a cloud sandbox, or any Claude infrastructure at runtime; earlier in this engagement, automating
+  this from Cowork's own scheduled-task infrastructure was found to be technically blocked anyway
+  (the sandboxed environment's network egress can't reach Yahoo Finance), so a fully local
+  mechanism was the only real option regardless of the privacy preference, and happens to be the
+  more private one too.
+- **Built:**
+  - `src/run_forward_checks.py` - thin wrapper that runs `gap_forward_check.py` then
+    `volume_confirmed_gap_forward_check.py` in sequence, capturing and re-printing each script's
+    output (so both remain independently runnable/editable exactly as before - this doesn't merge
+    their logic), and firing a best-effort macOS notification (`osascript`, never fatal on
+    failure) only on lines indicating a trade actually opened or closed - silent on no-signal days.
+  - `launchd/com.nq-research.forward-check.plist` - fires weekdays (Mon-Fri) at 6:35 AM Pacific
+    (the user's confirmed local time zone) - a few minutes after the 9:30 AM Eastern open, some
+    buffer against the Yahoo backfill-lag issue diagnosed the same day this track was launched.
+    Logs to `data/forward_check_log.txt` / `data/forward_check_errors.txt` (both already covered
+    by `.gitignore`'s `data/*_log.txt` / `data/*_errors.txt` patterns).
+  - `launchd/README.md` - install/test/check/uninstall commands, since the actual `launchctl load`
+    step has to be run from the user's own Terminal (installing into `~/Library/LaunchAgents` is
+    outside the folder this session has access to, deliberately - installing a persistent
+    background service is exactly the kind of thing that should go through the user's own hands,
+    not be done silently on their behalf).
+- **Status:** Files created and committed; NOT yet installed/loaded - that step is on the user,
+  per `launchd/README.md`. Recommended testing it manually once (`python3 run_forward_checks.py`)
+  before relying on the schedule.
+- **Verdict:** N/A - infrastructure, not a strategy result.
