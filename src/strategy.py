@@ -2317,3 +2317,62 @@ def get_relative_momentum_rotation_signals_from_archive(lookback_days=5, entry_t
         })
 
     return pd.DataFrame(results)
+
+
+def get_crude_oil_gap_signals_from_history(min_gap_pct=1.0, direction="continuation",
+                                              data_file="data/raw_cl_daily_history.csv"):
+    """FIRST INDEPENDENT-INSTRUMENT CANDIDATE (2026-09-10) - crude oil (WTI, CL=F), chosen as a
+    genuinely different risk driver (energy supply/demand) than the NQ/ES/YM/RTY equity book,
+    directly motivated by Entry 20's finding that the April 2026 equity rally was actually an oil
+    price collapse (the Iran ceasefire/Hormuz reopening) wearing an equity costume.
+
+    Uses yfinance's free daily-close history (2000-2026, 6539 bars) - no intraday resolution yet,
+    so unlike the equity gap strategies there is NO intrabar stop/target here: daily OHLC bars
+    don't reveal execution order within the day, so this is a simple enter-at-open/exit-at-close
+    bet (matching how Entry 14/17 started before a stop was added once intraday data existed).
+    A stop-loss version can be added once the 15m intraday archive (data/raw_cl/, building since
+    2026-09-10) has enough history.
+
+    Gap size is a PERCENTAGE of the prior close, not raw points - crude has ranged from roughly
+    $10 to $145/barrel across this history (and went briefly NEGATIVE on 2020-04-20/21), so a
+    fixed point threshold meaningful at $100/barrel is meaningless at $15/barrel. The 2 negative-
+    price days are excluded from the gap-qualifying filter as a structural data-quality carve-out
+    (percentage math is nonsensical across a sign flip), not curve-fitting - they're 2 days out of
+    6539.
+
+    direction="continuation": bet the gap direction continues through the day's close (the
+    equity-strategy mechanism). direction="reversion": bet the day fades back toward the prior
+    close instead. Tested as a genuinely open question in the research script, not an assumption
+    that what works on equities transfers to a different asset class - commodities have their own
+    documented literature on mean-reversion (storage/inventory dynamics) that doesn't necessarily
+    look like equity momentum."""
+    df = pd.read_csv(data_file, index_col="Date", parse_dates=True)
+    df = df.sort_index()
+    df["prior_close"] = df["Close"].shift(1)
+
+    # Data-quality carve-out: exclude the 2020-04-20/21 negative-price days from gap-qualifying -
+    # percentage change across a sign flip (positive prior_close -> negative price, or vice versa)
+    # is not a meaningful number, not a real trading signal.
+    df = df[df["prior_close"].abs() > 1.0]
+
+    df["gap_pct"] = (df["Open"] - df["prior_close"]) / df["prior_close"].abs() * 100
+
+    results = []
+    for day, row in df.iterrows():
+        if pd.isna(row["gap_pct"]) or abs(row["gap_pct"]) < min_gap_pct:
+            continue
+
+        gap_up = row["gap_pct"] > 0
+        if direction == "continuation":
+            signal = "LONG" if gap_up else "SHORT"
+        elif direction == "reversion":
+            signal = "SHORT" if gap_up else "LONG"
+        else:
+            raise ValueError(f"direction must be 'continuation' or 'reversion', got {direction!r}")
+
+        results.append({
+            "date": day.date(), "signal": signal, "gap_pct": row["gap_pct"],
+            "entry_price": row["Open"], "exit_price": row["Close"],
+        })
+
+    return pd.DataFrame(results)

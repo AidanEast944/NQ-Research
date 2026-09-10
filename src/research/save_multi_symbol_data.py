@@ -4,6 +4,9 @@ import os
 SYMBOLS = {
     "ES=F": "data/raw_es",
     "YM=F": "data/raw_ym",
+    "CL=F": "data/raw_cl",  # WTI Crude Oil - added 2026-09-10 as an independent-instrument
+                              # candidate (see research_log.md) - a genuinely different risk
+                              # driver (energy supply/demand) than the equity index book.
 }
 
 for ticker_symbol, save_folder in SYMBOLS.items():

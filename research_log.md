@@ -298,20 +298,72 @@ This log documents every strategy hypothesis tested, the method used, the result
   same as "validated" - it still needs the 1.3 net-of-cost profit factor bar cleared, likely via
   more accumulated live data, before it's more than a well-supported refinement.
 
+## Entry 22: Crude Oil Gap Continuation (independent-asset-class candidate) — outlier-dependency check
+- **Hypothesis:** Crude oil's daily open-gap continuation, as a second, genuinely independent
+  (different asset class) strategy candidate alongside the NQ/ES/YM/RTY book. 26 years of daily
+  history (2000-2026, 6539 bars), no fixed stop/target (enter at open, exit at close, daily-only
+  resolution).
+- **Method:** `get_crude_oil_gap_signals_from_history()` — swept continuation/reversion x 1%/2%/3%
+  gap thresholds. On first run, the standardized scorecard's new cost check (Entry 21's fix)
+  immediately caught that `trading_costs.py`'s default slippage (1.0 points = $1.00/barrel) is
+  calibrated for equity-index tick size and wildly wrong for crude's penny-tick structure — same
+  category of bug as an earlier MNQ/NQ point-value mixup. Re-ran with corrected MCL cost
+  assumptions (0.02 pts / 2 ticks slippage, $3 commission, both flagged as estimates, not the
+  user's real broker fees). The (continuation, 3%) cut passed 6/6 on the corrected scorecard, with
+  positive profit factor across all three multi-decade eras tested (2000-2008 PF 1.23, 2009-2019
+  PF 3.57, 2020-2026 PF 1.52). Given the Entry 20 lesson — a clean-looking, no-fixed-stop result
+  that turned out to hinge on one trade — ran the same outlier-concentration check here before
+  accepting the result: top-N-winning-trades as % of total P&L, largest trades identified by date,
+  and `full_stats` recomputed with the top 1 and top 3 trades excluded.
+- **Sample:** 108 trades.
+- **Result:** FAILS the outlier check, decisively — worse than Entry 20's case.
+  - Top 1 trade = 55.9% of total P&L ($2,401 of $4,298 total). That trade is **2020-04-21** — the
+    day immediately after the May 2020 WTI contract settled at -$37.63, the first-ever negative
+    settlement in crude oil history (a contract-expiry/forced-liquidation event, not a normal gap).
+    The function's existing data-quality carve-out (`prior_close.abs() > 1.0`) was written to
+    exclude the literal negative-price rows, but doesn't catch this one: the *prior* close
+    (-37.63) has `abs() > 1.0`, so the carve-out only removes exact zero-crossing rows, not the
+    surrounding contract-roll chaos.
+  - Top 3 trades = 102.8% of total P&L — meaning the other 105 trades combined are net *negative*.
+  - Excluding just the single largest trade: profit factor 1.25, expectancy $17.73/trade.
+  - Excluding the top 3 trades: profit factor 0.98, expectancy **-$1.16/trade**, total P&L
+    **-$122** across the remaining 105 trades. The edge disappears entirely.
+- **Verdict:** FAIL — outlier-dependent, not a real edge.
+- **Reasoning:** Same failure mode as Entry 20's Wednesday result, but more extreme: 3 trades out
+  of 108 (2.8% of the sample) account for more than the *entire* total P&L, and the single largest
+  trade is the direct product of a once-in-history negative-price/contract-roll anomaly, not a
+  repeatable continuation mechanism. The "positive in every era" framing from the initial pass was
+  misleading — the 2020-2026 era's result was substantially this one trade. Crude oil daily-gap
+  continuation at these thresholds is not validated. No further work planned on this exact
+  formulation without a fixed stop/target, which (per Entry 21) would structurally cap this kind
+  of single-trade domination rather than merely avoiding it by luck. General lesson for any future
+  daily-frequency crude oil work: data-quality carve-outs around the April 2020 negative-price
+  event need to consider the surrounding days, not just the exact anomalous rows.
+
 ---
 
-## Current Status Summary (as of 2026-09-09)
+## Current Status Summary (as of 2026-09-10)
 **Tier 1 — Live forward-testing:** Gap Continuation (re-rated WATCH per Entry 16, refined by
 Entry 21's volatility-regime filter — real, evidence-backed improvement, but net-of-cost PF 1.17
 still misses the 1.3 bar), NQ/ES Pairs, NQ/YM Pairs, ES/YM Pairs (PASS per Entries 9/13, but see
-Entry 18's cointegration caution)
+Entry 18's cointegration caution — these have not yet been re-run through the fixed 6-check
+cost-aware scorecard)
 **Watching, not yet live:** Overnight Session Drift (Entry 17/20) — stop-loss variant now tested;
 all-weekdays version fails the scorecard on drawdown, but the Wednesday-specific subset is a
 genuine (if unproven) hypothesis worth forward-testing
-**Rejected today:** Relative Momentum Rotation (Entry 19) — no momentum-persistence edge found
-across NQ/ES/YM/RTY at a 1-day RTH hold
-**Process note:** the standardized scorecard (scorecard.py) does not check trading costs — every
-"PASSES SCORECARD" verdict to date is gross-only. Worth adding a cost-adjusted check to the
-scorecard itself rather than re-deriving it by hand each time (see Entry 21).
+**Rejected:** Relative Momentum Rotation (Entry 19) — no momentum-persistence edge found across
+NQ/ES/YM/RTY at a 1-day RTH hold. Crude Oil Gap Continuation (Entry 22) — outlier-dependent on the
+2020-04-21 negative-oil-price anomaly; edge vanishes once the top 3 trades are excluded.
+**Second independent-asset-class candidate search:** 0 for 1 so far (crude oil gap continuation
+rejected in Entry 22). Deferred: the deeper intraday Databento crude-oil archive
+(`~/.databento/GLBX.MDP3/CL_c_0/`) was not pulled for this pass (chose the free yfinance daily
+history instead) and remains a possible upgrade if intraday-resolution crude oil work is wanted
+later — though a fixed-stop structure, not just finer data, is what would actually address the
+outlier-domination problem found here.
+**Process note:** the standardized scorecard (scorecard.py) now includes a cost-adjusted check
+(Check 6, added after Entry 21) with per-instrument `slippage_points`/`commission` overrides — this
+is what caught the crude-oil cost-model unit mismatch above on its first use outside the equity
+index book. Every "PASSES SCORECARD" verdict from before this fix should be treated as gross-only
+until re-run.
 **All pending:** 100+ trade validation threshold at their respective (corrected, where applicable) definitions
 **Validated for real capital:** None
