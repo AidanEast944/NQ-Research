@@ -759,7 +759,24 @@ definitions.
     outside the folder this session has access to, deliberately - installing a persistent
     background service is exactly the kind of thing that should go through the user's own hands,
     not be done silently on their behalf).
-- **Status:** Files created and committed; NOT yet installed/loaded - that step is on the user,
-  per `launchd/README.md`. Recommended testing it manually once (`python3 run_forward_checks.py`)
-  before relying on the schedule.
+- **Status:** Installed and confirmed active as of 2026-09-10. Two real bugs surfaced and fixed
+  during actual install, both worth recording since they'd bite anyone setting this up again:
+  1. `run_forward_checks.py` originally ran both underlying scripts with `cwd=SRC_DIR` (the src/
+     folder itself) - but both scripts use relative paths like `"data/risk_limits_state.json"`
+     meant to resolve from the repo root. This crashed both scripts inside `risk_limits.py`'s
+     `save_risk_state()` with `FileNotFoundError`, before either ever reached `place_order()` - no
+     trade data was corrupted (it crashed too early for that), it just never ran. Fixed to
+     `cwd=REPO_ROOT` (computed from the script's own `__file__`, not the caller's shell cwd); also
+     fixed the plist's `WorkingDirectory` and the README's manual-test command to match.
+  2. `launchctl load` (and initially `launchctl bootstrap`) both failed with a generic
+     "Input/output error" - `load`/`unload` are deprecated on modern macOS, and the first
+     `bootstrap` attempt appears to have left a stale/conflicting registration behind that caused
+     the second attempt to also fail. Fixed by running `launchctl bootout` (clear any stale
+     registration) immediately before `bootstrap`, plus `chmod 644` on the plist for unambiguous
+     permissions. Confirmed via `log show` that launchd genuinely registered all 5 weekday
+     `StartCalendarInterval` triggers with real computed fire times, not just an "inferred" read
+     of the plist file off disk (which is what a bare `launchctl print` can show even for a job
+     that never actually bootstrapped - misleading if taken at face value). `launchd/README.md`
+     updated to lead with `bootout` + `bootstrap`, not the deprecated `load`/`unload`.
+  Next scheduled fire: Friday 2026-09-11, 6:35 AM Pacific, then every subsequent weekday.
 - **Verdict:** N/A - infrastructure, not a strategy result.
