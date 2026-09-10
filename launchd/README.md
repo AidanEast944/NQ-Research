@@ -23,8 +23,21 @@ same scripts you've been running by hand, just triggered by the OS instead of by
 ```bash
 mkdir -p ~/Library/LaunchAgents
 cp ~/nq-research/launchd/com.nq-research.forward-check.plist ~/Library/LaunchAgents/
-launchctl load ~/Library/LaunchAgents/com.nq-research.forward-check.plist
+plutil -lint ~/Library/LaunchAgents/com.nq-research.forward-check.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.nq-research.forward-check.plist
 ```
+
+Using `launchctl bootstrap` rather than the older `launchctl load` deliberately - `load`/`unload`
+are deprecated on modern macOS and can fail with a generic, unhelpful "Input/output error" instead
+of a real reason. `plutil -lint` first catches a malformed plist with an actual error message
+before that happens. Verify it's registered:
+
+```bash
+launchctl print gui/$(id -u)/com.nq-research.forward-check
+```
+
+If macOS pops up a notification about a new background item, that's expected - System Settings ->
+General -> Login Items & Extensions is where you can see or revoke it later.
 
 Recommended: test it manually once BEFORE relying on the schedule, exactly as launchd would run it:
 
@@ -42,11 +55,11 @@ tail -50 ~/nq-research/data/forward_check_log.txt
 ## Uninstall / pause
 
 ```bash
-launchctl unload ~/Library/LaunchAgents/com.nq-research.forward-check.plist
+launchctl bootout gui/$(id -u)/com.nq-research.forward-check
 rm ~/Library/LaunchAgents/com.nq-research.forward-check.plist
 ```
 
-(Unloading pauses it; removing the file makes it permanent. The scripts and your data are
+(Booting out pauses it; removing the file makes it permanent. The scripts and your data are
 untouched either way - this only removes the schedule.)
 
 ## Changing the time or days
@@ -55,6 +68,6 @@ Edit the `Hour`/`Minute`/`Weekday` values in
 `~/Library/LaunchAgents/com.nq-research.forward-check.plist` directly, then:
 
 ```bash
-launchctl unload ~/Library/LaunchAgents/com.nq-research.forward-check.plist
-launchctl load ~/Library/LaunchAgents/com.nq-research.forward-check.plist
+launchctl bootout gui/$(id -u)/com.nq-research.forward-check
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.nq-research.forward-check.plist
 ```
