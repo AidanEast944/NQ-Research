@@ -398,6 +398,57 @@ This log documents every strategy hypothesis tested, the method used, the result
   The pairs book remains the strongest live candidate in the project, now on firmer ground than
   the original Entry 9/13 verdicts, which were never actually cost-checked.
 
+## Entry 24: Risk Limits Wired Into the Pairs Book + volume_confirmed_gap_test.py Rebuilt
+- **Purpose:** Two housekeeping items, both previously flagged as pending and left undone.
+- **Part A — volume_confirmed_gap_test.py.** This script crashed/was invalid for the same reason
+  Entry 10 was corrected in Entry 16: it called `get_gap_signals_with_volume_from_archive()`,
+  whose gap is defined off the first bar of the calendar date (the Sunday Globex reopen for most
+  of its trades), not an intraday open-bell gap. Added
+  `get_weekday_open_gap_signals_with_volume_from_archive()` - the volume-aware counterpart of
+  Entry 16's corrected definition - and rebuilt the test script on it. Not yet run against real
+  data (needs the user's archive); no verdict yet, just unblocked.
+- **Part B — risk_limits.py wiring.** `risk_limits.py` and `position_sizing.py` existed but were
+  never actually connected to the pairs forward-check scripts (`pairs_forward_check.py`,
+  `generic_pairs_forward_check.py`) - unlike `gap_forward_check.py`, which already used both
+  correctly via a `PaperBroker`. Followed that same proven pattern:
+  - Position sizing: `position_sizing.fixed_fractional_size()`, sized off each pair's own average
+    losing-trade dollar size from Entry 23's backtest (NQ/ES $514.89, NQ/YM $981.80, ES/YM
+    $324.92, all at 1x leg-A-equivalent micro sizing), at HALF `risk_limits.MAX_RISK_PER_TRADE_PCT`
+    (1.0% of account, not the full 2.0% cap) as a buffer against any single loss exceeding the
+    historical average - these are two-leg trades, and real-world worst-case can exceed the mean.
+    Leg B's contract count is `round(hedge_ratio * contracts_a)`, min 1 - real execution can't hold
+    fractional contracts the way the backtest's continuous hedge ratio implicitly could, so this
+    introduces a small, unavoidable hedge-tracking error versus the idealized backtest.
+  - All three pairs scripts now share ONE `PaperBroker` account file
+    (`data/pairs_paper_account.json`) and ONE risk-limits state file
+    (`data/pairs_risk_limits_state.json`), so `MAX_OPEN_POSITIONS`/drawdown/daily-loss are enforced
+    across the pairs book as a whole, not siloed per-pair. Added a `state_file` parameter to every
+    function in `risk_limits.py` (default preserved, so `gap_forward_check.py` is untouched and
+    keeps its own separate `risk_limits_state.json` - the two strategy families' circuit breakers
+    don't get mixed together).
+  - Each leg is opened/closed under a pair-tagged symbol (e.g. `"MNQ (NQ/ES)"`, `"MNQ (NQ/YM)"`),
+    not a bare `"MNQ"` - since the account file is shared, two pairs can each have an open MNQ-type
+    leg on the same day, and a bare symbol would risk closing the wrong pair's position.
+  - Each pairs trade now consumes 2 of `MAX_OPEN_POSITIONS`' 3 slots (one per leg) - a deliberately
+    conservative reading of real simultaneous market exposure, meaning at most 1 pairs trade can
+    reliably be open before a 2nd is blocked, and a 3rd is blocked outright.
+  - Added `src/tests/test_pairs_risk_wiring.py` (6 unit tests, self-contained via `tempfile` - no
+    archive data or network needed): sizing never returns 0 contracts, tagged symbols don't
+    collide across pairs sharing the account file, the open-positions gate actually blocks a 4th
+    leg, closing both legs produces the correct combined balance, the pairs risk state is provably
+    isolated from a simulated gap-strategy risk state, and the drawdown halt triggers correctly
+    with a custom `state_file`. All 6 pass.
+- **Caveats, stated plainly:** the $10,000 starting balance and the average-loss-based sizing are
+  both estimates/placeholders, not verified against the user's actual intended paper-trading
+  capital or a worst-case (rather than average-case) loss - update `PAIRS_STARTING_BALANCE` and the
+  `AVG_LOSS_PER_UNIT_DOLLARS`/`avg_loss_per_unit` figures if either assumption should change. This
+  wiring has NOT yet been run live (needs the user's actual venv + market data) - the mechanics are
+  unit-tested, not yet forward-tested.
+- **Reasoning:** Closes a real gap between "the pairs book passed Entry 23's re-validation" and
+  "the pairs book is actually risk-managed the way the gap strategy already is" - until this entry,
+  a live pairs signal would have opened a position with no sizing logic and no circuit breaker at
+  all, in contrast to gap_forward_check.py's existing protection.
+
 ---
 
 ## Current Status Summary (as of 2026-09-10)
@@ -405,7 +456,8 @@ This log documents every strategy hypothesis tested, the method used, the result
 Entry 21's volatility-regime filter — real, evidence-backed improvement, but net-of-cost PF 1.17
 still misses the 1.3 bar), NQ/ES Pairs, NQ/YM Pairs, ES/YM Pairs (re-validated WATCH per Entry 23 -
 cost-aware and outlier-checked now, still short of the 100-trade/20-OOS-trade bar; Entry 18's
-cointegration caution still stands as a caveat on the underlying mechanism)
+cointegration caution still stands as a caveat on the underlying mechanism; now risk-managed via
+Entry 24's wiring, matching the gap strategy's existing protection)
 **Watching, not yet live:** Overnight Session Drift (Entry 17/20) — stop-loss variant now tested;
 all-weekdays version fails the scorecard on drawdown, but the Wednesday-specific subset is a
 genuine (if unproven) hypothesis worth forward-testing
@@ -425,5 +477,6 @@ to 20. Every verdict from before these fixes that used a non-NQ point value shou
 that in mind until re-run - the pairs book (Entry 23) and the crude oil work (Entry 22) are now
 both re-validated against the fixed tooling; the gap/overnight-drift book (Entries 16/17/20/21)
 always used point_value correctly since MNQ's point_value=2 was passed explicitly throughout.
-**All pending:** 100+ trade validation threshold at their respective (corrected, where applicable) definitions
+**All pending:** 100+ trade validation threshold at their respective (corrected, where applicable)
+definitions. volume_confirmed_gap_test.py (Entry 24) is unblocked but not yet run.
 **Validated for real capital:** None

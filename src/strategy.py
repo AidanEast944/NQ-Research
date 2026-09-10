@@ -2039,6 +2039,102 @@ def get_weekday_open_gap_signals_with_vol_regime_from_archive(min_gap_points=30,
     return pd.DataFrame(results)
 
 
+def get_weekday_open_gap_signals_with_volume_from_archive(min_gap_points=30, stop_points=40, target_points=80,
+                                                             entry_time="08:30", session_end="16:00",
+                                                             data_folder="data/raw_nq_extended",
+                                                             volume_lookback=20):
+    """volume_confirmed_gap_test.py originally called get_gap_signals_with_volume_from_archive(),
+    which crashes/is invalid now for the same reason Entry 10 was corrected in Entry 16: that
+    function's gap is defined off the FIRST bar of the calendar date, which is the Sunday 6PM
+    Globex reopen for ~68 of its trades, not an intraday open-bell gap. This function is the
+    volume-aware counterpart of get_weekday_open_gap_signals_from_archive() (Entry 16's corrected
+    definition) instead - entry_time bar's Open vs. the prior TRADING day's close, restricted to
+    days that actually have an entry_time bar (structurally excludes Sunday) - with the same
+    opening-bar-volume-vs-trailing-average column get_gap_signals_with_volume_from_archive() used,
+    just computed against the corrected trade set. Same caveat as before: this is total bar volume
+    from OHLCV data, not true order-flow/bid-ask imbalance (that needs tick or MBP-level data)."""
+    files = glob.glob(os.path.join(data_folder, "*.csv"))
+    if not files:
+        raise FileNotFoundError(f"No archive files found in {data_folder}.")
+
+    all_days = [pd.read_csv(f, index_col="Datetime", parse_dates=True) for f in files]
+    history = pd.concat(all_days)
+    history = history[~history.index.duplicated(keep="first")]
+    history = history.sort_index()
+    history.index = pd.to_datetime(history.index, utc=True).tz_convert("America/New_York")
+    history["date"] = history.index.date
+
+    entry_t = pd.Timestamp(entry_time).time()
+    close_t = pd.Timestamp(session_end).time()
+
+    daily_close = history.groupby("date").agg(close=("Close", "last")).sort_index()
+    daily_close["prior_close"] = daily_close["close"].shift(1)
+
+    entry_bars_open = history[history.index.time == entry_t].groupby("date")["Open"].first().rename("entry_open")
+    entry_bars_vol = history[history.index.time == entry_t].groupby("date")["Volume"].first().rename("entry_volume")
+    daily = daily_close.join(entry_bars_open, how="inner").join(entry_bars_vol, how="left")
+    daily["gap_points"] = daily["entry_open"] - daily["prior_close"]
+
+    # min_periods=window//2 for the same reason as get_gap_signals_with_volume_from_archive(): not
+    # every day has an exact entry_time bar, so requiring a full window of non-null values would
+    # collapse almost every trailing average to NaN.
+    daily["entry_volume_avg"] = daily["entry_volume"].rolling(
+        volume_lookback, min_periods=max(5, volume_lookback // 2)
+    ).mean().shift(1)
+    daily["volume_ratio"] = daily["entry_volume"] / daily["entry_volume_avg"]
+
+    results = []
+    for day in daily.index.tolist():
+        row = daily.loc[day]
+        if pd.isna(row["gap_points"]) or abs(row["gap_points"]) < min_gap_points or pd.isna(row["volume_ratio"]):
+            continue
+
+        gap_up = row["gap_points"] > 0
+        signal = "LONG" if gap_up else "SHORT"  # continuation mode, matching the live gap strategy
+
+        entry_price = row["entry_open"]
+        if signal == "LONG":
+            stop_price = entry_price - stop_points
+            target_price = entry_price + target_points
+        else:
+            stop_price = entry_price + stop_points
+            target_price = entry_price - target_points
+
+        day_bars = history[
+            (history["date"] == day)
+            & (history.index.time > entry_t)
+            & (history.index.time <= close_t)
+        ]
+
+        exit_price = None
+        exit_reason = None
+        for _, bar in day_bars.iterrows():
+            if signal == "LONG":
+                hit_stop = bar["Low"] <= stop_price
+                hit_target = bar["High"] >= target_price
+            else:
+                hit_stop = bar["High"] >= stop_price
+                hit_target = bar["Low"] <= target_price
+            if hit_stop:
+                exit_price, exit_reason = stop_price, "stop"
+                break
+            elif hit_target:
+                exit_price, exit_reason = target_price, "target"
+                break
+
+        if exit_price is None:
+            exit_price = day_bars.iloc[-1]["Close"] if len(day_bars) > 0 else entry_price
+            exit_reason = "eod"
+
+        results.append({
+            "date": day, "signal": signal, "gap_points": row["gap_points"],
+            "volume_ratio": row["volume_ratio"],
+            "entry_price": entry_price, "exit_price": exit_price, "exit_reason": exit_reason
+        })
+
+    return pd.DataFrame(results)
+
+
 def get_overnight_drift_signals_with_stop_from_archive(data_folder="data/raw_nq_extended", entry_time="08:30",
                                                            session_close_time="16:00", direction="LONG",
                                                            stop_points=100, weekday_filter=None):
