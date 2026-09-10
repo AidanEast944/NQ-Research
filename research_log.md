@@ -676,3 +676,19 @@ definitions.
   network egress restrictions - the user will run it manually).
 - **Verdict:** N/A - not a strategy result, a forward-test launch. Revisit after enough live
   trading days have accumulated to say anything about either threshold's live performance.
+- **Addendum (same day, diagnosing a startup issue):** First run of the new script printed "No
+  data yet" for the current date. Investigated rather than assumed benign: confirmed via web
+  search that the date in question (2026-09-09) was a completely normal, active trading day (no
+  holiday, no CME outage), then confirmed directly that Yahoo's free intraday feed
+  (`yf.Ticker("NQ=F").history(interval="15m")`) simply had not backfilled that day's session yet
+  at the moment of the query - the returned data jumped straight from the prior day's evening
+  bars to the following day's overnight session, skipping the day in between entirely. This is a
+  data-feed backfill lag, not a bug in either script's logic, and it affects `gap_forward_check.py`
+  identically (same endpoint, same "only ever checks today" design) - it just isn't provable
+  retroactively since an early "no data" exit leaves no record either way. **Real limitation worth
+  keeping in mind:** neither script has catch-up logic, so a day where this lag coincides with the
+  moment the script is run means that day's signal (if any) is silently gone from BOTH live
+  forward-tests' records, not delayed. A future stretch of "zero trades" days should not be read as
+  pure "no signal" evidence without considering this. No code change made in response to this - the
+  practical mitigation is running both scripts within an hour or two of the 09:30 ET / 08:30 CT
+  open rather than checking again late at night, which is also the cadence they were designed for.
