@@ -20,6 +20,13 @@ import os
 from datetime import datetime
 
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
+# The underlying scripts use relative paths like "data/risk_limits_state.json" that are meant to
+# resolve from the REPO ROOT (nq-research/), not from inside src/ - matching how they've always
+# been run by hand (`python3 src/gap_forward_check.py` from the repo root). Bug found 2026-09-10:
+# this used to pass cwd=SRC_DIR, which made every "data/..." path resolve to a nonexistent
+# src/data/... and crash inside risk_limits.py's save_risk_state() before place_order() was ever
+# reached - no trade data was corrupted (it crashed too early for that), it just never ran.
+REPO_ROOT = os.path.dirname(SRC_DIR)
 SCRIPTS = ["gap_forward_check.py", "volume_confirmed_gap_forward_check.py"]
 
 
@@ -38,8 +45,11 @@ def notify(title, message):
 
 def run_script(script_name):
     print(f"\n{'=' * 70}\n{datetime.now().isoformat()} - running {script_name}\n{'=' * 70}")
+    # cwd=REPO_ROOT (not SRC_DIR) so the child script's relative "data/..." paths resolve
+    # correctly, matching how these scripts are meant to be run - see the note above.
     result = subprocess.run(
-        [sys.executable, script_name], cwd=SRC_DIR,
+        [sys.executable, os.path.join("src", script_name)],
+        cwd=REPO_ROOT,
         capture_output=True, text=True
     )
     output = (result.stdout or "") + (result.stderr or "")

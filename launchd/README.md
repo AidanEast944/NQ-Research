@@ -29,8 +29,8 @@ launchctl load ~/Library/LaunchAgents/com.nq-research.forward-check.plist
 Recommended: test it manually once BEFORE relying on the schedule, exactly as launchd would run it:
 
 ```bash
-cd ~/nq-research/src
-/Users/aidaneast/nq-research/venv/bin/python3 run_forward_checks.py
+cd ~/nq-research
+/Users/aidaneast/nq-research/venv/bin/python3 src/run_forward_checks.py
 ```
 
 ## Check on it

@@ -12,7 +12,7 @@
     </array>
 
     <key>WorkingDirectory</key>
-    <string>/Users/aidaneast/nq-research/src</string>
+    <string>/Users/aidaneast/nq-research</string>
 
     <!-- Weekdays only (Mon=1 ... Fri=5), 6:35 AM Pacific - a few minutes after the 9:30 AM
          Eastern cash-market open, giving Yahoo's feed a little buffer to have the 08:30 CT/9:30 ET
