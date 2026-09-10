@@ -458,11 +458,18 @@ still misses the 1.3 bar), NQ/ES Pairs, NQ/YM Pairs, ES/YM Pairs (re-validated W
 cost-aware and outlier-checked now, still short of the 100-trade/20-OOS-trade bar; Entry 18's
 cointegration caution still stands as a caveat on the underlying mechanism; now risk-managed via
 Entry 24's wiring, matching the gap strategy's existing protection)
-**Flagship candidate:** Volume-Confirmed Gap Continuation (Entry 25) — the project's first outright
-6/6 scorecard PASS, cost-adjusted PF 1.39, 4/4 improving walk-forward windows, structurally immune
-to single-trade domination (fixed 40/80 stop/target). Still backtest-only - not yet forward-tested
-live, and an open decision remains on whether to point the live `gap_forward_check.py` at this
-definition. Not yet "validated for real capital" under this project's two-step bar.
+**Flagship candidate:** Volume-Confirmed Gap Continuation (Entry 25, deep-dive scrutiny in Entry
+27) — the project's first outright 6/6 scorecard PASS, cost-adjusted PF 1.39, 4/4 improving
+walk-forward windows, structurally immune to single-trade domination (fixed 40/80 stop/target),
+robust to volume-lookback choice, and — the strongest evidence in the project so far — an honestly
+(no-hindsight) chosen threshold that performed BETTER, not worse, on genuinely unseen data (Entry
+27 Part 5: PF 3.78 out-of-time vs. PF 2.00 for the original hindsight-chosen threshold on the same
+holdout). One real caveat remains: a modest shared time trend with the unfiltered baseline (Entry
+27 Part 2), suggesting part of the edge may ride a favorable recent regime rather than being purely
+timeless. Recommended next step: live forward-testing of this definition. Still backtest-only -
+not yet forward-tested live, and an open decision remains on whether to point the live
+`gap_forward_check.py` at this definition. Not yet "validated for real capital" under this
+project's two-step bar.
 **Watching, not yet live:** Overnight Session Drift (Entry 17/20) — stop-loss variant now tested;
 all-weekdays version fails the scorecard on drawdown, but the Wednesday-specific subset is a
 genuine (if unproven) hypothesis worth forward-testing
@@ -580,3 +587,58 @@ definitions.
   worth considering whether an ATR-relative (volatility-scaled) sizing, rather than a flat
   percentage, might behave differently before concluding daily-gap mechanics categorically don't
   transfer to commodities/metals.
+
+---
+
+## Entry 27: Volume-Confirmed Gap — Deep-Dive Scrutiny, Passes Its Hardest Test Yet
+- **Hypothesis/purpose:** Entry 25's 6/6 result came from a 3-way threshold sweep (1.0x/1.2x/1.5x)
+  where profit factor rose monotonically as the sample shrank - a shape consistent with either a
+  real effect or mild selection luck. Five checks aimed specifically at that concern, not a repeat
+  of checks already covered by the fixed stop/target.
+- **Method/Result, in order:**
+  1. **Exit-reason mix at 1.2x:** 132/132 trades exit via stop (74) or target (58) - zero `eod`
+     exits. The bounded-risk claim holds for this exact filtered subset, not just inherited by
+     assumption from the unfiltered parent.
+  2. **Confound check (Entry 21's method):** both the confirmed (>=1.2x) and unconfirmed (<1.2x)
+     subsets improve over the same 4 calendar windows - so there IS a shared time trend present in
+     both, worth naming honestly rather than ignoring. But confirmed is better in EVERY window
+     (1.14/1.67/1.47/2.12 vs. unconfirmed's 0.95/1.09/1.12/1.34), never dips below breakeven where
+     unconfirmed's window 1 does (PF 0.95, -$231), and improves by more in both absolute and
+     relative terms. Partial support: real incremental information beyond the shared trend, but
+     not the dramatic clean divergence Entry 21 found in its own case - some of this edge may be
+     riding a market-regime tailwind common to both subsets.
+  3. **Finer threshold granularity (1.0x-1.6x in 0.1 steps):** profit factor climbs almost
+     perfectly monotonically (1.40 -> 1.45 -> 1.57 -> 1.56 -> 1.71 -> 1.88 -> 2.00) as the sample
+     shrinks (175 -> 82). A smooth, near-monotonic curve across 7 points is much harder to produce
+     by chance than the original 3-point sweep looked - real evidence against "the 1.2x number was
+     a fluke," though the underlying "improves with tighter volume filter" relationship still
+     invites the same finite-sample caution at the far end (82 trades at 1.6x).
+  4. **Lookback-window robustness (10d/20d/30d trailing volume average, all at 1.2x):** PF 1.42 /
+     1.57 / 1.58 - the effect holds at every lookback tested, not fragile to the specific 20-day
+     choice.
+  5. **THE key check - honest out-of-time threshold selection:** rather than judging OOS
+     performance of a threshold chosen with full-sample hindsight (what the original test did),
+     split chronologically at 70% FIRST, picked whichever threshold looked best using ONLY the
+     first 322 trades (1.5x, PF 1.44 in-sample - narrowly beating 1.2x's in-sample PF 1.40), then
+     applied that FIXED, blindly-chosen threshold to the real, never-seen last 138 trades: **26
+     trades, 65.4% win rate, PF 3.78, expectancy $76.92/trade.** For comparison, applying the
+     original hindsight-chosen 1.2x to the same holdout: 42 trades, PF 2.00, expectancy
+     $40.00/trade - still good, but the HONESTLY-selected threshold outperformed the
+     hindsight-selected one out of time. That is the opposite of what curve-fitting predicts
+     (curve-fit choices regress toward the mean or worse out-of-time; this one held up better).
+- **Verdict:** Substantially increased confidence - this is now the most rigorously-tested result
+  in the project, and it is the first one to pass an honest, blind threshold-selection test rather
+  than only a post-hoc OOS split. Still carries two real caveats, stated plainly: the confound check
+  found a real (if modest) shared time trend with the unfiltered baseline, or so some of this is
+  likely riding a favorable recent regime rather than a pure, timeless volume effect; and the
+  cleanest confirmatory sample (the blind out-of-time test) is only 26 trades, directionally very
+  strong but not enough alone to call this proven. Recommend beginning live forward-testing of this
+  definition (1.2x, or 1.5x given Part 5's in-sample result and Part 3's monotonic trend both favor
+  it) - not real capital, and not an automatic redirect of `gap_forward_check.py` without the user's
+  sign-off, but this clears the specific "was the threshold cherry-picked" concern about as well as
+  the available data can.
+- **Reasoning:** This is the answer to Entry 25's own open caveat, tested the way this project has
+  tested every other promising-looking result - and unlike Entries 20/22 (which failed once actually
+  scrutinized), this one got MORE convincing under scrutiny, not less. The single strongest piece of
+  evidence in the whole project to date is Part 5: a threshold chosen without hindsight performed
+  better, not worse, on genuinely unseen data.
