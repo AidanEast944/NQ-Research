@@ -1071,3 +1071,59 @@ definitions.
   all three touched files; `generate_dashboard.py` executed end-to-end and confirmed Fade drops
   out of `readiness_scorecard()` while remaining in `combined_book_summary()`, exactly as intended.
 - **Verdict:** FAIL (reaffirmed, not new) - Fade. Retired. Nothing else changes.
+
+## Entry 37: Databento Refresh Script Corrupted 4 Archive Files on Its First Real Run (Caught and Fixed)
+- **What happened:** `refresh_databento_archive.py`'s first real run (following the cost-check
+  approval in Entry 36) passed bare `date.isoformat()` strings (e.g. `"2026-09-02"`) as
+  `start`/`end` to Databento's `get_range()`/`get_cost()`. Those bare strings are parsed as UTC
+  midnight, not Eastern midnight. Since Eastern is UTC-4 right now, every requested range
+  silently bled ~4 hours into the adjacent Eastern calendar day at BOTH boundaries.
+- **The damage:** at the start boundary (`start = last_archived_date + 1 day`), the UTC-shifted
+  query pulled in a partial slice of the day *before* the intended start - a day that was already
+  fully archived and git-committed. `resample_and_save()` had no guard against this, so it
+  overwrote 4 already-complete archive files with truncated ~4-hour slices (76 rows -> 16 rows
+  each): `data/raw_nq_extended/nq_15m_2026-08-31.csv`, `data/raw_es_extended/es_15m_2026-09-02.csv`,
+  `data/raw_ym_extended/ym_15m_2026-09-02.csv`, `data/raw_rty_extended/rty_15m_2026-09-02.csv`.
+  At the end boundary, the same issue truncated the *final* day of the run for all 4 symbols -
+  `nq/es/ym/rty_15m_2026-09-09.csv` were saved missing their last ~4 hours (ending 19:45 ET
+  instead of the normal 23:45 ET for a Wednesday).
+- **Caught by:** noticing the script's own printed "Saved ... -> ..." range didn't match what
+  the "Plan" step said it was going to fetch, then confirmed with hard evidence - `git status`
+  showed exactly those 4 files modified (everything else in the run was new, untouched files),
+  and `git show HEAD:<path> | wc -l` vs the new file's row count showed 77 -> 17 lines for all 4.
+  Cross-checked against known-good file patterns (comparing first/last timestamps of untouched
+  weekday files like 2026-08-24 through 2026-08-27, which all run 00:00-23:45 ET) confirmed the
+  2026-09-09 files were genuinely truncated, not a legitimate short trading day.
+- **Fixed, belt-and-suspenders, in both `refresh_databento_archive.py` and
+  `check_databento_refresh_cost.py`:**
+  1. Added `eastern_midnight_iso(d)` - builds a real `America/New_York`-timezone-aware timestamp
+     for midnight of date `d` via `zoneinfo`, and passes that (not a bare date string) to every
+     Databento API call. This is the actual root-cause fix.
+  2. `resample_and_save()` now takes the intended `start_date`/`end_date` and drops any row
+     outside that range before grouping/saving - a defensive filter independent of whether the
+     API call itself was bounded correctly.
+  3. `resample_and_save()` also now refuses to overwrite an existing file with one that has
+     FEWER rows than it already has, logging a `SKIPPING` warning instead - so even a future,
+     unanticipated boundary bug can't silently shrink-overwrite a good file again.
+- **Restored:** the 4 corrupted files were restored via `git checkout -- <path>` to their last
+  good committed state (confirmed back to 77/77/77/77 lines). The 24 newly-created files were
+  checked individually for completeness against the known-good weekday pattern; only the 4
+  final-day (2026-09-09) files across NQ/ES/YM/RTY were found truncated (see above) - all other
+  new files (9/1-9/8) matched the expected row counts/timestamp ranges for their day of week
+  (including legitimate short days: Fridays ending 16:45 ET, the Sunday-evening open on 9/6, and
+  a thinner-than-usual Labor Day Monday on 9/7 with gaps but full 00:00-23:45 ET range - not the
+  same failure mode as the truncated 9/9 files, which end mid-evening).
+- **Not yet done:** the 8 truncated 9/9 files (NQ/ES/YM/RTY) still need a corrective re-pull to
+  fill in their missing last ~4 hours, now using the fixed script. Per the standing "tell me the
+  price before you purchase" instruction, this needs the same cost-transparency treatment as the
+  original pull before running - deferred to get explicit sign-off first rather than just doing it.
+  The `launchd` scheduled job to automate this refresh going forward is also still deferred until
+  the fixed script has a clean, verified real run.
+- **Verified:** `py_compile` clean on both touched scripts; the 4 restored files independently
+  re-checked at 77 lines each (matching their pre-corruption git-committed state); the 9/09
+  truncation confirmed via direct timestamp comparison against known-good same-weekday files
+  rather than assumed.
+- **Verdict:** Real, confirmed data-corruption bug in newly-written research-infrastructure code
+  (not a live-trading strategy) - caught before it silently degraded the archives further, root
+  cause fixed with two independent safeguards, damage repaired. No live trading capital or
+  decisions were affected; the live pipeline still runs entirely on yfinance, untouched by this.
