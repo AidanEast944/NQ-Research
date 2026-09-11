@@ -1127,3 +1127,17 @@ definitions.
   (not a live-trading strategy) - caught before it silently degraded the archives further, root
   cause fixed with two independent safeguards, damage repaired. No live trading capital or
   decisions were affected; the live pipeline still runs entirely on yfinance, untouched by this.
+
+## Entry 38: Repaired the 4 Truncated 9/9 Archive Files (Entry 37 Follow-Up)
+- **What:** The one piece of damage left over from Entry 37 - all four 2026-09-09 archive files
+  (NQ/ES/YM/RTY) were missing their last ~4 hours (ending 19:45 ET instead of 23:45 ET).
+- **Cost confirmed before running anything:** $0.0198 total (NQ $0.0050, ES $0.0050, YM $0.0049,
+  RTY $0.0049) via a one-off cost-check script, well under the $1.00 safety cap used elsewhere.
+- **Repaired** via `src/research/repair_909_archive.py` - re-pulls just that single day using the
+  Entry 37 timezone fix, and only writes if the new pull has >= as many rows as the existing file
+  (same shrink-guard as the main refresh script). All 4 files now correctly run 00:00-23:45 ET,
+  92 data rows each - matching the normal full-weekday pattern exactly.
+- **Verified:** first/last timestamps confirmed directly (00:00:00-04:00 -> 23:45:00-04:00, all
+  4 symbols); row counts (93 lines incl. header) match known-good same-weekday files.
+- **Verdict:** Archive fully repaired. `data/raw_{nq,es,ym,rty}_extended` are now clean and
+  current through 2026-09-09 with no known gaps or truncations.
