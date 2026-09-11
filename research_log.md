@@ -1180,3 +1180,21 @@ definitions.
   anything this project's scripts do now (single-day catch-ups, ~$0.005/symbol/day).
 - **Verdict:** Correct call given real uncertainty about billing mechanics and an explicit user
   instruction not to risk it. Revisit once the user checks their Databento account directly.
+
+## Entry 41: Entry 38's "Repaired" Claim Was Incomplete — Start-Boundary Files Were Still Corrupted
+- **What:** Entry 38 claimed all 4 files corrupted by Entry 37's timezone bug were repaired, but
+  its title and description only covered the 4 end-boundary files (all dated 9/9). The 4
+  start-boundary files (nq_15m_2026-08-31.csv, es/ym/rty_15m_2026-09-02.csv) were never actually
+  fixed - verified independently by checking row counts and end-of-day timestamps directly, not
+  by trusting the log's claim.
+- **Verification method:** Compared against a known-good neighboring day (2026-08-30, a Sunday)
+  to confirm 2026-08-31 should
+ legitimately run the full 00:00-23:45 ET session. The 4 files were
+  still truncated at 77 lines (76 rows), ending 19:30-19:45 ET instead of 23:45 ET.
+- **Fix:** Re-pulled all 4 dates from free Yahoo Finance data (still within its 60-day rolling
+  window), verified each pull had 80+ rows before overwriting, confirmed all 4 repaired files now
+  end at 23:45:00 ET with 92 rows each. Committed as `5a35a73`.
+- **Reasoning:** Same lesson as Entry 16 (don't trust a "fixed" claim without independently
+  verifying it) - a status report describing something as resolved is not the same as it actually
+  being
+ resolved. Worth periodically spot-checking archive integrity going forward rather than assuming automation reports are accurate.
