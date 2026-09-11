@@ -32,9 +32,12 @@ data/*_account.json
 data/*_log.txt
 data/*_errors.txt
 
-# Generated visualizations - regenerate on demand via generate_dashboard.py.
+# Generated visualizations - regenerate on demand via generate_dashboard.py /
+# generate_morning_brief.py.
 results/dashboard.html
 results/equity_curve.png
+results/combined_equity_curve.png
+results/morning_brief.html
 
 # One-off diagnostic scratch file, safe to delete.
 data/_debug_combined_nq.csv

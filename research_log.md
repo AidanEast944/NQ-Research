@@ -925,3 +925,67 @@ definitions.
 - **Verdict:** N/A - infrastructure/data-integrity fixes, not a strategy result. No strategy's
   backtest conclusions from prior entries are affected by anything in this entry - this was all
   about how live/paper results get recorded and displayed, not what the strategies do.
+
+---
+
+## Entry 33: Portfolio-Level View, Automated Morning Brief, Live Readiness Scorecard
+- **What:** The user asked what a more comprehensive setup - closer to what an actual hedge fund
+  desk runs - would look like on top of Entry 32's fixes. Three things were missing that no
+  single per-strategy script could ever produce on its own, since each one only knows about
+  itself: a combined view of the whole book, a way to see progress toward this project's own
+  stated live-trade bar without doing the math by hand each time, and something to read each
+  morning instead of opening the full dashboard cold.
+- **New `src/portfolio_analytics.py`** - shared, read-only calculations used by both the
+  dashboard and the new morning brief:
+  - `combined_book_summary()` / `combined_equity_curve()` / `combined_max_drawdown()` - sums
+    every PaperBroker-backed account (Gap, both Vol-Confirmed thresholds, Fade, the shared pairs
+    account) into one book. Trend is deliberately excluded from every dollar figure - its
+    `trade_history` has always been points-only, with no contract size ever established for it
+    (it was built and retired before this project started sizing trades in real contracts), and
+    fabricating one now would be worse than leaving it out.
+  - `aggregate_open_risk()` - dollars actually at risk right now, across every open position,
+    correctly blending the three different risk models already in use in this codebase: price-stop
+    based (gap/vol-confirmed/Fade), the pairs book's own `contracts_a * avg_loss_per_unit` sizing
+    formula (not a price stop - pairs exit on a z-score, not a price level), and Trend's points-only
+    risk (no dollar figure, same reasoning as above). The orphaned ES/YM position from Entry 32 is
+    explicitly flagged as "risk not quantifiable from current records" rather than guessed at or
+    silently dropped.
+  - `readiness_scorecard()` - turns this project's own repeatedly-stated ~20-30-live-trade bar
+    into an actual computed number per strategy (25 used as the midpoint target): trade count,
+    % of target, and a rough pace-based ETA. Explicitly labeled as rough given how few trades
+    exist so far - this is meant to save doing the math by hand each time it's asked about, not
+    to imply more precision than a handful of trades can support.
+  - `diversification_notes()` - deliberately NOT a computed correlation. With single-digit-to-
+    low-teens live trades per track, a Pearson correlation would be statistical noise dressed up
+    as a real number (a `MIN_TRADES_FOR_CORRELATION = 15` gate is defined for when that becomes
+    honest to compute). What can be said now: the unfiltered Gap track and both Volume-Confirmed
+    thresholds are NOT three independent bets - Volume-Confirmed is a strict subset of Gap's own
+    entry signal, so they fire together by construction. Fade and the pairs book are plausible
+    real diversifiers (different underlying signals) but unconfirmed for lack of data.
+- **`generate_dashboard.py`** now opens with three new sections built from the module above: a
+  combined-book panel, an aggregate-open-risk panel, a combined equity curve (one line for the
+  whole book, in addition to the existing per-strategy chart), a readiness scorecard with a
+  progress bar per strategy, and the diversification notes - all ahead of the existing
+  per-strategy panels, since portfolio-level risk is what a real desk checks first.
+- **New `src/generate_morning_brief.py`** (`results/morning_brief.html`) - a 30-second read
+  instead of the full dashboard: what fully resolved yesterday (these tracks open and resolve
+  same-day, so a trade dated yesterday is a known, complete outcome), what opened this morning,
+  what's still open from before (carried-over positions, including Trend's known-stale one and
+  any open pairs position), and an explicit "afternoon tracks, not yet run today" section for
+  Trend/pairs, which fire later in the day (~14:15-14:25 PT) than this brief does (5:45 AM PT) -
+  called out directly rather than implying their status is current when it isn't. Sends a
+  best-effort macOS notification with a one-line summary, same non-fatal pattern used by the
+  resolve scripts.
+- **New `launchd/com.nqresearch.morningbrief.plist`** - fires weekdays at 5:45 AM Pacific, after
+  the morning open-side jobs (gapforward 5:37, fadepapercheck 5:36, volumegapcheck 5:38) so it has
+  something to report. `launchd/README.md` updated with the new row.
+- **Verified:** all new/changed files pass `py_compile`; `portfolio_analytics.py`'s functions
+  were run directly against real account data and spot-checked (correctly totaled the combined
+  book at $51,480 across 10 live trades, correctly flagged ES/YM's orphaned risk as unquantifiable
+  rather than including a guessed number, correctly excluded Trend from every dollar total);
+  `generate_dashboard.py` and `generate_morning_brief.py` were both executed end-to-end against
+  real data (not just syntax-checked) and produce valid HTML with the new sections; the new plist
+  passes plist validation.
+- **Verdict:** N/A - infrastructure, not a strategy result. Nothing here changes any strategy's
+  backtest conclusion or the live-capital timeline - it makes the existing evidence easier to see
+  and check, not any more or less favorable than it already was.

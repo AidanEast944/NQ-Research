@@ -24,6 +24,7 @@ launchctl print gui/$(id -u)/com.nqresearch.<name>   # exact schedule + last exi
 | `com.nqresearch.volumegapresolve.plist` | `volume_confirmed_gap_resolve.py` | resolves whatever the above opened, using the full day's price bars | 5:07 PM |
 | `com.nqresearch.gapresolve.plist` | `gap_forward_resolve.py` | resolves today's unfiltered gap trade (opened by the pre-existing `com.nqresearch.gapforward` job at 5:37 AM - not this repo, see below) | 5:05 PM |
 | `com.nqresearch.dashboard.plist` | `generate_dashboard.py` | regenerates `results/dashboard.html` from every currently-active strategy's state | 5:15 PM |
+| `com.nqresearch.morningbrief.plist` | `generate_morning_brief.py` | short daily brief (`results/morning_brief.html`) - what resolved yesterday, what opened this morning, what's still carried over, plus a readiness snapshot | 5:45 AM |
 
 `com.nqresearch.gapforward` (the pre-existing job that opens the unfiltered gap trade at 5:37 AM)
 is NOT tracked here - it already existed, and this engagement only fixed the script it runs

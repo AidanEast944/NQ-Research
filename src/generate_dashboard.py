@@ -1,21 +1,18 @@
 """
 Generates a local HTML status dashboard (results/dashboard.html) showing what the automated
 forward-testing infrastructure is actually doing - the live paper-trading state of EVERY
-currently-active track on this machine, plus an honest overall research status. Reads only local
-JSON files already written by the various forward-test scripts; nothing here touches the network
-or any external service.
+currently-active track on this machine, a portfolio-level view of the combined book, and an
+honest overall research status. Reads only local JSON files already written by the various
+forward-test scripts; nothing here touches the network or any external service.
 
-Rewritten 2026-09-10 (Entry 32), SECOND TIME - the previous rewrite (Entry 31, commit bbac614)
-wrongly dropped Fade, Trend, and the pairs book from this dashboard based on misleading mtimes seen
-through a mounted filesystem view, not their actual content. All of those are genuinely active,
-pre-existing, independently-automated strategies that predate this dashboard's original build and
-were never abandoned. This version restores them and adds the two new gap/volume-confirmed
-open/resolve tracks (also Entry 32) alongside everything already here. See research_log.md Entry 32
-for the full incident writeup.
+Rewritten 2026-09-10 (Entry 32) to restore Fade/Trend/pairs after a mistaken earlier pass dropped
+them. Extended 2026-09-11 (Entry 33) with three portfolio-level sections that no single
+per-strategy script could produce on its own - a combined book view, aggregate open risk, and a
+live readiness scorecard against this project's own ~20-30-live-trade bar. See
+src/portfolio_analytics.py for the calculations behind all three; this file is presentation only.
 
-Regenerated automatically each weekday evening by the existing com.nqresearch.dashboard launchd job
-(now pointed at this file - see Entry 32), after all of the day's resolve jobs have run. Also safe
-to run manually anytime:
+Regenerated automatically each weekday evening by the existing com.nqresearch.dashboard launchd
+job, after all of the day's resolve jobs have run. Also safe to run manually anytime:
 
     cd ~/nq-research && python3 src/generate_dashboard.py
 
@@ -28,6 +25,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from datetime import datetime
+import portfolio_analytics as pa
 
 STARTING_BALANCE = 10000
 
@@ -121,9 +119,6 @@ def trend_panel():
     if position:
         rows.append(("OPEN POSITION", f'{position.get("direction","?")} from {position.get("entry_date","?")} '
                                        f'@ {position.get("entry_price","?")} (stop {position.get("stop_price","?")})'))
-        # Flag if the daily manage job hasn't actually run recently while a position is still open -
-        # a retired strategy with an unmanaged open position is a real risk (no one is watching the
-        # stop), not just a stale-data curiosity.
         try:
             days_stale = (datetime.now().date() - datetime.strptime(last_run, "%Y-%m-%d").date()).days
             if days_stale >= 2:
@@ -184,6 +179,93 @@ def pairs_leg_panel(title, state_path, account_path, accent, note):
     return panel(title, rows, accent=accent, subtitle=note, warning=warning)
 
 
+def combined_book_panel():
+    """Portfolio-level view (Entry 33) - sums every PaperBroker-backed account into one book.
+    Trend is intentionally excluded (see portfolio_analytics.py's TREND_STATE_FILE comment)."""
+    summary = pa.combined_book_summary()
+    dd = pa.combined_max_drawdown()
+    rows = [
+        ("COMBINED P&L", f'{colorval(summary["total_pnl"])} <span class="neu">'
+                          f'(${summary["total_balance"]:,.2f} of ${summary["total_starting"]:,.0f})</span>'),
+        ("TOTAL LIVE TRADES", summary["total_trades"]),
+        ("TOTAL OPEN POSITIONS", summary["total_open"]),
+        ("MAX DRAWDOWN (combined)", f'${dd["dollars"]:,.2f} ({dd["pct"]:.1f}%)'),
+    ]
+    return panel("PORTFOLIO — COMBINED BOOK", rows, accent="#00e5a0",
+                 subtitle="Sum of Gap + both Vol-Confirmed + Fade + Pairs (Trend excluded, points-only, see below)")
+
+
+def open_risk_panel():
+    """Aggregate dollars actually at risk right now, across every open position in every
+    strategy (Entry 33). See portfolio_analytics.aggregate_open_risk for the three different
+    risk models this necessarily blends (price-stop, pairs-sizing-formula, points-only)."""
+    risk = pa.aggregate_open_risk()
+    rows = [("TOTAL $ AT RISK (priced positions)", f'${risk["total_dollars"]:,.2f}')]
+    if risk["lines"]:
+        for line in risk["lines"]:
+            rows.append((line["label"], f'{line["detail"]} — ${line["risk"]:,.2f}'))
+    else:
+        rows.append(("PRICED OPEN POSITIONS", "none"))
+    if risk["trend_points_at_risk"] is not None:
+        rows.append(("Trend (retired, points only)", f'{risk["trend_points_at_risk"]:.0f}pt at risk — no $ value established'))
+
+    warning = None
+    if risk["unknown_risk_positions"]:
+        warning = (f'{", ".join(risk["unknown_risk_positions"])} has an open position with no recorded '
+                   f'contract sizing (pre-broker-wiring, Entry 32) - its risk is real but not quantifiable '
+                   f'from current records, so it is NOT included in the total above.')
+    return panel("PORTFOLIO — AGGREGATE OPEN RISK", rows, accent="#ff8fd6", warning=warning)
+
+
+def readiness_panel():
+    """Live readiness scorecard (Entry 33) - turns this project's own stated ~20-30-live-trade
+    bar into a computed number per strategy, using 25 as the midpoint target."""
+    rows_html = ""
+    for row in pa.readiness_scorecard():
+        bar_width = row["pct"]
+        rows_html += f"""
+        <div class="readiness-row">
+            <div class="readiness-label">{row['label']}<span class="readiness-sub">{row['backtest_note']}</span></div>
+            <div class="readiness-bar-track"><div class="readiness-bar-fill" style="width:{bar_width}%;"></div></div>
+            <div class="readiness-count">{row['trades']}/{row['target']}</div>
+            <div class="readiness-eta">{row['eta_note']}</div>
+        </div>
+        """
+    return f"""
+    <div class="chart-panel" style="margin-bottom: 20px;">
+        <div class="chart-title">READINESS TOWARD A REAL-CAPITAL CONVERSATION — LIVE TRADE COUNT vs. ~25-TRADE BAR</div>
+        <div style="font-size:11px; color:#6b7280; margin-bottom:10px;">
+            This bar is a trade-count threshold only, not a go/no-go signal by itself - a strategy still
+            needs its live results to actually look like its backtest once it gets there. Pace/ETA figures
+            below are rough given how few trades exist so far and will tighten up over time.
+        </div>
+        {rows_html}
+    </div>
+    """
+
+
+def diversification_panel():
+    rows_html = ""
+    for pair_label, verdict, explanation in pa.diversification_notes():
+        color = "#ff5c5c" if "STRUCTURALLY RELATED" in verdict else "#8b909c"
+        rows_html += f"""
+        <div style="margin-bottom:10px;">
+            <span style="color:{color}; font-weight:600;">{pair_label} — {verdict}</span><br>
+            <span style="font-size:12px; color:#8b909c;">{explanation}</span>
+        </div>
+        """
+    return f"""
+    <div class="chart-panel" style="margin-bottom: 20px;">
+        <div class="chart-title">DIVERSIFICATION — QUALITATIVE, NOT A COMPUTED CORRELATION</div>
+        <div style="font-size:11px; color:#6b7280; margin-bottom:10px;">
+            No strategy here has {pa.MIN_TRADES_FOR_CORRELATION}+ overlapping live trade-days yet, so a
+            real Pearson correlation would just be noise - shown as reasoning instead of a fabricated number.
+        </div>
+        {rows_html}
+    </div>
+    """
+
+
 def build_equity_curve():
     def load_trades(filepath):
         if not os.path.exists(filepath):
@@ -197,11 +279,6 @@ def build_equity_curve():
         balances = [balance]
         for t in trades:
             points = t.get("points_result", 0)
-            # Use each trade's own recorded point_value_used when present. Older trade records
-            # (e.g. Fade's, written before this field existed) don't have it - fall back to that
-            # track's own actual contract size (passed in per-track below), NOT a single global
-            # guess, since Fade trades full-size NQ (20/pt) while the gap tracks trade MNQ (2/pt) -
-            # a shared default would silently mis-scale whichever one didn't match it.
             point_value = t.get("point_value_used", default_point_value)
             balance += points * point_value
             balances.append(balance)
@@ -249,7 +326,46 @@ def build_equity_curve():
         return base64.b64encode(f.read()).decode("utf-8")
 
 
+def build_combined_equity_curve():
+    """The portfolio-level counterpart to build_equity_curve() above - one line, the whole
+    book's combined balance over calendar time, instead of one line per strategy (Entry 33)."""
+    curve = pa.combined_equity_curve()
+    balances = [b for _, b in curve]
+
+    plt.style.use("dark_background")
+    fig, ax = plt.subplots(figsize=(11, 3.5), facecolor="#0a0e14")
+    ax.set_facecolor("#0a0e14")
+
+    starting = STARTING_BALANCE * len(pa.BROKER_ACCOUNTS)
+    if len(balances) > 1:
+        ax.plot(balances, color="#00e5a0", linewidth=2, marker="o", markersize=3)
+        ax.fill_between(range(len(balances)), balances, starting, color="#00e5a0", alpha=0.08)
+    else:
+        ax.text(0.5, 0.5, "No live trades yet across any strategy", color="#6b7280", fontsize=12,
+                ha="center", va="center", transform=ax.transAxes)
+
+    ax.axhline(y=starting, color="#555b66", linestyle="--", linewidth=1)
+    ax.set_xlabel("TRADE # (combined, calendar order across all strategies)", color="#8b909c", fontsize=9, fontfamily="monospace")
+    ax.set_ylabel("COMBINED BALANCE ($)", color="#8b909c", fontsize=9, fontfamily="monospace")
+    ax.tick_params(colors="#8b909c", labelsize=8)
+    for spine in ax.spines.values():
+        spine.set_color("#2a2e39")
+    ax.grid(True, alpha=0.15, color="#8b909c")
+    plt.tight_layout()
+
+    os.makedirs("results", exist_ok=True)
+    img_path = "results/combined_equity_curve.png"
+    plt.savefig(img_path, dpi=140, facecolor="#0a0e14")
+    plt.close()
+
+    with open(img_path, "rb") as f:
+        return base64.b64encode(f.read()).decode("utf-8")
+
+
 equity_curve_b64 = build_equity_curve()
+combined_equity_curve_b64 = build_combined_equity_curve()
+
+portfolio_panels = [combined_book_panel(), open_risk_panel()]
 
 panels = []
 panels.append(live_panel(
@@ -302,7 +418,8 @@ Gold Gap (Entry 26, no edge), Relative Momentum Rotation (Entry 19, no edge).<br
 <strong style="color:#ff5c5c;">Bottom line:</strong> Nothing here has been validated for real
 capital. Backtest evidence and live forward-validation are deliberately treated as two separate
 bars in this project - live trade counts are still early across every track, nowhere near the
-roughly 20-30 trade threshold this project uses before that conversation is even on the table.
+roughly 20-30 trade threshold this project uses before that conversation is even on the table
+(see the readiness scorecard below for exactly how far each strategy actually is).
 """
 
 html = f"""
@@ -387,6 +504,22 @@ html = f"""
         font-size: 11px;
         line-height: 1.5;
     }}
+    .readiness-row {{
+        display: grid;
+        grid-template-columns: minmax(160px, 260px) 1fr 60px minmax(140px, 260px);
+        align-items: center;
+        gap: 12px;
+        padding: 8px 0;
+        border-bottom: 1px solid #1a1e28;
+        font-size: 12px;
+    }}
+    .readiness-row:last-child {{ border-bottom: none; }}
+    .readiness-label {{ color: #cfd3dc; display: flex; flex-direction: column; }}
+    .readiness-sub {{ font-size: 9px; color: #6b7280; margin-top: 2px; }}
+    .readiness-bar-track {{ background: #1a1e28; height: 8px; border-radius: 4px; overflow: hidden; }}
+    .readiness-bar-fill {{ background: #00e5a0; height: 100%; }}
+    .readiness-count {{ color: #cfd3dc; text-align: right; font-weight: 600; }}
+    .readiness-eta {{ color: #8b909c; font-size: 10px; }}
 </style>
 </head>
 <body>
@@ -401,11 +534,23 @@ html = f"""
     </div>
 
     <div class="grid">
+        {"".join(portfolio_panels)}
+    </div>
+
+    <div class="chart-panel" style="margin-bottom: 20px;">
+        <div class="chart-title">PORTFOLIO — COMBINED EQUITY CURVE (ALL STRATEGIES, ONE BOOK)</div>
+        <img src="data:image/png;base64,{combined_equity_curve_b64}" />
+    </div>
+
+    {readiness_panel()}
+    {diversification_panel()}
+
+    <div class="grid">
         {"".join(panels)}
     </div>
 
     <div class="chart-panel">
-        <div class="chart-title">EQUITY CURVE — LIVE PAPER / FORWARD ACCOUNTS</div>
+        <div class="chart-title">EQUITY CURVE — LIVE PAPER / FORWARD ACCOUNTS (PER STRATEGY)</div>
         <img src="data:image/png;base64,{equity_curve_b64}" />
     </div>
 </body>
