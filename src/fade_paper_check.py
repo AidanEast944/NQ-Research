@@ -9,6 +9,22 @@ TARGET_POINTS = 60
 ENTRY_TIME = "08:30"
 STATE_FILE = "data/fade_paper_account.json"
 
+# RETIRED 2026-09-11 (research_log.md Entry 35): this strategy's ORIGINAL backtest (Entry 2) was
+# already a FAIL (0/5 scorecard at 32 trades) - it was live this whole time despite that verdict,
+# apparently never retired the way Trend (Entry 6) correctly was on its own FAIL. Re-run against
+# the current 108-day archive via run_scorecards.py (results/scorecard_2026-09-06.txt) confirms it
+# STILL fails 0/5 - profit factor 0.69, 102% max drawdown, negative out-of-sample expectancy - not
+# a small-sample fluke that improved with more data, same as Entry 2 originally found. This guard
+# matches trend_forward_daily.py's STRATEGY_RETIRED pattern: no new positions opened; there is no
+# open position to manage as of retirement (checked directly - data/fade_paper_account.json has
+# zero open positions), so no separate manage-only resolve step is needed the way Trend's has one.
+# Remove this guard only after a fresh, explicit decision to re-test the strategy.
+STRATEGY_RETIRED = True
+if STRATEGY_RETIRED:
+    print("Strategy RETIRED (research_log.md Entry 35: FAIL, 0/5 scorecard on the full archive) - "
+          "no new positions will be opened.")
+    sys.exit()
+
 nq = yf.Ticker("NQ=F")
 history = nq.history(period="5d", interval="15m")
 

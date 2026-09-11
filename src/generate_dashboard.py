@@ -381,8 +381,13 @@ panels.append(live_panel(
     note="Entry 27 Part 5 - honest out-of-time threshold - automated"
 ))
 panels.append(live_panel(
-    "FADE (prior-day break) // LIVE", "data/fade_paper_account.json", "#ff8fd6",
-    note="Entry 2 - full-size NQ - automated"
+    "FADE (prior-day break) // RETIRED", "data/fade_paper_account.json", "#6b7280",
+    note="Entry 2/35 - FAIL on full archive (0/5, PF 0.69) - was live a week despite the "
+         "original Entry 2 FAIL before being caught and retired 2026-09-11",
+    warning="This strategy's own original backtest (Entry 2) was already a FAIL. It ran live "
+            "anyway for roughly 3 weeks before this was caught. Re-verified against the current "
+            "108-day archive (Entry 35) - still fails 0/5. Retired, no new positions. Its balance "
+            "above is a real historical record, not an endorsement."
 ))
 panels.append(trend_panel())
 panels.append(pairs_leg_panel(
@@ -409,10 +414,12 @@ automated daily. Backtest net PF 1.39 (1.2x, 132 trades).<br><br>
 sample (37-39 trades each, below the 100-trade bar). Has actually been running live since
 ~2026-09-03 (Entry 24's risk wiring), earlier than previously tracked here.<br><br>
 <strong style="color:#ffb020;">Also tracked live:</strong> unfiltered Gap Continuation
-(Entry 16/21) &mdash; real edge, but net-of-cost PF (1.17) falls short of the 1.3 bar &mdash; and
-Fade (Entry 2), running since early in this project.<br><br>
+(Entry 16/21) &mdash; real edge, but net-of-cost PF (1.17) falls short of the 1.3 bar.<br><br>
 <strong style="color:#6b7280;">Retired:</strong> Trend Following (Entry 6) &mdash; regime-dependent,
-not durable. No new entries; still manages any position open at retirement.<br><br>
+not durable. No new entries; managed the last open position to close 2026-09-10 (Entry 34).
+Fade (Entry 2/35) &mdash; failed its OWN original backtest (0/5 scorecard) yet ran live anyway
+until caught and retired 2026-09-11; re-verified against the full current archive and still
+fails 0/5 (PF 0.69, 102% max drawdown).<br><br>
 <strong style="color:#ff5c5c;">Rejected:</strong> Crude Oil Gap (Entry 22, outlier-dependent),
 Gold Gap (Entry 26, no edge), Relative Momentum Rotation (Entry 19, no edge).<br><br>
 <strong style="color:#ff5c5c;">Bottom line:</strong> Nothing here has been validated for real

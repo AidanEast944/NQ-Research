@@ -1028,3 +1028,46 @@ definitions.
 - **Verdict:** N/A - infrastructure. Doesn't change Trend's FAIL verdict (Entry 6) or its retired
   status - it only restores the ability to correctly close out the one position still open at
   retirement, which is what the retirement design always intended.
+
+---
+
+## Entry 35: Fade Was Live Despite Having Already Failed Its Own Original Backtest
+- **What:** Following up on the recommendation to verify Fade's backtest status before trusting
+  it just because it was the best-performing live track. Checked `research_log.md` Entry 2
+  directly - "Prior Day Fade (reversal)" - **VERDICT: FAIL, 0/5 scorecard at 32 trades**. This is
+  the exact same strategy `fade_paper_check.py` has been running live: same signal (fade a break
+  of yesterday's high/low), same 30pt stop / 60pt target, same 08:30 entry - confirmed by
+  `strategy.py`'s `get_prior_day_fade_signals_from_archive(stop_points=30, target_points=60,
+  entry_time="08:30")`, whose defaults match the live script exactly. Unlike Trend (Entry 6),
+  which was correctly retired via a `STRATEGY_RETIRED` guard immediately on its own FAIL
+  verdict, Fade had no such guard and kept running live regardless.
+- **Re-verified rather than trusted the old number:** the pre-existing weekly scorecard job
+  (`com.nqresearch.weeklyscorecard`, running `run_scorecards.py`) already re-checks Fade against
+  the full, current 108-day archive (not just Entry 2's original 32-trade sample) - its most
+  recent output, `results/scorecard_2026-09-06.txt`, confirms the FAIL still holds with much more
+  data: 35 trades, profit factor 0.69 (need 1.3+), max drawdown $10,200 (102% of a $10k account),
+  out-of-sample expectancy -$436/trade. Not a small-sample fluke that resolved itself with more
+  data - the same conclusion Entry 2 reached originally, holding up under a much larger sample.
+- **User confirmed via AskUserQuestion: "Yes, retire it now (Recommended)."** Fixed:
+  - `fade_paper_check.py` now has the same `STRATEGY_RETIRED = True` guard pattern as
+    `trend_forward_daily.py`, exiting before ever calling `place_order()` or hitting the network.
+    Confirmed directly there was zero open position at the time of retirement (checked
+    `data/fade_paper_account.json`), so unlike Trend there's no position to manage out - no
+    separate resolve-only step needed.
+  - `portfolio_analytics.py`: Fade's `candidate` flag flipped to `False` and excluded from
+    `readiness_scorecard()` (there's no scenario where more trades on a retired, failed strategy
+    leads toward a real-capital decision) - but deliberately KEPT in `combined_book_summary()` /
+    `combined_equity_curve()` / `aggregate_open_risk()`, since its historical P&L (+$1,800 real
+    paper trading over 6 trades) genuinely happened and belongs in the book's honest record, not
+    memory-holed.
+  - `generate_dashboard.py`: Fade's panel now reads `// RETIRED` with an explicit warning
+    explaining it ran live for roughly 3 weeks despite already having failed its own original
+    backtest, and the honest-assessment summary block updated to match.
+- **Open question, not yet investigated:** how did a strategy with an explicit FAIL verdict end
+  up live in the first place, when the established pattern (Trend) was to retire immediately on
+  FAIL? Worth understanding before assuming this couldn't happen again with another strategy -
+  flagged for a future session, not chased down here given the scope already covered today.
+- **Verified:** confirmed zero open Fade positions before adding the guard; `py_compile` clean on
+  all three touched files; `generate_dashboard.py` executed end-to-end and confirmed Fade drops
+  out of `readiness_scorecard()` while remaining in `combined_book_summary()`, exactly as intended.
+- **Verdict:** FAIL (reaffirmed, not new) - Fade. Retired. Nothing else changes.

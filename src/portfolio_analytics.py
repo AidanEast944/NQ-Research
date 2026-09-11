@@ -41,8 +41,11 @@ BROKER_ACCOUNTS = [
      "default_point_value": 2, "candidate": True,
      "backtest_note": "PASS - honest out-of-time threshold (Entry 27 Part 5)"},
     {"key": "fade", "label": "Fade", "path": "data/fade_paper_account.json",
-     "default_point_value": 20, "candidate": True,
-     "backtest_note": "not in the Tier-1 scorecard table - verify research_log.md before counting toward readiness"},
+     "default_point_value": 20, "candidate": False,
+     "backtest_note": "RETIRED 2026-09-11 (Entry 35) - re-run scorecard on full archive confirmed "
+                       "the ORIGINAL Entry 2 FAIL still holds (0/5, PF 0.69, 102% max drawdown). "
+                       "Was live for a week despite that original verdict - historical P&L kept "
+                       "here for the record, but excluded from the readiness scorecard below."},
     {"key": "pairs", "label": "Pairs book (NQ/ES + NQ/YM + ES/YM, shared account)",
      "path": "data/pairs_paper_account.json", "default_point_value": 2, "candidate": True,
      "backtest_note": "PASS on all 3 legs - net PF 1.76-2.33, thinner sample (37-39 trades each, Entry 23)"},
@@ -214,6 +217,10 @@ def readiness_scorecard():
     for acct in BROKER_ACCOUNTS:
         if acct["key"] == "pairs":
             continue  # pairs are scored per-leg below, using their own trade counts
+        if not acct["candidate"]:
+            continue  # retired/failed strategies (Fade, Entry 35) don't count toward the live-
+                       # capital readiness bar - there's no scenario where more of their trades
+                       # leads anywhere
         state = load_json(acct["path"])
         trades = state.get("trade_history", []) if state else []
         rows.append(_readiness_row(acct["label"], trades, acct["backtest_note"], today))
