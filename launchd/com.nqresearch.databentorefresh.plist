@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.nqresearch.databentorefresh</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/aidaneast/nq-research/venv/bin/python3</string>
+        <string>/Users/aidaneast/nq-research/src/research/refresh_databento_archive.py</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/aidaneast/nq-research</string>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>3</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+    <key>RunAtLoad</key>
+    <false/>
+    <key>StandardOutPath</key>
+    <string>/Users/aidaneast/nq-research/data/databentorefresh_log.txt</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/aidaneast/nq-research/data/databentorefresh_errors.txt</string>
+</dict>
+</plist>

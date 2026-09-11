@@ -1141,3 +1141,20 @@ definitions.
   4 symbols); row counts (93 lines incl. header) match known-good same-weekday files.
 - **Verdict:** Archive fully repaired. `data/raw_{nq,es,ym,rty}_extended` are now clean and
   current through 2026-09-09 with no known gaps or truncations.
+
+## Entry 39: Scheduled the Databento Archive Refresh
+- **What:** Added `com.nqresearch.databentorefresh.plist`, scheduled for 3:00 AM Pacific -
+  deliberately earlier than every other tracked job (earliest is 5:05 AM) so a slow API call or
+  retry never competes with anything time-sensitive, and because `END_DATE = yesterday` (the
+  confirmed ~1-day access delay, Entry 36) means running earlier vs. later makes no difference to
+  what data is actually available.
+- **Why now, not earlier:** deliberately held off scheduling this until the Entry 37 timezone bug
+  was fully found, fixed (two independent safeguards), and verified clean (Entry 38) - didn't
+  want an unattended job repeating a bug that had already corrupted 4 files once.
+- **Safety already in place, not new here:** `refresh_databento_archive.py`'s own
+  `MAX_COST_PER_RUN_USD = 1.00` circuit breaker is what makes this safe to run without a human
+  approving cost each time - same pattern as `risk_limits.py` elsewhere in this project. Typical
+  daily cost is roughly $0.02 (4 symbols x ~$0.005/day), far under the cap.
+- **Not yet installed** - plist is committed to the repo but needs `launchctl bootstrap` run
+  locally (this engagement's device shell can reach the repo's files but not launchctl/the real
+  LaunchAgents folder, same limitation noted since Entry 32).

@@ -26,6 +26,7 @@ launchctl print gui/$(id -u)/com.nqresearch.<name>   # exact schedule + last exi
 | `com.nqresearch.dashboard.plist` | `generate_dashboard.py` | regenerates `results/dashboard.html` from every currently-active strategy's state | 5:15 PM |
 | `com.nqresearch.morningbrief.plist` | `generate_morning_brief.py` | short daily brief (`results/morning_brief.html`) - what resolved yesterday, what opened this morning, what's still carried over, plus a readiness snapshot | 5:45 AM |
 | `com.nqresearch.trendforward.plist` | `trend_forward_daily.py` | manages (does not open new) Trend positions - retired strategy, Entry 6 | 5:10 PM |
+| `com.nqresearch.databentorefresh.plist` | `refresh_databento_archive.py` | keeps `data/raw_{nq,es,ym,rty}_extended` current - pulls only NEW days since each archive's last saved date, resamples to 15-min bars, appends one CSV/day. Does NOT touch the live trading pipeline (still yfinance-only). Has its own $1.00/run cost circuit breaker (Entry 36/37) since no human can approve cost interactively on a schedule. | 3:00 AM |
 
 `com.nqresearch.gapforward` (the pre-existing job that opens the unfiltered gap trade at 5:37 AM)
 is NOT tracked here - it already existed, and this engagement only fixed the script it runs
@@ -37,6 +38,16 @@ its original schedule (2:15 PM) ran nearly 3 hours before `com.nqresearch.dailys
 tracked here) writes that day's archive file, so it was silently failing to find "today" in its own
 data every single day since 2026-09-04, leaving an open position unmanaged for a week (Entry 34).
 Moved to 5:10 PM - after the archiver, before the 5:15 PM dashboard job picks up its fresh state.
+
+### Why the Databento refresh runs at 3:00 AM
+
+Picked deliberately clear of every other job (earliest existing job is 5:05 AM) so a slow API
+pull, a rate limit, or a retry never competes with anything time-sensitive. The refresh always
+targets `END_DATE = yesterday` (Entry 36's confirmed ~1-day account access delay), so running at
+3 AM vs. 6 AM makes no difference to what data is available - there's no reason to run it any
+later. Unlike every other job here, this one hits a paid API - see `refresh_databento_archive.py`'s
+own docstring (and research_log.md Entries 36-38) for the cost circuit breaker and the
+timezone-boundary bug it originally shipped with, found and fixed before this job was scheduled.
 
 ### Why an open step and a resolve step, run hours apart
 
