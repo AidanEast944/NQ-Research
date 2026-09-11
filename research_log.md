@@ -1158,3 +1158,25 @@ definitions.
 - **Not yet installed** - plist is committed to the repo but needs `launchctl bootstrap` run
   locally (this engagement's device shell can reach the repo's files but not launchctl/the real
   LaunchAgents folder, same limitation noted since Entry 32).
+
+## Entry 40: Paused the Databento Auto-Refresh - Kept Manual Pending Billing Confirmation
+- **What:** Right after installing `com.nqresearch.databentorefresh` (Entry 39), the user asked
+  whether it draws from existing Databento credits or would charge a card, and was explicit:
+  "i dont want to charge my card yet." Neither this engagement nor any script here has visibility
+  into the account's actual billing configuration (card on file, auto-recharge, current credit
+  balance) - that's only visible on Databento's own account/billing dashboard, not exposed by the
+  `get_cost()`/`get_range()` API calls this project uses.
+- **Decision:** rather than assume it's fine, paused the job (`launchctl bootout` - run by the
+  user in their own terminal, since this engagement's device shell doesn't have `launchctl`).
+  The plist stays committed and copied to `~/Library/LaunchAgents/`, ready to re-enable with a
+  single `bootstrap` command once the user has confirmed the billing setup directly with
+  Databento. Nothing was deleted - this is a pause, not a removal.
+- **Net effect:** the archive refresh goes back to fully manual - `refresh_databento_archive.py`
+  run by hand, same as every Databento interaction in this project so far, still printing the
+  exact cost before pulling anything. No functionality lost, just no unattended daily spend.
+- **Also clarified for the user in this exchange:** the ~$3/symbol cost they recalled from
+  earlier was almost certainly the original historical archive build (841 days back to
+  2024-01-01 per symbol, done independently before this engagement) - unrelated in scale to
+  anything this project's scripts do now (single-day catch-ups, ~$0.005/symbol/day).
+- **Verdict:** Correct call given real uncertainty about billing mechanics and an explicit user
+  instruction not to risk it. Revisit once the user checks their Databento account directly.

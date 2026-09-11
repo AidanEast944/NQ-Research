@@ -26,7 +26,7 @@ launchctl print gui/$(id -u)/com.nqresearch.<name>   # exact schedule + last exi
 | `com.nqresearch.dashboard.plist` | `generate_dashboard.py` | regenerates `results/dashboard.html` from every currently-active strategy's state | 5:15 PM |
 | `com.nqresearch.morningbrief.plist` | `generate_morning_brief.py` | short daily brief (`results/morning_brief.html`) - what resolved yesterday, what opened this morning, what's still carried over, plus a readiness snapshot | 5:45 AM |
 | `com.nqresearch.trendforward.plist` | `trend_forward_daily.py` | manages (does not open new) Trend positions - retired strategy, Entry 6 | 5:10 PM |
-| `com.nqresearch.databentorefresh.plist` | `refresh_databento_archive.py` | keeps `data/raw_{nq,es,ym,rty}_extended` current - pulls only NEW days since each archive's last saved date, resamples to 15-min bars, appends one CSV/day. Does NOT touch the live trading pipeline (still yfinance-only). Has its own $1.00/run cost circuit breaker (Entry 36/37) since no human can approve cost interactively on a schedule. | 3:00 AM |
+| `com.nqresearch.databentorefresh.plist` | `refresh_databento_archive.py` | **NOT enabled - see Entry 40.** Would keep `data/raw_{nq,es,ym,rty}_extended` current automatically if bootstrapped. Plist is committed and ready, but paused pending confirmation of how Databento bills this account (card vs. credits only) - run manually instead for now: `python3 src/research/refresh_databento_archive.py` | 3:00 AM (if enabled) |
 
 `com.nqresearch.gapforward` (the pre-existing job that opens the unfiltered gap trade at 5:37 AM)
 is NOT tracked here - it already existed, and this engagement only fixed the script it runs
@@ -38,6 +38,22 @@ its original schedule (2:15 PM) ran nearly 3 hours before `com.nqresearch.dailys
 tracked here) writes that day's archive file, so it was silently failing to find "today" in its own
 data every single day since 2026-09-04, leaving an open position unmanaged for a week (Entry 34).
 Moved to 5:10 PM - after the archiver, before the 5:15 PM dashboard job picks up its fresh state.
+
+### Why `databentorefresh` is committed but NOT running
+
+Set up and bootstrapped in Entry 39, then deliberately paused in Entry 40 - not a technical issue,
+a billing-visibility one. Neither this engagement nor the scripts here can see whether this
+Databento account bills a card immediately, only after existing credits run out, or has
+auto-recharge on - that's only visible on Databento's own account/billing page. Since the user
+explicitly said not to risk a card charge without confirming that first, the safer default is
+manual: run `refresh_databento_archive.py` by hand whenever you want the archive caught up (it
+still prints the exact cost via `get_cost()` before pulling anything, same as it always has). To
+re-enable automatic daily refreshes once the billing question is confirmed:
+```bash
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.nqresearch.databentorefresh.plist
+```
+(the plist is already copied to `~/Library/LaunchAgents/` from Entry 39 - just needs bootstrapping
+again after the earlier `bootout`.)
 
 ### Why the Databento refresh runs at 3:00 AM
 
