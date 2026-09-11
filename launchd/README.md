@@ -25,11 +25,18 @@ launchctl print gui/$(id -u)/com.nqresearch.<name>   # exact schedule + last exi
 | `com.nqresearch.gapresolve.plist` | `gap_forward_resolve.py` | resolves today's unfiltered gap trade (opened by the pre-existing `com.nqresearch.gapforward` job at 5:37 AM - not this repo, see below) | 5:05 PM |
 | `com.nqresearch.dashboard.plist` | `generate_dashboard.py` | regenerates `results/dashboard.html` from every currently-active strategy's state | 5:15 PM |
 | `com.nqresearch.morningbrief.plist` | `generate_morning_brief.py` | short daily brief (`results/morning_brief.html`) - what resolved yesterday, what opened this morning, what's still carried over, plus a readiness snapshot | 5:45 AM |
+| `com.nqresearch.trendforward.plist` | `trend_forward_daily.py` | manages (does not open new) Trend positions - retired strategy, Entry 6 | 5:10 PM |
 
 `com.nqresearch.gapforward` (the pre-existing job that opens the unfiltered gap trade at 5:37 AM)
 is NOT tracked here - it already existed, and this engagement only fixed the script it runs
 (`gap_forward_check.py`, split into open-only + the new `gapresolve` step above - Entry 32) rather
 than touching its schedule.
+
+`com.nqresearch.trendforward.plist` IS tracked here even though the job predates this engagement -
+its original schedule (2:15 PM) ran nearly 3 hours before `com.nqresearch.dailysave` (5:00 PM, not
+tracked here) writes that day's archive file, so it was silently failing to find "today" in its own
+data every single day since 2026-09-04, leaving an open position unmanaged for a week (Entry 34).
+Moved to 5:10 PM - after the archiver, before the 5:15 PM dashboard job picks up its fresh state.
 
 ### Why an open step and a resolve step, run hours apart
 

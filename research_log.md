@@ -989,3 +989,42 @@ definitions.
 - **Verdict:** N/A - infrastructure, not a strategy result. Nothing here changes any strategy's
   backtest conclusion or the live-capital timeline - it makes the existing evidence easier to see
   and check, not any more or less favorable than it already was.
+
+---
+
+## Entry 34: Trend's Management Job Was Silently Broken by a Scheduling Race, Not Just Slow
+- **What:** Entry 32/33's dashboard correctly flagged Trend's open position as "stale" (last
+  managed 2026-09-04), but treated it as a soft staleness warning rather than investigating why.
+  Asked directly "anything you recommend for this project" prompted a closer look, which found a
+  real, structural bug rather than mere neglect.
+- **Root cause, confirmed against the real plists:** `com.nqresearch.trendforward` was scheduled
+  for 2:15 PM Pacific; `com.nqresearch.dailysave` (the daily archiver
+  `trend_forward_daily.py` reads its price data from, via `data/raw/*.csv`) runs at 5:00 PM
+  Pacific - almost 3 hours LATER. `trend_forward_daily.py` looks for `date.today()` in its
+  archive and exits immediately (before ever touching `state` or the open position) if that day's
+  data isn't there yet - which, given the 2:15 PM run time, it structurally never could be. This
+  wasn't an occasional data-pipeline gap (Entry 30's status review item #5) - `data/raw` was
+  actually current through every recent trading day when checked directly - it was a guaranteed
+  same-day mismatch, every single day, confirmed by `trend_forward_log.txt` showing "No archived
+  data for {date} yet" on every run since the position opened on 2026-09-03. Net effect: Trend's
+  one open LONG position (entry 2026-09-03 @ 29514.0, stop 29314.0) went completely unmanaged for
+  a full week - its stop-loss and MA-reversal exit logic never got a chance to run, not because
+  nothing happened, but because the job never reached that code.
+- **Fix:** moved `com.nqresearch.trendforward` to 5:10 PM Pacific - after `dailysave` writes that
+  day's archive, before the 5:15 PM dashboard job so it picks up Trend's freshly-updated state the
+  same evening. Added `launchd/com.nqresearch.trendforward.plist` to this repo (previously
+  untracked, like the other pre-existing jobs) specifically because this engagement now owns its
+  fix - see the note in `launchd/README.md` explaining why this one pre-existing job is tracked
+  here when the others (gapforward, fadepapercheck, pairsforward, genericpairs, dailysave,
+  weeklyscorecard) intentionally aren't.
+- **Not yet installed** on the real `~/Library/LaunchAgents` as of writing - instructions given to
+  the user in chat (`bootout` the stale registration, copy the corrected plist over, `bootstrap`
+  again). Recommended running `trend_forward_daily.py` manually once immediately after installing,
+  since today's archive file already exists (dailysave already ran today) - no need to wait until
+  tomorrow's 5:10 PM slot for the position to finally get re-evaluated for the first time in a week.
+- **Verified:** reproduced the failure mechanism directly (loaded the same archive the script
+  loads, confirmed recent trading days ARE present in it, confirmed the only missing piece was
+  timing relative to `dailysave`); new plist passes plist validation.
+- **Verdict:** N/A - infrastructure. Doesn't change Trend's FAIL verdict (Entry 6) or its retired
+  status - it only restores the ability to correctly close out the one position still open at
+  retirement, which is what the retirement design always intended.
