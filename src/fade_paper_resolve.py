@@ -3,6 +3,7 @@ import yfinance as yf
 import pandas as pd
 from datetime import date
 from paper_broker import PaperBroker
+from dashboard_trigger import refresh_dashboard
 
 STATE_FILE = "data/fade_paper_account.json"
 
@@ -61,5 +62,6 @@ for position in todays_positions:
 
     if exit_price is not None:
         broker.close_position(position, exit_price, reason=exit_reason)
+        refresh_dashboard()
 
 broker.summary()

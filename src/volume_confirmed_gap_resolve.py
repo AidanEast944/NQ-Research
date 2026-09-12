@@ -9,6 +9,7 @@ import yfinance as yf
 import pandas as pd
 from datetime import date
 from paper_broker import PaperBroker
+from dashboard_trigger import refresh_dashboard
 from risk_limits import record_trade_result
 
 STOP_POINTS = 40
@@ -110,6 +111,7 @@ for label, cfg in THRESHOLDS.items():
             continue
 
         broker.close_position(position, exit_price, reason=exit_reason, point_value=POINT_VALUE)
+        refresh_dashboard()
 
         points = (exit_price - position["entry_price"]) if signal == "LONG" else (position["entry_price"] - exit_price)
         record_trade_result(points * POINT_VALUE, state_file=cfg["risk_state_file"])
