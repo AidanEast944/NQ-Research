@@ -1198,3 +1198,19 @@ definitions.
   verifying it) - a status report describing something as resolved is not the same as it actually
   being
  resolved. Worth periodically spot-checking archive integrity going forward rather than assuming automation reports are accurate.
+
+## Entry 42: Added ES to Volume-Confirmed Gap Continuation (Properly Scaled); Rejected RTY
+- Hypothesis: extend the validated volume-confirmed gap continuation strategy to ES and RTY.
+- Discovered the raw NQ/YM parameters (30pt gap, 40/80 stop/target) were mismatched for ES's
+  lower price level - initial naive test showed only 91 total signals (vs NQ's 467, YM's 524)
+  and poor quality, similar to the fixed-stop RTY pairs mismatch found in Entry 14.
+- Rebuilt with properly scaled ES parameters: min_gap=6pts, stop=10pts, target=20pts (same ~1:5
+  ratio as ES's price level vs NQ). Result: 113 trades, 41.6% win rate, PF 1.42. Out-of-sample
+  check: PF 1.40, win rate 41.2% - no collapse, consistent with in-sample. Added live via
+  volume_confirmed_gap_es_forward_check.py / _resolve.py (MES sizing, $5/point).
+- RTY tested at NQ/YM's original parameters (30pt gap): only 12 trades at 1.2x volume threshold,
+  50% win rate, PF 0.66. Consistent with Entry 14's earlier finding that RTY (small-cap) does not
+  share the same structural relationship with the large-cap trio (NQ/ES/YM). Not added live.
+- Reasoning: confirms the volume-confirmed gap edge generalizes across large-cap index futures
+  when parameters are properly scaled to each symbol's price level - the same lesson learned
+  with RTY pairs trading now confirmed a second time in a completely different strategy family.
