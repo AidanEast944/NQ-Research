@@ -1214,3 +1214,38 @@ definitions.
 - Reasoning: confirms the volume-confirmed gap edge generalizes across large-cap index futures
   when parameters are properly scaled to each symbol's price level - the same lesson learned
   with RTY pairs trading now confirmed a second time in a completely different strategy family.
+
+## Entry 43: Systematic Macro Exploration - NFP Fade Shows Promise, Structurally Capped
+- Hypothesis: does NQ react predictably to scheduled macro events (NFP, CPI)? Tested per Bailey/
+  Lopez de Prado's own recommendation to develop models across asset classes/event types rather
+  than over-fit one instrument - this is the project's first entry into Systematic Macro as a
+  distinct strategy category, alongside existing Pairs (Stat Arb) and retired Trend (CTA).
+- NFP reaction-continuation (bet the first 15-min post-release move continues): 19 trades,
+  21.1% win rate, PF 0.56 - clean rejection. 15 of 19 trades hit stop, suggesting the initial
+  reaction frequently reverses rather than continues.
+- NFP fade (bet the first 15-min reaction reverses): same 19 trades, mirrored direction -
+  52.6% win rate, PF 2.04, net PF 1.80 after costs, max drawdown only 2.4% of a $10k account.
+  Full scorecard: 4/7 (FAILS only on sample size and out-of-sample size). DSR: 68.7% probability
+  of genuine skill - second-highest DSR of any strategy tested in this project, behind only the
+  uncorrected volume-confirmed gap's inflated early number.
+- CPI fade (same logic, approximate/unverified CPI release dates): 15 trades, 26.7% win rate,
+  PF 0.73 - does not replicate. Treated as inconclusive rather than a confident rejection, since
+  the CPI dates used were NOT verified against bls.gov's actual release calendar (unlike NFP's
+  mathematically certain first-Friday rule) - a real limitation on this specific result, not
+  necessarily evidence CPI fade genuinely fails.
+- Structural finding, distinct from a strategy verdict: NFP only occurs 12x/year, meaning
+  reaching this project's 100-trade validation bar would take 8+ years at the current rate -
+  fundamentally incompatible with the "wait for more real trades" path that works for
+  daily-frequency strategies (gap continuation, pairs). NFP fade may be a genuine, real edge
+  that this project's validation framework is structurally unable to fully prove within any
+  practical timeframe, given the event's rarity - a real limitation of the framework, not
+  necessarily of the strategy.
+- Verdict: NFP fade = WATCH, with explicit note about its permanent sample-size ceiling (unlike
+  every other WATCH-tier strategy). NFP continuation = FAIL. CPI fade = INCONCLUSIVE (unverified
+  dates, small sample). Not added to live forward-testing - marginal value given the 19-trade
+  backtest ceiling and no realistic path to a larger sample.
+- Reasoning: a genuinely useful exploration of a new strategy category (Systematic Macro),
+  producing one promising signal and a clear-eyed understanding of why monthly-frequency events
+  are structurally harder to validate than daily ones - worth remembering if extending to CPI
+  (with verified dates) or FOMC (8x/year) in the future, since combining multiple LOW-frequency
+  event types could eventually reach a meaningful combined sample faster than any single type.
