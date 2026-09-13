@@ -1285,3 +1285,24 @@ definitions.
   (Wednesday effect) and Entry 15 (overnight reversion). A real, detectable statistical pattern
   in price behavior is not the same as a tradeable edge once real entry/exit mechanics are
   applied. Good example of the diagnostic-to-strategy gap this project has now hit three times.
+
+## Entry 46: Backfilled Missing Documentation - YM Volume-Confirmed Gap
+- Process gap found via external audit - this live, capital-tracking strategy
+  (volume_confirmed_gap_ym_forward_check.py) had zero record in research_log.md. Its only prior
+  justification existed in git commit bef037d's message alone.
+- Backfilling the real backtest evidence originally used to justify going live: 113 trades
+  tested at the time, 42.5% win rate, PF 1.48 at 1.2x volume threshold - directly comparable to
+  NQ's validated Entry 25 result (132 trades, PF 1.53 at the same threshold, same 30/40/80
+  gap/stop/target structure). Same methodology as Entry 25, MYM ($0.50/point) sizing.
+- Re-ran YM through the full 7-check scorecard on 2026-09-12 (post-backfill, using the current
+  archive and corrected num_trials=45): 134 trades, PF 1.48 gross / 1.38 net of costs, drawdown
+  2.2% of a $10k account, out-of-sample expectancy improved ($6.34 vs $5.16 in-sample), DSR
+  32.9%. Result: 6/7 pass, blocked only by DSR - consistent with NQ's 40.2% and ES's 27.7% under
+  the same methodology.
+- Verdict: WATCH, same tier as NQ and ES volume-confirmed gap tracks. Confirms YM's live tracking
+  is on equally solid footing to its siblings - the documentation gap was real, but did not
+  correspond to an actual, hidden weakness once properly checked.
+- Reasoning: closes the documentation gap directly, and confirms via real re-testing (not just
+  paperwork) that YM's live status was justified. Good example of "the log has no record of
+  this" being worth investigating rather than just backfilling - in this case, investigation
+  confirmed the underlying strategy was fine, which is itself a useful, positive finding.
