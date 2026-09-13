@@ -12,9 +12,9 @@ MAX_OOS_EXPECTANCY_DROP_PCT = 50  # out-of-sample shouldn't be less than half of
 PARTIAL_VERDICT_THRESHOLD_PCT = 60  # need at least this % of checks passed for a PARTIAL verdict
 MIN_DSR = 0.95  # minimum probability of genuine skill after correcting for selection bias
 
-def run_scorecard(signals, strategy_name, entry_col="entry_price", exit_col="exit_price",
+def run_scorecard(signals, strategy_name, num_trials, entry_col="entry_price", exit_col="exit_price",
                    account_size=10000, point_value=20, date_col="entry_date",
-                   slippage_points=None, commission=None, num_trials=1, known_trial_sharpes=None):
+                   slippage_points=None, commission=None, known_trial_sharpes=None):
     """slippage_points/commission override trading_costs.py's defaults for check 6 - leave as
     None to use the shared SLIPPAGE_POINTS/COMMISSION_PER_TRADE constants everyone else uses, so
     every strategy is judged against the same cost assumptions unless there's a specific reason
