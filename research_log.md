@@ -1324,3 +1324,31 @@ definitions.
   likely to attract more attention over time and could shrink even after passing validation.
   This tool doesn't replace the existing validation checks, it adds ongoing monitoring for a
   risk none of them were designed to catch.
+
+## Entry 48: Crowding Proxy and Adversarial Reasoning
+- Addressed two remaining gaps in adversarial-market awareness: (1) no way to detect if an edge
+  is becoming more crowded/competed-away over time, (2) no explicit reasoning for WHY each
+  surviving edge might persist despite market competition.
+- Crowding proxy (crowding_proxy_check.py): checks whether pairs trading's time-to-revert is
+  shrinking over time - a real, testable signal that faster mean-reversion resolution can
+  indicate more capital competing for the same signal. NQ/ES and NQ/YM: stable (+0.5%, -8.4%).
+  ES/YM: -22.6% faster reversion in the recent half vs early half - crosses the flag threshold,
+  but on a thin sample (39 trades split into ~19/half) - a real signal worth tracking, not yet
+  a confirmed finding. Worth cross-referencing against edge_decay_check.py's expectancy trend
+  for ES/YM specifically going forward - if both show weakening together, that combination would
+  be much more convincing than either alone.
+- Adversarial persistence reasoning (written, not computed - this is a judgment exercise):
+  Volume-confirmed gap's plausible persistence reason is that it requires combining two signals
+  (gap size AND volume confirmation) that simple, heavily-arbitraged gap-trading systems
+  (Entry 21's confound already showed plain gap-trading is well-picked-over) typically don't
+  combine. Falsification risk: if volume-confirmed gap trading becomes popular retail content,
+  it could crowd out faster than expected.
+  Pairs trading's plausible persistence reason is a size/complexity niche - too small for large
+  funds needing capacity, too complex (cointegration-style multi-instrument reasoning) for
+  typical retail. Falsification risk: Entry 18's failed cointegration test is a real warning
+  here - without a confirmed structural reason for these three to mean-revert, any edge may
+  just reflect this specific historical window rather than a persistent inefficiency.
+- Reasoning: no tool can fully answer "is this edge crowded" without real order-flow/positioning
+  data this project doesn't have access to. This entry documents the best available proxy
+  evidence and explicit reasoning, to be revisited and updated as more data accumulates rather
+  than treated as a final answer.
