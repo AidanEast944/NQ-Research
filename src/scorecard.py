@@ -1,5 +1,7 @@
 from analysis_utils import compute_points, full_stats
 import trading_costs
+from deflated_sharpe import deflated_sharpe_ratio, compute_returns_stats
+import numpy as np
 
 # Fixed, non-negotiable thresholds - the same bar for every strategy, every time
 MIN_TRADES = 100
@@ -8,15 +10,27 @@ MAX_ACCEPTABLE_DRAWDOWN_PCT_OF_ACCOUNT = 30  # won't blow up a reasonably sized 
 MIN_PROFIT_FACTOR = 1.3
 MAX_OOS_EXPECTANCY_DROP_PCT = 50  # out-of-sample shouldn't be less than half of in-sample
 PARTIAL_VERDICT_THRESHOLD_PCT = 60  # need at least this % of checks passed for a PARTIAL verdict
+MIN_DSR = 0.95  # minimum probability of genuine skill after correcting for selection bias
 
 def run_scorecard(signals, strategy_name, entry_col="entry_price", exit_col="exit_price",
                    account_size=10000, point_value=20, date_col="entry_date",
-                   slippage_points=None, commission=None):
+                   slippage_points=None, commission=None, num_trials=1, known_trial_sharpes=None):
     """slippage_points/commission override trading_costs.py's defaults for check 6 - leave as
     None to use the shared SLIPPAGE_POINTS/COMMISSION_PER_TRADE constants everyone else uses, so
     every strategy is judged against the same cost assumptions unless there's a specific reason
     to deviate. Always pass the SAME point_value you used for the gross stats (e.g. 2 for MNQ) -
-    trading_costs.apply_costs() scales slippage in the same units as your points."""
+    trading_costs.apply_costs() scales slippage in the same units as your points.
+
+    num_trials: how many independent strategy variations were tested before arriving at this
+    one - required for an honest Check 7 (Deflated Sharpe Ratio). Defaults to 1, which is the
+    MOST GENEROUS possible assumption (as if this were the only thing ever tried) - always pass
+    the real, honest count if you know it. Passing 1 when more trials were actually run will
+    make Check 7 look better than it should.
+
+    known_trial_sharpes: optional list of Sharpe ratios from other trials, if you have them -
+    used to estimate the variance in Sharpe ratios across trials. If omitted, a small fixed
+    variance (0.01) is used as a conservative placeholder - see run_deflated_sharpe_check.py
+    for how to gather real trial Sharpes."""
     print("=" * 60)
     print(f"SCORECARD: {strategy_name}")
     print("=" * 60)
@@ -25,7 +39,7 @@ def run_scorecard(signals, strategy_name, entry_col="entry_price", exit_col="exi
     signals = signals.sort_values(date_col)
 
     checks_passed = 0
-    checks_total = 6
+    checks_total = 7
 
     # Check 1: Sample size
     n = len(signals)
@@ -114,6 +128,36 @@ def run_scorecard(signals, strategy_name, entry_col="entry_price", exit_col="exi
         checks_passed += 1
     else:
         print("    FAIL - the edge doesn't survive realistic trading costs")
+
+    # Check 7: Deflated Sharpe Ratio. Added 2026-09-12 - corrects for selection bias from
+    # testing many strategy variations before finding this one (Bailey & Lopez de Prado, 2014).
+    # A high raw Sharpe found after trying many alternatives is less trustworthy than the same
+    # Sharpe found on the first and only attempt - this check accounts for that difference.
+    # See the num_trials/known_trial_sharpes docstring above - defaults are the MOST GENEROUS
+    # possible assumptions, so an honest caller should pass real values whenever known.
+    dsr_stats = compute_returns_stats(signals["points"].tolist())
+    sharpe_variance = float(np.var(known_trial_sharpes)) if known_trial_sharpes else 0.01
+
+    dsr = deflated_sharpe_ratio(
+        observed_sharpe=dsr_stats["sharpe"],
+        num_trials=num_trials,
+        sharpe_variance=sharpe_variance,
+        num_returns=dsr_stats["n"],
+        skewness=dsr_stats["skewness"],
+        kurtosis=dsr_stats["kurtosis"]
+    )
+
+    print(f"\n[7] Deflated Sharpe Ratio: {dsr:.3f} ({dsr*100:.1f}% probability of genuine skill, "
+          f"num_trials={num_trials})")
+    if num_trials <= 1:
+        print("    WARNING: num_trials=1 assumes this was the ONLY strategy ever tried - if that's")
+        print("    not true, pass the real count for an honest result. This check is currently")
+        print("    as lenient as it can possibly be.")
+    if dsr >= MIN_DSR:
+        print("    PASS - statistically significant even after correcting for selection bias")
+        checks_passed += 1
+    else:
+        print("    FAIL - not yet distinguishable from a lucky find among many trials")
 
     print(f"\n{'='*60}")
     print(f"OVERALL: {checks_passed}/{checks_total} checks passed")
