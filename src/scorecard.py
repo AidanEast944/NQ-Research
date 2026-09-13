@@ -22,10 +22,10 @@ def run_scorecard(signals, strategy_name, num_trials, entry_col="entry_price", e
     trading_costs.apply_costs() scales slippage in the same units as your points.
 
     num_trials: how many independent strategy variations were tested before arriving at this
-    one - required for an honest Check 7 (Deflated Sharpe Ratio). Defaults to 1, which is the
-    MOST GENEROUS possible assumption (as if this were the only thing ever tried) - always pass
-    the real, honest count if you know it. Passing 1 when more trials were actually run will
-    make Check 7 look better than it should.
+    one - required (no default) for an honest Check 7 (Deflated Sharpe Ratio). Use
+    trial_count.count_research_trials() as the standard, single source of truth for this value
+    rather than a hand-typed number - passing a number lower than the real count will make
+    Check 7 look better than it honestly should.
 
     known_trial_sharpes: optional list of Sharpe ratios from other trials, if you have them -
     used to estimate the variance in Sharpe ratios across trials. If omitted, a small fixed

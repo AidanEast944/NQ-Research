@@ -4,6 +4,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from strategy import get_weekday_open_gap_signals_with_volume_from_archive
 from scorecard import run_scorecard
+from trial_count import count_research_trials
 
 configs = [
     ("Volume-Confirmed Gap NQ (1.2x)", "data/raw_nq_extended", 30, 40, 80, 2),
@@ -23,5 +24,5 @@ for name, folder, min_gap, stop, target, point_value in configs:
         entry_col="entry_price",
         date_col="date",
         point_value=point_value,
-        num_trials=41
+        num_trials=count_research_trials()
     )

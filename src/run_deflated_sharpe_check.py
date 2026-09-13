@@ -9,6 +9,7 @@ sys.path.insert(0, "src")
 
 from deflated_sharpe import deflated_sharpe_ratio, compute_returns_stats
 import strategy as strat
+from trial_count import count_research_trials
 
 def get_points(signals, entry_col="entry_price", exit_col="exit_price"):
     def pts(row):
@@ -50,6 +51,7 @@ if not trials:
 
 print(f"\n{'='*70}")
 print(f"REAL TRIAL COUNT FROM RECOMPUTABLE STRATEGIES: {len(trials)}")
+print(f"ACTUAL num_trials USED FOR DSR (from research_log.md, the true project-wide count): {count_research_trials()}")
 print(f"{'='*70}")
 print("NOTE: This project has tested 40+ strategy variations total across its history.")
 print("Many early/superseded scripts are no longer directly recomputable. This DSR check")
@@ -74,7 +76,7 @@ for name, points in trials:
     stats_result = compute_returns_stats(points)
     dsr = deflated_sharpe_ratio(
         observed_sharpe=stats_result["sharpe"],
-        num_trials=len(trials),
+        num_trials=count_research_trials(),
         sharpe_variance=sharpe_variance,
         num_returns=stats_result["n"],
         skewness=stats_result["skewness"],
@@ -82,3 +84,4 @@ for name, points in trials:
     )
     verdict = "LIKELY GENUINE" if dsr >= 0.95 else ("UNCERTAIN" if dsr >= 0.5 else "LIKELY LUCK")
     print(f"{name}: DSR={dsr:.3f} ({dsr*100:.1f}% probability of genuine skill) - {verdict}")
+    
