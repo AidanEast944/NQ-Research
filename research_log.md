@@ -1266,3 +1266,22 @@ definitions.
   is uniquely better either - confirms 8:30 was not accidentally a suboptimal choice.
 - Reasoning: closes a real documentation gap. Also a reminder to verify prior findings against
   actual code and logs before presenting them as either already tested or novel.
+
+## Entry 45: Realized Correlation Breakdown (NQ/ES) - Genuinely Novel, Cleanly Rejected
+- Hypothesis: does a breakdown in short-term realized correlation between NQ and ES (distinct
+  from Entry 18's long-run cointegration test) predict near-term volatility or direction?
+- Confirmed genuinely novel via external audit before building - no prior test of rolling/
+  realized correlation existed in this project.
+- Diagnostic: NQ/ES 20-bar rolling correlation is extremely high normally (mean 0.92, median
+  0.95). Breakdowns (corr < 0.5) occurred 235 times over the archive. Volatility check: future
+  20-bar range LOWER after breakdown (138.44) than after normal correlation (174.49) - opposite
+  of the volatility-expansion hypothesis. Direction check: mild negative drift after breakdown
+  (-0.08% avg future 20-bar return vs +0.02% normal, 40.9% win rate) - a real, if small, signal.
+- Built as a tradeable strategy (SHORT NQ on corr < 0.5, 40/80 stop/target, cooldown to avoid
+  counting one extended breakdown as multiple trades): 53 trades, PF 0.86 gross, out-of-sample
+  expectancy flipped negative (-$35.00/trade vs +$4.32 in-sample), DSR 2.1%. FAIL, 1/7 scorecard.
+- Reasoning: the small directional lean visible in raw diagnostic data did not survive being
+  converted into an actual stop/target trading rule - same failure pattern as Entry 11
+  (Wednesday effect) and Entry 15 (overnight reversion). A real, detectable statistical pattern
+  in price behavior is not the same as a tradeable edge once real entry/exit mechanics are
+  applied. Good example of the diagnostic-to-strategy gap this project has now hit three times.

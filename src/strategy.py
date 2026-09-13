@@ -2449,3 +2449,66 @@ def get_gold_gap_signals_with_stop_from_history(min_gap_pct=1.0, stop_pct=0.5, t
         })
 
     return pd.DataFrame(results)
+
+
+def get_correlation_breakdown_signals_from_archive(corr_threshold=0.5, corr_window=20,
+                                                       stop_points=40, target_points=80,
+                                                       nq_folder="data/raw_nq_extended",
+                                                       es_folder="data/raw_es_extended"):
+    files_a = glob.glob(os.path.join(nq_folder, "*.csv"))
+    files_b = glob.glob(os.path.join(es_folder, "*.csv"))
+    if not files_a or not files_b:
+        raise FileNotFoundError("Missing NQ or ES archive data.")
+
+    def load_15m(files):
+        all_days = [pd.read_csv(f, index_col="Datetime", parse_dates=True) for f in files]
+        hist = pd.concat(all_days)
+        hist = hist[~hist.index.duplicated(keep="first")]
+        hist = hist.sort_index()
+        hist.index = pd.to_datetime(hist.index, utc=True).tz_convert("America/New_York")
+        return hist
+
+    nq = load_15m(files_a)
+    es = load_15m(files_b)[["Close"]].rename(columns={"Close": "es_close"})
+
+    merged = nq.join(es, how="inner")
+    merged["nq_return"] = merged["Close"].pct_change()
+    merged["es_return"] = merged["es_close"].pct_change()
+    merged["rolling_corr"] = merged["nq_return"].rolling(corr_window).corr(merged["es_return"])
+    merged["date"] = merged.index.date
+
+    results = []
+    in_position = False
+    cooldown_until = None
+
+    for idx, row in merged.iterrows():
+        if pd.isna(row["rolling_corr"]):
+            continue
+
+        if not in_position:
+            if cooldown_until is not None and idx <= cooldown_until:
+                continue
+            if row["rolling_corr"] < corr_threshold:
+                entry_price = row["Close"]
+                stop_price = entry_price + stop_points
+                target_price = entry_price - target_points
+                entry_time = idx
+                in_position = True
+            continue
+
+        if in_position:
+            hit_stop = row["High"] >= stop_price
+            hit_target = row["Low"] <= target_price
+
+            if hit_stop or hit_target:
+                exit_price = stop_price if hit_stop else target_price
+                exit_reason = "stop" if hit_stop else "target"
+                results.append({
+                    "date": entry_time.date(), "signal": "SHORT",
+                    "entry_price": entry_price, "exit_price": exit_price,
+                    "exit_reason": exit_reason
+                })
+                in_position = False
+                cooldown_until = idx
+
+    return pd.DataFrame(results)
