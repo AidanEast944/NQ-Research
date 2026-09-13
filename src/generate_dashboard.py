@@ -535,9 +535,24 @@ html = f"""
         <div class="timestamp">LAST UPDATE: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</div>
     </div>
 
-    <div class="chart-panel" style="margin-bottom: 20px;">
-        <div class="chart-title">RESEARCH STATUS — HONEST ASSESSMENT</div>
-        <div style="font-size: 13px; line-height: 1.6; color: #cfd3dc;">{honest_assessment}</div>
+        <div class="chart-panel" style="margin-bottom: 20px;">
+        <div class="chart-title">RESEARCH STATUS — HONEST ASSESSMENT (updated w/ Deflated Sharpe Ratio, 2026-09-12)</div>
+        <div style="font-size: 13px; line-height: 1.6; color: #cfd3dc;">
+            <strong style="color:#ffb020;">Volume-Confirmed Gap (NQ/YM/ES):</strong> 6/7 scorecard checks pass on all
+            three symbols. Blocked only by Deflated Sharpe Ratio (28-40% probability of genuine skill after
+            correcting for the 43 strategy variations tested to find this one) - large sample (113-134 trades),
+            survives real costs, but not yet statistically distinguishable from a lucky find.<br><br>
+            <strong style="color:#c86bff;">Pairs Trading (NQ/ES, NQ/YM, ES/YM):</strong> Highest Deflated Sharpe
+            Ratio in the project (65-71%) - the most statistically convincing signal found so far. Blocked by
+            small sample size (39 trades) and drawdown, not by the underlying edge itself.<br><br>
+            <strong style="color:#ff5c5c;">Unfiltered Gap Continuation:</strong> Now FAILS decisively (DSR 0.1%)
+            once honestly re-scored against all 43 tested variations - retired as a live-tracking priority in
+            favor of its volume-confirmed refinement.<br><br>
+            <strong style="color:#ff5c5c;">Bottom line:</strong> Nothing currently passes all 7 checks. No
+            strategy is validated for real capital. Deflated Sharpe Ratio - which corrects for the number of
+            strategies tried before finding these - is the honest reason why: statistical confidence requires
+            more real trades, which only time can provide.
+        </div>
     </div>
 
     <div class="grid">
