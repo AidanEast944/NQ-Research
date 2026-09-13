@@ -1249,3 +1249,20 @@ definitions.
   are structurally harder to validate than daily ones - worth remembering if extending to CPI
   (with verified dates) or FOMC (8x/year) in the future, since combining multiple LOW-frequency
   event types could eventually reach a meaningful combined sample faster than any single type.
+
+## Entry 44: Orphaned Finding Logged - Time-of-Day Scan (Fade Strategy)
+- Process note: this script (src/research/time_of_day_scan.py) was built and run months ago but
+  never logged in research_log.md - caught during an external audit of proposed "new" research
+  directions, which correctly identified this as an accuracy gap in how prior findings were being
+  described to the user (mischaracterized as testing breakout when it actually tested fade).
+- Hypothesis: does the Prior Day Fade signal perform better at some entry time other than 8:30?
+- Method: swept entry_time from 08:30 through 15:30 (11 time slots), same fade logic (30/60
+  stop/target) at each, using the current NQ extended archive.
+- Result: no time slot shows a robust, consistent edge. Best result was at 10:00 with plus 330
+  total points; worst was at 13:00 with minus 690 total points, across similar sample sizes at
+  each time. No coherent pattern across adjacent times, consistent with noise rather than a real
+  time-of-day effect. Matches the original run of this script months ago.
+- Verdict: FAIL, no effect found. 8:30 is not uniquely disadvantaged for fade, and no other time
+  is uniquely better either - confirms 8:30 was not accidentally a suboptimal choice.
+- Reasoning: closes a real documentation gap. Also a reminder to verify prior findings against
+  actual code and logs before presenting them as either already tested or novel.
