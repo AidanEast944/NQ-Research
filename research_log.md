@@ -1306,3 +1306,21 @@ definitions.
   paperwork) that YM's live status was justified. Good example of "the log has no record of
   this" being worth investigating rather than just backfilling - in this case, investigation
   confirmed the underlying strategy was fine, which is itself a useful, positive finding.
+
+## Entry 47: Edge Decay Monitoring Added (edge_decay_check.py)
+- Addressed a real gap: existing validation (scorecard, walk-forward, DSR) checks historical
+  data once, with no mechanism to detect a currently-passing strategy quietly weakening over
+  time as the market competes the edge away.
+- Built check_edge_decay(): compares a strategy's most recent N trades (default 30) against its
+  full historical expectancy, flagging STABLE / WATCH / WARNING based on the size of the drop.
+  Meant to be re-run monthly as part of the regular check-in routine, watching the TREND across
+  repeated checks rather than a single snapshot.
+- First real run (2026-09-12): NQ and YM volume-confirmed gap both STABLE (+0.6%, +11.4% recent
+  vs full history). ES flagged WATCH (-24.5%, recent win rate 40.0% vs 42.2% full history) - not
+  alarming yet, but a real, early signal worth tracking going forward. All three pairs
+  strategies correctly returned INSUFFICIENT_DATA (37-39 total trades, need 50+) rather than a
+  forced, unreliable verdict on too small a recent sample.
+- Reasoning: markets are adversarial and competitive - a real edge, if genuinely exploitable, is
+  likely to attract more attention over time and could shrink even after passing validation.
+  This tool doesn't replace the existing validation checks, it adds ongoing monitoring for a
+  risk none of them were designed to catch.
