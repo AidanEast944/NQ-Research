@@ -25,6 +25,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from datetime import datetime
+import plotly.graph_objects as go
 import portfolio_analytics as pa
 
 STARTING_BALANCE = 10000
@@ -274,15 +275,17 @@ def build_equity_curve():
             state = json.load(f)
         return state.get("trade_history", [])
 
-    def curve(trades, default_point_value):
+    def curve_with_dates(trades, default_point_value):
         balance = STARTING_BALANCE
         balances = [balance]
+        dates = ["Start"]
         for t in trades:
             points = t.get("points_result", 0)
             point_value = t.get("point_value_used", default_point_value)
             balance += points * point_value
             balances.append(balance)
-        return balances
+            dates.append(t.get("entry_date", t.get("date", "")))
+        return balances, dates
 
     tracks = [
         ("data/gap_paper_account.json", "GAP (unfiltered)", "#ffb020", 2),
@@ -292,38 +295,45 @@ def build_equity_curve():
         ("data/pairs_paper_account.json", "PAIRS BOOK (all 3)", "#c86bff", 2),
     ]
 
-    plt.style.use("dark_background")
-    fig, ax = plt.subplots(figsize=(11, 4.5), facecolor="#0a0e14")
-    ax.set_facecolor("#0a0e14")
-
+    fig = go.Figure()
     plotted = False
+
     for path, label, color, default_pv in tracks:
         trades = load_trades(path)
         if trades:
-            ax.plot(curve(trades, default_pv), color=color, linewidth=1.8, marker="o", markersize=3, label=label)
+            balances, dates = curve_with_dates(trades, default_pv)
+            fig.add_trace(go.Scatter(
+                x=list(range(len(balances))),
+                y=balances,
+                mode="lines+markers",
+                name=label,
+                line=dict(color=color, width=2),
+                marker=dict(size=5),
+                customdata=dates,
+                hovertemplate="<b>%{fullData.name}</b><br>Trade #%{x}<br>Balance: $%{y:,.2f}<br>Date: %{customdata}<extra></extra>"
+            ))
             plotted = True
 
-    ax.axhline(y=STARTING_BALANCE, color="#555b66", linestyle="--", linewidth=1)
-    ax.set_xlabel("TRADE #", color="#8b909c", fontsize=9, fontfamily="monospace")
-    ax.set_ylabel("BALANCE ($)", color="#8b909c", fontsize=9, fontfamily="monospace")
-    ax.tick_params(colors="#8b909c", labelsize=8)
-    for spine in ax.spines.values():
-        spine.set_color("#2a2e39")
-    ax.grid(True, alpha=0.15, color="#8b909c")
-    if plotted:
-        ax.legend(facecolor="#131722", edgecolor="#2a2e39", labelcolor="#e6e9ef", fontsize=8)
-    else:
-        ax.text(0.5, 0.5, "No live trades yet", color="#6b7280", fontsize=12,
-                ha="center", va="center", transform=ax.transAxes)
-    plt.tight_layout()
+    fig.add_hline(y=STARTING_BALANCE, line_dash="dash", line_color="#555b66", line_width=1)
 
-    os.makedirs("results", exist_ok=True)
-    img_path = "results/equity_curve.png"
-    plt.savefig(img_path, dpi=140, facecolor="#0a0e14")
-    plt.close()
+    fig.update_layout(
+        paper_bgcolor="#0a0e14",
+        plot_bgcolor="#0a0e14",
+        font=dict(color="#8b909c", family="SF Mono, Menlo, monospace", size=11),
+        xaxis=dict(title="TRADE #", gridcolor="#2a2e39", zerolinecolor="#2a2e39"),
+        yaxis=dict(title="BALANCE ($)", gridcolor="#2a2e39", zerolinecolor="#2a2e39"),
+        legend=dict(bgcolor="#131722", bordercolor="#2a2e39", borderwidth=1, font=dict(color="#e6e9ef")),
+        margin=dict(l=60, r=20, t=20, b=50),
+        height=420,
+        hovermode="x unified",
+    )
 
-    with open(img_path, "rb") as f:
-        return base64.b64encode(f.read()).decode("utf-8")
+    if not plotted:
+        fig.add_annotation(text="No live trades yet", showarrow=False,
+                            font=dict(color="#6b7280", size=14),
+                            xref="paper", yref="paper", x=0.5, y=0.5)
+
+    return fig.to_html(full_html=False, include_plotlyjs=False, config={"displayModeBar": False})
 
 
 def build_combined_equity_curve():
@@ -331,39 +341,59 @@ def build_combined_equity_curve():
     book's combined balance over calendar time, instead of one line per strategy (Entry 33)."""
     curve = pa.combined_equity_curve()
     balances = [b for _, b in curve]
-
-    plt.style.use("dark_background")
-    fig, ax = plt.subplots(figsize=(11, 3.5), facecolor="#0a0e14")
-    ax.set_facecolor("#0a0e14")
+    dates = [d for d, _ in curve]
 
     starting = STARTING_BALANCE * len(pa.BROKER_ACCOUNTS)
+
+    fig = go.Figure()
+
     if len(balances) > 1:
-        ax.plot(balances, color="#00e5a0", linewidth=2, marker="o", markersize=3)
-        ax.fill_between(range(len(balances)), balances, starting, color="#00e5a0", alpha=0.08)
+        x_vals = list(range(len(balances)))
+
+        # Starting-balance reference line, added as a real trace so we can fill against it
+        fig.add_trace(go.Scatter(
+            x=x_vals,
+            y=[starting] * len(balances),
+            mode="lines",
+            line=dict(color="#555b66", width=1, dash="dash"),
+            hoverinfo="skip",
+            showlegend=False
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=x_vals,
+            y=balances,
+            mode="lines+markers",
+            line=dict(color="#00e5a0", width=2),
+            marker=dict(size=5),
+            fill="tonexty",
+            fillcolor="rgba(0, 229, 160, 0.08)",
+            customdata=dates,
+            hovertemplate="Trade #%{x}<br>Combined Balance: $%{y:,.2f}<br>Date: %{customdata}<extra></extra>",
+            showlegend=False
+        ))
     else:
-        ax.text(0.5, 0.5, "No live trades yet across any strategy", color="#6b7280", fontsize=12,
-                ha="center", va="center", transform=ax.transAxes)
+        fig.add_annotation(text="No live trades yet across any strategy", showarrow=False,
+                            font=dict(color="#6b7280", size=14),
+                            xref="paper", yref="paper", x=0.5, y=0.5)
 
-    ax.axhline(y=starting, color="#555b66", linestyle="--", linewidth=1)
-    ax.set_xlabel("TRADE # (combined, calendar order across all strategies)", color="#8b909c", fontsize=9, fontfamily="monospace")
-    ax.set_ylabel("COMBINED BALANCE ($)", color="#8b909c", fontsize=9, fontfamily="monospace")
-    ax.tick_params(colors="#8b909c", labelsize=8)
-    for spine in ax.spines.values():
-        spine.set_color("#2a2e39")
-    ax.grid(True, alpha=0.15, color="#8b909c")
-    plt.tight_layout()
+    fig.update_layout(
+        paper_bgcolor="#0a0e14",
+        plot_bgcolor="#0a0e14",
+        font=dict(color="#8b909c", family="SF Mono, Menlo, monospace", size=11),
+        xaxis=dict(title="TRADE # (combined, calendar order across all strategies)",
+                   gridcolor="#2a2e39", zerolinecolor="#2a2e39"),
+        yaxis=dict(title="COMBINED BALANCE ($)", gridcolor="#2a2e39", zerolinecolor="#2a2e39"),
+        margin=dict(l=60, r=20, t=20, b=50),
+        height=350,
+        hovermode="x unified",
+    )
 
-    os.makedirs("results", exist_ok=True)
-    img_path = "results/combined_equity_curve.png"
-    plt.savefig(img_path, dpi=140, facecolor="#0a0e14")
-    plt.close()
-
-    with open(img_path, "rb") as f:
-        return base64.b64encode(f.read()).decode("utf-8")
+    return fig.to_html(full_html=False, include_plotlyjs=False, config={"displayModeBar": False})
 
 
-equity_curve_b64 = build_equity_curve()
-combined_equity_curve_b64 = build_combined_equity_curve()
+equity_curve_html = build_equity_curve()
+combined_equity_curve_html = build_combined_equity_curve()
 
 portfolio_panels = [combined_book_panel(), open_risk_panel()]
 
@@ -528,6 +558,7 @@ html = f"""
     .readiness-count {{ color: #cfd3dc; text-align: right; font-weight: 600; }}
     .readiness-eta {{ color: #8b909c; font-size: 10px; }}
 </style>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 </head>
 <body>
     <div class="header">
@@ -561,7 +592,7 @@ html = f"""
 
     <div class="chart-panel" style="margin-bottom: 20px;">
         <div class="chart-title">PORTFOLIO — COMBINED EQUITY CURVE (ALL STRATEGIES, ONE BOOK)</div>
-        <img src="data:image/png;base64,{combined_equity_curve_b64}" />
+        {combined_equity_curve_html}
     </div>
 
     {readiness_panel()}
@@ -573,7 +604,7 @@ html = f"""
 
     <div class="chart-panel">
         <div class="chart-title">EQUITY CURVE — LIVE PAPER / FORWARD ACCOUNTS (PER STRATEGY)</div>
-        <img src="data:image/png;base64,{equity_curve_b64}" />
+        {equity_curve_html}
     </div>
 </body>
 </html>
