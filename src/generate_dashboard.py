@@ -324,7 +324,6 @@ def build_equity_curve():
         yaxis=dict(title="BALANCE ($)", gridcolor="#2a2e39", zerolinecolor="#2a2e39"),
         legend=dict(bgcolor="#131722", bordercolor="#2a2e39", borderwidth=1, font=dict(color="#e6e9ef")),
         margin=dict(l=60, r=20, t=20, b=50),
-        height=420,
         hovermode="x unified",
     )
 
@@ -333,7 +332,8 @@ def build_equity_curve():
                             font=dict(color="#6b7280", size=14),
                             xref="paper", yref="paper", x=0.5, y=0.5)
 
-    return fig.to_html(full_html=False, include_plotlyjs=False, config={"displayModeBar": False})
+    return fig.to_html(full_html=False, include_plotlyjs=False,
+                        config={"displayModeBar": False, "responsive": True})
 
 
 def build_combined_equity_curve():
