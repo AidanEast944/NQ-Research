@@ -1352,3 +1352,53 @@ definitions.
   data this project doesn't have access to. This entry documents the best available proxy
   evidence and explicit reasoning, to be revisited and updated as more data accumulates rather
   than treated as a final answer.
+
+## Entry 49: Fixed trial_count.py's Inverted "Conservative Floor" Logic
+- Found via external audit (2026-09-13/15): trial_count.py counted only numbered research_log.md
+  entry headers and called that a "conservative floor" for DSR's num_trials. That framing was
+  backwards - DSR's benchmark (expected best Sharpe by chance) GROWS with num_trials, so
+  UNDERcounting trials makes the benchmark easier to beat, making DSR look BETTER than it should,
+  not more skeptical. Several entries collapse many real trials into one (an ATR-multiplier
+  sweep, a 3-way volume-threshold sweep, regime_filter_test.py's two-variant comparison) -
+  counting entry headers alone silently hid those.
+- Fix: added a second, independent count - actual run_scorecard() call sites in
+  src/research/*.py, sweep-loop-aware (a call inside a 3-value parameter sweep counts as 3
+  trials, not 1), computed via static AST parsing. num_trials is now the MAX of this and the old
+  entry-header count, never either alone, since both undercount in different directions.
+- Result: as of this fix, num_trials is UNCHANGED (48 either way - the entry-header count still
+  happens to be larger in this snapshot, since most entries didn't come from a run_scorecard()
+  sweep). No currently-reported DSR number changes. The fix is structural, not retroactive: before
+  this, a future large parameter sweep would have stayed invisibly capped at "however many log
+  entries exist" no matter how many trials it actually ran. Now it correctly pushes num_trials
+  (and the DSR bar) up. Re-check trial_count.py's output after any future large sweep.
+- Verdict: methodology fix, not a strategy finding - no change to any strategy's tier or verdict.
+- Reasoning: DSR is only as honest as num_trials. A "conservative" proxy that quietly biases
+  toward LESS skepticism is worse than no automation at all, since it looks rigorous while
+  understating the true multiple-testing correction. Fixed before trusting any DSR number for a
+  real-capital decision.
+
+## Entry 50: Live-Trading Default-Closed Gate (live_gate.py)
+- Structural fix for the root cause behind Entry 35 (Fade traded live for ~3 weeks after already
+  failing its own original backtest): Trend had a STRATEGY_RETIRED guard, Fade never got one -
+  two independent hand-written booleans in two different files, easy for one to be forgotten for
+  a new script.
+- Added src/live_gate.py: a single shared registry (LIVE_STRATEGIES) that every *_forward_check.py
+  script must be explicitly listed in, with a PASS/WATCH verdict, to open new positions. Anything
+  not listed - a brand-new script nobody added yet, a strategy removed on retirement - is CLOSED
+  by default, not open by default. This only gates new entries; existing open positions are still
+  managed/closed normally by each script's own resolve logic regardless of this gate.
+- Wired into the 6 live scripts that had no guard at all: gap_forward_check.py,
+  volume_confirmed_gap_{forward_check,es_forward_check,ym_forward_check}.py,
+  pairs_forward_check.py, generic_pairs_forward_check.py. Verified via static AST analysis that
+  the gate check precedes every broker.place_order() call in all 6 files (no live run against
+  real market state was performed as part of this change, to avoid any unintended side effect on
+  paper-trading state files - verification was structural/static only). trend_forward_daily.py
+  and fade_paper_check.py keep their existing, already-correct STRATEGY_RETIRED guards unchanged.
+- Current registry mirrors exactly what was already live before this change (all 7
+  strategies - gap_unfiltered, volume_confirmed_gap_{nq,es,ym}, pairs_{nq_es,nq_ym,es_ym} -
+  registered as WATCH) - this is a no-op for today's behavior, purely a structural safeguard for
+  the future.
+- Verdict: infrastructure fix, no change to any strategy's live status today.
+- Reasoning: makes the Entry 35 class of bug structurally impossible going forward rather than
+  something that has to be caught by audit - a new live script that is never explicitly promoted
+  in live_gate.py trades nothing, instead of trading freely until someone happens to check.

@@ -4,6 +4,7 @@ import pandas as pd
 from datetime import date
 from paper_broker import PaperBroker
 from risk_limits import check_trade_allowed
+from live_gate import gate_new_entry
 
 MIN_GAP_POINTS = 30
 STOP_POINTS = 40
@@ -74,6 +75,11 @@ signal = "LONG" if gap_points > 0 else "SHORT"
 entry_price = open_price
 stop_price = entry_price - STOP_POINTS if signal == "LONG" else entry_price + STOP_POINTS
 target_price = entry_price + TARGET_POINTS if signal == "LONG" else entry_price - TARGET_POINTS
+
+# --- LIVE GATE: default-closed, must be explicitly registered in live_gate.py (2026-09-15) ---
+if not gate_new_entry("gap_unfiltered", label="Gap Unfiltered"):
+    sys.exit()
+# --- END LIVE GATE ---
 
 # --- RISK CIRCUIT BREAKER CHECK, using the REAL current account balance ---
 proposed_risk_dollars = STOP_POINTS * POINT_VALUE

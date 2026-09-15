@@ -7,6 +7,7 @@ from datetime import date
 from paper_broker import PaperBroker
 from position_sizing import fixed_fractional_size
 import risk_limits
+from live_gate import gate_new_entry
 
 LOOKBACK = 20
 ENTRY_Z = 2.0
@@ -26,7 +27,7 @@ RISK_PERCENT = risk_limits.MAX_RISK_PER_TRADE_PCT / 2  # half the hard cap, as a
 
 
 def run_pairs_check(symbol_a, symbol_b, state_file, label, tag_a, tag_b,
-                     point_value_a, point_value_b, avg_loss_per_unit):
+                     point_value_a, point_value_b, avg_loss_per_unit, strategy_key):
     """tag_a/tag_b (e.g. 'MNQ (NQ/YM)') uniquely identify this pair's legs in the SHARED
     PAIRS_ACCOUNT_FILE, since NQ/YM and ES/YM (and pairs_forward_check.py's NQ/ES) can all have an
     open MNQ or MES leg on the same day - a plain symbol like 'MNQ' would collide and risk closing
@@ -84,6 +85,12 @@ def run_pairs_check(symbol_a, symbol_b, state_file, label, tag_a, tag_b,
 
     if state["position"] is None:
         if abs(current_z) > ENTRY_Z:
+            # --- LIVE GATE: default-closed, must be explicitly registered in live_gate.py (2026-09-15) ---
+            if not gate_new_entry(strategy_key, label=label):
+                save_state(state)
+                return
+            # --- END LIVE GATE ---
+
             direction_a = "SHORT" if current_z > ENTRY_Z else "LONG"
             direction_b = "LONG" if direction_a == "SHORT" else "SHORT"
 
@@ -202,7 +209,9 @@ def run_pairs_check(symbol_a, symbol_b, state_file, label, tag_a, tag_b,
 # taken directly from Entry 23's backtest (research_log.md).
 run_pairs_check("NQ=F", "YM=F", "data/pairs_nqym_forward_state.json", "NQ/YM",
                 tag_a="MNQ (NQ/YM)", tag_b="MYM (NQ/YM)",
-                point_value_a=2.0, point_value_b=0.5, avg_loss_per_unit=981.80)
+                point_value_a=2.0, point_value_b=0.5, avg_loss_per_unit=981.80,
+                strategy_key="pairs_nq_ym")
 run_pairs_check("ES=F", "YM=F", "data/pairs_esym_forward_state.json", "ES/YM",
                 tag_a="MES (ES/YM)", tag_b="MYM (ES/YM)",
-                point_value_a=5.0, point_value_b=0.5, avg_loss_per_unit=324.92)
+                point_value_a=5.0, point_value_b=0.5, avg_loss_per_unit=324.92,
+                strategy_key="pairs_es_ym")

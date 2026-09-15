@@ -7,6 +7,7 @@ from datetime import date
 from paper_broker import PaperBroker
 from position_sizing import fixed_fractional_size
 import risk_limits
+from live_gate import gate_new_entry
 
 LOOKBACK = 20
 ENTRY_Z = 2.0
@@ -95,6 +96,12 @@ broker = PaperBroker(starting_balance=PAIRS_STARTING_BALANCE, state_file=PAIRS_A
 
 if state["position"] is None:
     if abs(current_z) > ENTRY_Z:
+        # --- LIVE GATE: default-closed, must be explicitly registered in live_gate.py (2026-09-15) ---
+        if not gate_new_entry("pairs_nq_es", label="NQ/ES"):
+            save_state(state)
+            sys.exit()
+        # --- END LIVE GATE ---
+
         direction_nq = "SHORT" if current_z > ENTRY_Z else "LONG"
         direction_es = "LONG" if direction_nq == "SHORT" else "SHORT"
 

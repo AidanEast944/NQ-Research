@@ -51,7 +51,7 @@ if not trials:
 
 print(f"\n{'='*70}")
 print(f"REAL TRIAL COUNT FROM RECOMPUTABLE STRATEGIES: {len(trials)}")
-print(f"ACTUAL num_trials USED FOR DSR (from research_log.md, the true project-wide count): {count_research_trials()}")
+print(f"ACTUAL num_trials USED FOR DSR (max of research_log.md entries and counted scorecard sweeps - see trial_count.py): {count_research_trials()}")
 print(f"{'='*70}")
 print("NOTE: This project has tested 40+ strategy variations total across its history.")
 print("Many early/superseded scripts are no longer directly recomputable. This DSR check")

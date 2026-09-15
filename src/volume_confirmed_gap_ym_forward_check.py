@@ -16,6 +16,7 @@ import pandas as pd
 from datetime import date
 from paper_broker import PaperBroker
 from risk_limits import check_trade_allowed
+from live_gate import gate_new_entry
 
 MIN_GAP_POINTS = 30
 STOP_POINTS = 40
@@ -95,6 +96,11 @@ signal = "LONG" if gap_points > 0 else "SHORT"
 entry_price = open_price
 stop_price = entry_price - STOP_POINTS if signal == "LONG" else entry_price + STOP_POINTS
 target_price = entry_price + TARGET_POINTS if signal == "LONG" else entry_price - TARGET_POINTS
+
+# --- LIVE GATE: default-closed, must be explicitly registered in live_gate.py (2026-09-15) ---
+if not gate_new_entry("volume_confirmed_gap_ym", label="Volume-Confirmed Gap YM"):
+    sys.exit()
+# --- END LIVE GATE ---
 
 for label, cfg in THRESHOLDS.items():
     print(f"\n--- [YM] Threshold {label} ---")
