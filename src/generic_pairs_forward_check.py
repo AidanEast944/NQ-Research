@@ -21,7 +21,10 @@ PAIRS_ACCOUNT_FILE = "data/pairs_paper_account.json"          # shared across al
 PAIRS_RISK_STATE_FILE = "data/pairs_risk_limits_state.json"   # shared across all 3 pairs scripts,
                                                                 # kept separate from gap_forward_check.py's
                                                                 # risk_limits_state.json
-PAIRS_STARTING_BALANCE = 10000  # placeholder paper-trading capital, same assumption as pairs_forward_check.py
+PAIRS_STARTING_BALANCE = 100000  # bumped from 10000 on 2026-09-23 (research_log.md Entry 51) -
+                                  # see pairs_forward_check.py's PAIRS_STARTING_BALANCE comment for
+                                  # the full explanation. Must stay equal to that constant - both
+                                  # scripts share PAIRS_ACCOUNT_FILE as one paper book.
 RISK_PERCENT = risk_limits.MAX_RISK_PER_TRADE_PCT / 2  # half the hard cap, as a buffer against a
                                                           # single loss exceeding the historical average
 
@@ -95,9 +98,22 @@ def run_pairs_check(symbol_a, symbol_b, state_file, label, tag_a, tag_b,
             direction_b = "LONG" if direction_a == "SHORT" else "SHORT"
 
             hedge_ratio = (current_a_price * point_value_a) / (current_b_price * point_value_b)
-            contracts_a = max(1, round(fixed_fractional_size(
+
+            # --- POSITION SIZING FIX 2026-09-23 (research_log.md Entry 51) - see
+            # pairs_forward_check.py's matching comment for the full explanation. ---
+            raw_size_a = fixed_fractional_size(
                 PAIRS_STARTING_BALANCE, RISK_PERCENT, stop_points=1, point_value=avg_loss_per_unit
-            )))
+            )
+            contracts_a = int(raw_size_a)  # genuine floor, not round-to-nearest-with-min-1
+            if contracts_a < 1:
+                print(f"[{label}] z-score {current_z:.2f} would trigger an entry, but position "
+                      f"sizing yields {raw_size_a:.3f} contracts at ${PAIRS_STARTING_BALANCE:,.0f} "
+                      f"balance / {RISK_PERCENT:.2f}% risk - skipping rather than forcing a "
+                      f"1-contract minimum that would only get blocked by the risk cap anyway.")
+                save_state(state)
+                return
+            # --- END POSITION SIZING FIX ---
+
             contracts_b = max(1, round(contracts_a * hedge_ratio))
 
             # --- RISK CIRCUIT BREAKER CHECK, using the pairs book's own paper balance/state ---

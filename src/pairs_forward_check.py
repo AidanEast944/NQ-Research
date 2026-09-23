@@ -27,8 +27,17 @@ PAIRS_RISK_STATE_FILE = "data/pairs_risk_limits_state.json"  # shared across all
                                                                # risk_limits_state.json so the two
                                                                # strategy families' drawdown/halt
                                                                # tracking don't get mixed together.
-PAIRS_STARTING_BALANCE = 10000  # placeholder paper-trading capital - update if you want a
-                                 # different assumed size for the pairs book specifically.
+PAIRS_STARTING_BALANCE = 100000  # bumped from 10000 on 2026-09-23 (research_log.md Entry 51) -
+                                  # at $10,000, even a single micro contract's risk (see
+                                  # AVG_LOSS_PER_UNIT_DOLLARS below) already exceeded
+                                  # risk_limits.MAX_RISK_PER_TRADE_PCT (2%), so every proposed
+                                  # entry was blocked before it could open. $100,000 is the
+                                  # smallest clean number that lets all three pairs (NQ/ES, NQ/YM,
+                                  # ES/YM - this constant is shared across pairs_forward_check.py
+                                  # and generic_pairs_forward_check.py) size at least 1 contract
+                                  # within RISK_PERCENT below, comfortably under the 2% hard cap.
+                                  # Still a placeholder paper-trading assumption - update if you
+                                  # want a different assumed size for the pairs book specifically.
 # Average losing-trade size at 1x leg-A-contract-equivalent sizing, from Entry 23's real
 # backtest (39 trades) - used as the "risk per contract" basis for position sizing below. This is
 # the historical AVERAGE loss, not the worst case, so RISK_PERCENT is set to half of
@@ -106,9 +115,30 @@ if state["position"] is None:
         direction_es = "LONG" if direction_nq == "SHORT" else "SHORT"
 
         hedge_ratio = (current_nq_price * POINT_VALUE_NQ) / (current_es_price * POINT_VALUE_ES)
-        contracts_nq = max(1, round(fixed_fractional_size(
+
+        # --- POSITION SIZING FIX 2026-09-23 (research_log.md Entry 51) ---
+        # This used to be `max(1, round(fixed_fractional_size(...)))`, which forced a 1-contract
+        # floor whenever the ideal size rounded to 0. But fixed_fractional_size()'s own docstring
+        # says to round DOWN for real trading, since you can't buy partial contracts - and for
+        # this pair, 1 forced contract's risk (contracts * AVG_LOSS_PER_UNIT_DOLLARS) could itself
+        # exceed risk_limits.MAX_RISK_PER_TRADE_PCT, so the circuit breaker blocked every single
+        # entry, silently, no matter how strong the z-score signal was. Genuinely flooring to 0 and
+        # skipping the trade (instead of forcing 1 and getting blocked downstream) makes that
+        # failure visible and correct - see the PAIRS_STARTING_BALANCE comment above for the other
+        # half of this fix, which is what actually lets a real trade open again.
+        raw_size_nq = fixed_fractional_size(
             PAIRS_STARTING_BALANCE, RISK_PERCENT, stop_points=1, point_value=AVG_LOSS_PER_UNIT_DOLLARS
-        )))
+        )
+        contracts_nq = int(raw_size_nq)  # genuine floor, not round-to-nearest-with-min-1
+        if contracts_nq < 1:
+            print(f"NQ/ES: z-score {current_z:.2f} would trigger an entry, but position sizing "
+                  f"yields {raw_size_nq:.3f} contracts at ${PAIRS_STARTING_BALANCE:,.0f} balance / "
+                  f"{RISK_PERCENT:.2f}% risk - skipping rather than forcing a 1-contract minimum "
+                  f"that would only get blocked by the risk cap anyway.")
+            save_state(state)
+            sys.exit()
+        # --- END POSITION SIZING FIX ---
+
         contracts_es = max(1, round(contracts_nq * hedge_ratio))
 
         # --- RISK CIRCUIT BREAKER CHECK, using the pairs book's own paper balance/state ---

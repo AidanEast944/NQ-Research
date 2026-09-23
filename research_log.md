@@ -1402,3 +1402,42 @@ definitions.
 - Reasoning: makes the Entry 35 class of bug structurally impossible going forward rather than
   something that has to be caught by audit - a new live script that is never explicitly promoted
   in live_gate.py trades nothing, instead of trading freely until someone happens to check.
+
+## Entry 51: Pairs Position-Sizing/Risk-Cap Conflict Fix
+- Bug found while checking on the open ES/YM position (2026-09-23): all three pairs strategies
+  (NQ/ES, NQ/YM, ES/YM) had been structurally unable to open ANY new position since the Sept 10
+  risk-wiring commit (Entry 24), despite all three still showing WATCH on the dashboard and
+  repeatedly triggering entry-worthy z-scores (NQ/ES up to 3.29, per pairsforward_log.txt).
+- Root cause: `max(1, round(fixed_fractional_size(...)))` at the position-sizing call site forced
+  a 1-contract minimum whenever the ideal fractional size rounded to 0 - but each pair's fixed
+  AVG_LOSS_PER_UNIT_DOLLARS basis was large enough relative to the old $10,000
+  PAIRS_STARTING_BALANCE that even 1 forced contract's implied risk exceeded
+  risk_limits.MAX_RISK_PER_TRADE_PCT (2%) on its own: NQ/ES worked out to 5.15%, NQ/YM to 9.82%,
+  ES/YM to 3.25% - so risk_limits.check_trade_allowed() blocked every single proposed entry,
+  silently, no matter how strong the signal. Two independently reasonable safety mechanisms (a
+  round-to-at-least-1-contract floor, and a hard per-trade risk cap) combined to make an entire
+  strategy category permanently untradeable.
+- Fix, in src/pairs_forward_check.py and src/generic_pairs_forward_check.py:
+  1. Position sizing now genuinely floors to 0 and skips the trade for this run (clear log
+     message, no forced minimum) instead of rounding up to 1 and getting silently blocked
+     downstream - matches fixed_fractional_size()'s own docstring ("round down for real trading,
+     since you can't buy partial contracts").
+  2. PAIRS_STARTING_BALANCE raised from 10,000 to 100,000 (still a placeholder paper-trading
+     capital assumption, same as before - just no longer an unworkably small one). $100,000 is
+     the smallest clean number that lets all three pairs size at least 1 contract within
+     RISK_PERCENT (half the 2% cap), comfortably under the hard cap. Both files share this
+     constant since they share PAIRS_ACCOUNT_FILE as one paper book.
+- Verified via static math check against position_sizing.fixed_fractional_size() and
+  risk_limits.MAX_RISK_PER_TRADE_PCT directly (no live run against real market/state files, same
+  verification approach as Entry 50): at $100,000, NQ/ES sizes to 1 contract (0.51% risk), NQ/YM
+  to 1 contract (0.98% risk), ES/YM to 3 contracts (0.97% risk) - all comfortably pass the 2% cap,
+  versus 5.15%/9.82%/3.25% (all blocked) under the old $10,000 basis. Both edited files compile
+  cleanly (py_compile).
+- Verdict: infrastructure/bug fix, not a strategy finding - doesn't change any strategy's
+  backtested performance or scorecard verdict, only whether the live scripts can actually act on
+  a WATCH-verdict signal the way the scorecard already validated.
+- Reasoning: a risk cap that blocks 100% of a strategy's proposed trades isn't managing risk, it's
+  silently disabling the strategy while the dashboard still reports it as active/WATCH - worse
+  than an explicit retirement, since nothing flags it. Caught by manually checking on the aging
+  ES/YM position and finding pairsforward_log.txt/genericpairs_log.txt full of repeated "TRADE
+  BLOCKED BY RISK LIMITS" lines despite valid entry signals.
