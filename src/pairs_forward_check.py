@@ -27,7 +27,7 @@ PAIRS_RISK_STATE_FILE = "data/pairs_risk_limits_state.json"  # shared across all
                                                                # risk_limits_state.json so the two
                                                                # strategy families' drawdown/halt
                                                                # tracking don't get mixed together.
-PAIRS_STARTING_BALANCE = 100000  # bumped from 10000 on 2026-09-23 (research_log.md Entry 51) -
+PAIRS_STARTING_BALANCE = 10000
                                   # at $10,000, even a single micro contract's risk (see
                                   # AVG_LOSS_PER_UNIT_DOLLARS below) already exceeded
                                   # risk_limits.MAX_RISK_PER_TRADE_PCT (2%), so every proposed

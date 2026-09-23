@@ -21,7 +21,7 @@ PAIRS_ACCOUNT_FILE = "data/pairs_paper_account.json"          # shared across al
 PAIRS_RISK_STATE_FILE = "data/pairs_risk_limits_state.json"   # shared across all 3 pairs scripts,
                                                                 # kept separate from gap_forward_check.py's
                                                                 # risk_limits_state.json
-PAIRS_STARTING_BALANCE = 100000  # bumped from 10000 on 2026-09-23 (research_log.md Entry 51) -
+PAIRS_STARTING_BALANCE = 10000
                                   # see pairs_forward_check.py's PAIRS_STARTING_BALANCE comment for
                                   # the full explanation. Must stay equal to that constant - both
                                   # scripts share PAIRS_ACCOUNT_FILE as one paper book.

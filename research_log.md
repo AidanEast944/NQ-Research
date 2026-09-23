@@ -1441,3 +1441,29 @@ definitions.
   than an explicit retirement, since nothing flags it. Caught by manually checking on the aging
   ES/YM position and finding pairsforward_log.txt/genericpairs_log.txt full of repeated "TRADE
   BLOCKED BY RISK LIMITS" lines despite valid entry signals.
+
+## Entry 52: Reverted Entry 51's Balance Inflation - Real Finding at True $10,000 Sizing
+- Entry 51 fixed a genuine bug (forced 1-contract minimum silently blocked every pairs trade
+  since the Sept 10 risk-wiring commit, since 1 contract's real risk exceeded the 2% cap at the
+  old $10,000 assumption). That diagnosis was correct.
+- However, Entry 51's chosen fix - raising PAIRS_STARTING_BALANCE 10,000 -> 100,000 - was
+  rejected on review. Raising the assumed balance doesn't reduce real risk; it changes the
+  denominator used to calculate risk percentage until the math permits a trade, which is a
+  different thing from confirming the trade is actually safe at the account size the user
+  wants to simulate. The user was explicit: they want $10,000, not $100,000.
+- Did the actual math by hand at true $10,000: AVG_LOSS_PER_UNIT_DOLLARS for NQ/ES is $514.89.
+  RISK_PERCENT is 1.0% (half the 2.0% hard cap). 1.0% of $10,000 = $100 risk budget. One real
+  contract's risk ($514.89) is over 5x that budget - not a rounding issue, a genuine structural
+  mismatch between this strategy's minimum tradeable unit and a $10,000 account's safe risk
+  allocation.
+- Reverted PAIRS_STARTING_BALANCE to 10,000 in both pairs_forward_check.py and
+  generic_pairs_forward_check.py. The correct, honest behavior at true $10,000 sizing is what
+  Entry 51's OTHER fix already does correctly: skip the trade with a clear log message rather
+  than force a doomed or artificially-permitted position.
+- Reasoning: a validation system that adjusts its own assumptions until a desired outcome
+  becomes possible is doing the opposite of what this project's entire methodology has been
+  built to prevent. The honest answer, at the size the user actually wants, may legitimately be
+  "these pairs strategies are undersized for $10,000 real capital, even though they show strong
+  DSR" - a real, useful finding about practical tradeability, not a bug to engineer around.
+  Worth revisiting only if the user explicitly decides a different real account size, as their
+  own deliberate choice - not as a default the code quietly picks for them.
