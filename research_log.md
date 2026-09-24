@@ -1467,3 +1467,22 @@ definitions.
   DSR" - a real, useful finding about practical tradeability, not a bug to engineer around.
   Worth revisiting only if the user explicitly decides a different real account size, as their
   own deliberate choice - not as a default the code quietly picks for them.
+
+## Entry 53: Second-Order Bug from Entry 51/52 - Saved Account Balance Survived the Code Revert
+- Entry 52 reverted PAIRS_STARTING_BALANCE from 100,000 back to 10,000 in the source code, but
+  this constant only applies when PaperBroker creates a brand-new account file. Since
+  data/pairs_paper_account.json already existed (created under Entry 51's $100,000 assumption),
+  it kept loading its OLD saved balance (100,000) regardless of what the code constant said -
+  the revert was incomplete.
+- Real consequence: on 2026-09-23, two real trades opened (NQ/ES: $514.89 proposed risk = 0.51%
+  of 100,000; NQ/YM: $981.80 proposed risk = 0.98% of 100,000) - both comfortably under the 2%
+  cap at the WRONG balance. At the intended true $10,000 balance, these same dollar risks would
+  be 5.15% and 9.82% - both would have been correctly blocked, matching what the log shows WAS
+  blocked earlier the same day before the stale $100,000 file let them through on a later check.
+- Decision: let the two already-open trades (NQ/ES, NQ/YM) resolve naturally at their current
+  sizing rather than force-close or reset mid-trade, which risks its own new problems. Reset the
+  actual saved account balance to 10,000 immediately after, before any further trades can open
+  under the same stale assumption.
+- Reasoning: reverting a hardcoded constant is not the same as reverting persisted state loaded
+  from that constant - a real, easy-to-miss category of bug worth remembering for any future
+  "STARTING_BALANCE"-style default embedded in a JSON state file rather than recomputed each run.
