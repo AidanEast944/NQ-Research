@@ -2512,3 +2512,78 @@ def get_correlation_breakdown_signals_from_archive(corr_threshold=0.5, corr_wind
                 cooldown_until = idx
 
     return pd.DataFrame(results)
+
+
+def get_vol_momentum_reversal_signals_from_archive(vol_lookback=10, momentum_lookback=5,
+                                                       stop_points=40, target_points=80,
+                                                       entry_time="08:30",
+                                                       data_folder="data/raw_nq_extended"):
+    """From src/research/pattern_scanner.py's bounded scan (research_log.md Entry 54): high
+    realized volatility + strong upward momentum predicted WEAKER forward returns than baseline
+    across 27 tested combinations, most consistently at vol_lookback=10, momentum_lookback=5,
+    forward_window=3. This builds that specific combination into a real, tradeable SHORT signal
+    with fixed stop/target - the diagnostic showed a real pattern in daily closes; this tests
+    whether it survives becoming an actual trade."""
+    files = glob.glob(os.path.join(data_folder, "*.csv"))
+    if not files:
+        raise FileNotFoundError(f"No archive files found in {data_folder}.")
+
+    all_days = [pd.read_csv(f, index_col="Datetime", parse_dates=True) for f in files]
+    history = pd.concat(all_days)
+    history = history[~history.index.duplicated(keep="first")]
+    history = history.sort_index()
+    history.index = pd.to_datetime(history.index, utc=True).tz_convert("America/New_York")
+    history["date"] = history.index.date
+
+    daily = history.groupby("date").agg(close=("Close", "last"), high=("High", "max"), low=("Low", "min"))
+    daily.index = pd.to_datetime(daily.index)
+    daily = daily.sort_index()
+    daily["range"] = daily["high"] - daily["low"]
+    daily["vol_avg"] = daily["range"].rolling(vol_lookback).mean()
+    daily["high_vol"] = daily["range"] > daily["vol_avg"]
+    daily["momentum"] = daily["close"].pct_change(momentum_lookback)
+    daily["strong_up_momentum"] = daily["momentum"] > daily["momentum"].rolling(vol_lookback).std()
+
+    daily["signal_day"] = (daily["high_vol"] & daily["strong_up_momentum"]).shift(1)
+    daily["prior_close"] = daily["close"].shift(1)
+
+    entry_t = pd.Timestamp(entry_time).time()
+    session_bars = history[
+        (history.index.time > entry_t) & (history.index.time <= pd.Timestamp("16:00").time())
+    ]
+
+    results = []
+    for day, is_signal in daily["signal_day"].items():
+        if not is_signal or pd.isna(is_signal):
+            continue
+
+        day_date = day.date()
+        open_bar = history[(history["date"] == day_date) & (history.index.time == entry_t)]
+        if open_bar.empty:
+            continue
+
+        entry_price = open_bar.iloc[0]["Open"]
+        stop_price = entry_price + stop_points
+        target_price = entry_price - target_points
+
+        day_bars = session_bars[session_bars["date"] == day_date]
+        exit_price = None
+        exit_reason = None
+        for _, bar in day_bars.iterrows():
+            if bar["High"] >= stop_price:
+                exit_price, exit_reason = stop_price, "stop"
+                break
+            elif bar["Low"] <= target_price:
+                exit_price, exit_reason = target_price, "target"
+                break
+
+        if exit_price is None:
+            exit_price = day_bars.iloc[-1]["Close"] if len(day_bars) > 0 else entry_price
+            exit_reason = "eod"
+
+        results.append({
+            "date": day_date, "signal": "SHORT",
+            "entry_price": entry_price, "exit_price": exit_price, "exit_reason": exit_reason
+        })
+
+    return pd.DataFrame(results)

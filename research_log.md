@@ -1486,3 +1486,25 @@ definitions.
 - Reasoning: reverting a hardcoded constant is not the same as reverting persisted state loaded
   from that constant - a real, easy-to-miss category of bug worth remembering for any future
   "STARTING_BALANCE"-style default embedded in a JSON state file rather than recomputed each run.
+
+## Entry 54: Vol+Momentum Reversal (NQ) - Discovered via Bounded Pattern Scanner, Promising 5/7
+- Built src/research/pattern_scanner.py: a bounded, transparent 27-combination scan (3 vol
+  lookbacks x 3 momentum lookbacks x 3 forward windows) checking whether high realized
+  volatility + strong upward momentum predicts forward returns. All 27 combinations counted
+  toward num_trials for any resulting strategy - this is NOT the automated "strategy discovery
+  engine" originally proposed (rejected as too dangerous for DSR/multiple-comparisons reasons);
+  this is a bounded, human-reviewed scan producing candidates for manual strategy-building.
+- Result: consistently NEGATIVE forward returns following high-vol+strong-momentum days across
+  all 27 combinations - the opposite of continuation, suggesting exhaustion/overextension.
+  Strongest, most consistent signal at vol_lookback=10, momentum_lookback=5, forward_window=3.
+- Built as a real SHORT strategy with 40/80 stop/target: 82 trades, PF 1.62 gross / 1.43 net of
+  costs, drawdown 4.8% of $10k, out-of-sample expectancy IMPROVED over in-sample ($41.44 vs
+  $20.74/trade). DSR 43.9% at num_trials=80 (52 prior + 27 scan combinations, using max()).
+  5/7 scorecard - fails only sample size (82 vs 100) and DSR (43.9% vs 95%).
+- Reasoning: first strategy discovered via systematic scanning (rather than a single hand-picked
+  hypothesis) to survive becoming a real, stopped/targeted trade without collapsing - unlike
+  Entry 11 (Wednesday effect) and Entry 15 (overnight reversion), which showed real diagnostic
+  patterns that failed once converted to actual trading rules. DSR (43.9%) is the 3rd-highest in
+  the project, behind only the pairs family. Genuinely promising WATCH candidate - not yet added
+  to live tracking given the sample size gap, but a strong case for continued attention as more
+  real trades accumulate.
