@@ -293,6 +293,7 @@ def build_equity_curve():
         ("data/volume_gap_1_5x_paper_account.json", "VOL-CONFIRMED 1.5x", "#2fa8ff", 2),
         ("data/fade_paper_account.json", "FADE", "#ff8fd6", 20),
         ("data/pairs_paper_account.json", "PAIRS BOOK (all 3)", "#c86bff", 2),
+        ("data/vol_momentum_reversal_paper_account.json", "VOL+MOMENTUM REVERSAL", "#ff5c5c", 2),
     ]
 
     fig = go.Figure()
@@ -409,6 +410,12 @@ panels.append(live_panel(
 panels.append(live_panel(
     "VOLUME-CONFIRMED GAP 1.5x // LIVE", "data/volume_gap_1_5x_paper_account.json", "#2fa8ff",
     note="Entry 27 Part 5 - honest out-of-time threshold - automated"
+
+))
+
+panels.append(live_panel(
+    "VOL+MOMENTUM REVERSAL // LIVE", "data/vol_momentum_reversal_paper_account.json", "#ff5c5c",
+    note="Entry 54 - discovered via bounded pattern scanner, 5/7 scorecard, DSR 43.9% - automated"
 ))
 panels.append(live_panel(
     "FADE (prior-day break) // RETIRED", "data/fade_paper_account.json", "#6b7280",
