@@ -32,6 +32,7 @@ LIVE_STRATEGIES = {
     "pairs_nq_es": {"verdict": "WATCH", "entry": 23},
     "pairs_nq_ym": {"verdict": "WATCH", "entry": 23},
     "pairs_es_ym": {"verdict": "WATCH", "entry": 23},
+     "vol_momentum_reversal_nq": {"verdict": "WATCH", "entry": 54},
 }
 
 _OPEN_VERDICTS = ("PASS", "WATCH")
