@@ -2587,3 +2587,75 @@ def get_vol_momentum_reversal_signals_from_archive(vol_lookback=10, momentum_loo
         })
 
     return pd.DataFrame(results)
+
+
+def get_low_volume_momentum_bounce_signals_from_archive(lookback=10, stop_points=40, target_points=80,
+                                                            entry_time="08:30",
+                                                            data_folder="data/raw_nq_extended"):
+    """From src/research/general_pattern_scanner.py's bounded 135-combination scan (research_log.md
+    Entry 55): low volume + downward momentum predicted a bounce (forward return meaningfully
+    ABOVE baseline) most consistently at lookback=10, forward_window=3 (43 observations, largest
+    sample among the top results, appeared consistently across multiple forward windows at this
+    lookback). Built as a real LONG signal with fixed stop/target."""
+    files = glob.glob(os.path.join(data_folder, "*.csv"))
+    if not files:
+        raise FileNotFoundError(f"No archive files found in {data_folder}.")
+
+    all_days = [pd.read_csv(f, index_col="Datetime", parse_dates=True) for f in files]
+    history = pd.concat(all_days)
+    history = history[~history.index.duplicated(keep="first")]
+    history = history.sort_index()
+    history.index = pd.to_datetime(history.index, utc=True).tz_convert("America/New_York")
+    history["date"] = history.index.date
+
+    daily = history.groupby("date").agg(close=("Close", "last"), high=("High", "max"),
+                                          low=("Low", "min"), volume=("Volume", "sum"))
+    daily.index = pd.to_datetime(daily.index)
+    daily = daily.sort_index()
+
+    daily["low_volume"] = daily["volume"] < daily["volume"].rolling(lookback).mean() * 0.7
+    daily["momentum"] = daily["close"].pct_change(lookback)
+    daily["momentum_down"] = daily["momentum"] < -daily["momentum"].rolling(lookback).std()
+
+    daily["signal_day"] = (daily["low_volume"] & daily["momentum_down"]).shift(1)
+
+    entry_t = pd.Timestamp(entry_time).time()
+    session_bars = history[
+        (history.index.time > entry_t) & (history.index.time <= pd.Timestamp("16:00").time())
+    ]
+
+    results = []
+    for day, is_signal in daily["signal_day"].items():
+        if not is_signal or pd.isna(is_signal):
+            continue
+
+        day_date = day.date()
+        open_bar = history[(history["date"] == day_date) & (history.index.time == entry_t)]
+        if open_bar.empty:
+            continue
+
+        entry_price = open_bar.iloc[0]["Open"]
+        stop_price = entry_price - stop_points
+        target_price = entry_price + target_points
+
+        day_bars = session_bars[session_bars["date"] == day_date]
+        exit_price = None
+        exit_reason = None
+        for _, bar in day_bars.iterrows():
+            if bar["Low"] <= stop_price:
+                exit_price, exit_reason = stop_price, "stop"
+                break
+            elif bar["High"] >= target_price:
+                exit_price, exit_reason = target_price, "target"
+                break
+
+        if exit_price is None:
+            exit_price = day_bars.iloc[-1]["Close"] if len(day_bars) > 0 else entry_price
+            exit_reason = "eod"
+
+        results.append({
+            "date": day_date, "signal": "LONG",
+            "entry_price": entry_price, "exit_price": exit_price, "exit_reason": exit_reason
+        })
+
+    return pd.DataFrame(results)

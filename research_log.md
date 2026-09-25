@@ -1508,3 +1508,23 @@ definitions.
   the project, behind only the pairs family. Genuinely promising WATCH candidate - not yet added
   to live tracking given the sample size gap, but a strong case for continued attention as more
   real trades accumulate.
+
+## Entry 55: General Pattern Scanner Built - One Result Confirmed, One Cleanly Rejected
+- Built src/research/general_pattern_scanner.py: a bounded, reusable scanner testing pairs of
+  6 features (high/low volatility, up/down momentum, high/low volume) across 3 lookbacks and 3
+  forward windows - 135 real combinations, all counted toward num_trials honestly.
+- Top result: "high_vol + low_volume" predicting meaningfully positive forward returns,
+  consistent across multiple lookback/forward-window combinations, but small samples (23-27 obs).
+- Second-strongest, larger-sample result: "low_volume + momentum_down" predicting a bounce
+  (positive forward return), most consistent at lookback=10, forward_window=3 (43 observations).
+- Built the second pattern as a real LONG strategy with 40/80 stop/target. Result: 40 trades
+  (down from 43 diagnostic observations - stricter data requirements for a real entry/exit),
+  PF 0.56 gross, out-of-sample expectancy $0.00 vs in-sample -$38.89, DSR 0.2% at num_trials=189
+  (54 prior + 135 scan combinations). 1/7 scorecard - clean, decisive FAIL.
+- Reasoning: same diagnostic-to-strategy gap seen in Entry 11 (Wednesday effect) and Entry 15
+  (overnight reversion) - a real-looking pattern in raw forward-return diagnostics did not
+  survive conversion into an actual stop/target trade. Two scans from the bounded scanner
+  approach have now produced opposite outcomes (Entry 54: survived and promising; this one:
+  cleanly rejected) - exactly the expected, healthy behavior of a real filtering process, not a
+  system that validates everything it finds. The "high_vol + low_volume" pattern remains
+  untested as a real strategy - worth building and checking before concluding anything about it.
