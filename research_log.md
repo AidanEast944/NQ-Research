@@ -1528,3 +1528,45 @@ definitions.
   cleanly rejected) - exactly the expected, healthy behavior of a real filtering process, not a
   system that validates everything it finds. The "high_vol + low_volume" pattern remains
   untested as a real strategy - worth building and checking before concluding anything about it.
+
+## Entry 56: Frequency vs. Trust Trade-off - Looser Volume Threshold Rejected, Signal Combination Confirmed Additive
+- **Motivation:** user asked for a strategy recommendation, built from this project's existing
+  research, that fires meaningfully more often than the currently-live strategies while staying
+  trustworthy - not a new hand-picked hypothesis, but an honest look at whether more frequency is
+  available from what's already been validated.
+- **Test 1 - the obvious lever (loosen Volume-Confirmed Gap's threshold from 1.2x to 1.0x):**
+  Entry 25's original 3-way sweep only ever ran quick gross-stats on the 1.0x/1.5x cuts, never the
+  full standardized scorecard (real per-instrument costs, walk-forward, honest DSR) that the 1.2x
+  cut got. Ran that missing check now (`check_volume_gap_1_0x_threshold.py`), same methodology as
+  the live numbers in `results/scorecard_2026-09-20.txt`:
+  - NQ: 177 trades (+32% vs 1.2x's 134), still 6/7, net PF 1.33 (vs 1.35) - roughly a wash.
+  - YM: 179 trades (+34% vs 1.2x's 134), but now **5/7 - net PF drops to 1.28, FAILS the 1.3 cost
+    bar it used to clear at 1.2x.**
+  - ES: 145 trades (+28% vs 1.2x's 113), still 6/7, net PF actually improved slightly (1.41 vs
+    1.34).
+  - All three legs' DSR got WORSE at the looser threshold (NQ 37.5%->13.2%, YM 31.1%->13.7%, ES
+    25.6%->30.7% - only ES improved) - more trades but a noisier per-trade edge, which is exactly
+    what DSR is designed to catch.
+  - **Verdict: REJECTED as a lever.** Loosening this specific filter doesn't buy more trustworthy
+    frequency - for 2 of 3 legs it's a net loss (YM literally starts failing a check it used to
+    pass), not a free upgrade. Firing more here means firing worse, not just firing more.
+- **Test 2 - combining independent signals instead of loosening one:** checked whether Entry 54's
+  Vol+Momentum Reversal (NQ) - a genuinely different mechanism (volatility/momentum exhaustion,
+  not gap-based) - actually adds new trading days or just re-fires the same days as the existing
+  Volume-Confirmed Gap NQ (1.2x) signal. Of VMR's 82 trade dates, only 21 overlap with the gap
+  signal's 134 dates - **61 of VMR's 82 trades (74%) happen on days the gap strategy wouldn't have
+  traded at all.** Running both together would cover 195 unique trading days vs. 134 for the gap
+  signal alone - a genuine ~46% increase in trading frequency from real diversification, not
+  double-counting the same underlying bet.
+- **Reasoning / recommendation:** the honest answer to "more frequency, still trustworthy" is not
+  a looser filter on an existing signal (tested, backfires) - it's adding a second, mechanistically
+  independent signal that already passes every check EXCEPT the two Entry 54 already flagged as
+  its known gaps (sample size 82 vs. the 100-trade bar, and DSR 43.9% vs. the project's very high
+  95% bar that literally no strategy in the project has ever cleared, including the flagship
+  Volume-Confirmed Gap at 6/7). Vol+Momentum Reversal is the most defensible candidate for adding
+  real, non-redundant frequency - not because it's already "trustworthy" in isolation, but because
+  it's the best-performing candidate whose only real gap is more accumulated data, exactly the
+  same position Volume-Confirmed Gap itself was in before it started forward-testing. Recommending
+  it be added to live paper-tracking (mirroring how Volume-Confirmed Gap was added alongside the
+  unfiltered Gap strategy in Entry 28) rather than deployed with real capital - this is a WATCH
+  recommendation, not a PASS.
