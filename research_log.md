@@ -1659,3 +1659,33 @@ definitions.
   account state and real price history directly, independent of whatever each strategy's own
   resolve script believes happened, which is exactly the property that would have made Entry 57's
   bug visible on day one instead of day six.
+
+## Entry 59: Databento Archive Was Frozen Since 9/9 (Job Never Loaded) - Refreshed, Re-Checked Edge Decay/Crowding
+- Follow-up to Entries 47-48, prompted by this conversation's broader review. Found that
+  `data/raw_{nq,es,ym,rty}_extended` - the archives both the edge-decay check and the crowding
+  proxy check run against - stopped dead at 2026-09-09. `com.nqresearch.databentorefresh` was
+  committed to the repo on 2026-09-11 (Entry 39) to keep them current, but its log/error files
+  didn't exist on disk at all, meaning the job had never actually fired once - the plist existed
+  in the repo but was never `launchctl load`ed onto the machine. Same gap as the stale-position
+  check needed its own manual load step for (this conversation, same day) - a plist committed to
+  the repo is not the same thing as a job actually running.
+- Ran `refresh_databento_archive.py` manually first, per its own docstring's instructions: pulled
+  2026-09-10 through 2026-09-29 for all four symbols (NQ/ES/YM/RTY), $0.2532 total, well under its
+  $1.00 safety cap. All four archives now current through 9/29.
+- Re-ran both monitoring checks against the refreshed data:
+  - Edge decay: ES flips WATCH -> STABLE. The -24.5% recent-vs-full expectancy drop that
+    triggered the original Entry 47 flag has fully reversed - most recent 30 trades now show
+    +70.0% vs. full history (46.7% win rate recent vs. 41.2% full). Looks like it was a temporary
+    dip rather than a real decay trend. NQ and YM remain STABLE, as before.
+  - Crowding proxy: ES/YM remains flagged, -20.6% faster reversion (was -22.6% in Entry 48) -
+    essentially unchanged, not worsening. NQ/YM is newly flagged at -15.2% (right at the -15%
+    threshold), which wasn't flagged last check. NQ/ES stays STABLE on both checks.
+  - Pairs edge-decay still can't run for any of the three pairs (needs 50 trades minimum, have
+    38-40) - same sample-size bottleneck as everything else in pairs trading.
+- Verdict: no strategy verdicts changed. ES's edge-decay flag downgrades from WATCH to STABLE;
+  NQ/YM's crowding status moves from unflagged to borderline-flagged. Neither changes `live_gate.py`
+  status - both strategies stay WATCH, this is monitoring commentary, not a scorecard re-run.
+- Reasoning: these two checks are only as good as the archive they run against, and a check that
+  silently keeps re-reporting the same stale number isn't actually monitoring anything. Worth
+  re-verifying after this that `com.nqresearch.databentorefresh` is actually loaded going forward
+  (confirmed via `launchctl list` after this entry), not just present in the repo.
