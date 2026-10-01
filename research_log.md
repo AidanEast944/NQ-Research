@@ -1570,3 +1570,51 @@ definitions.
   it be added to live paper-tracking (mirroring how Volume-Confirmed Gap was added alongside the
   unfiltered Gap strategy in Entry 28) rather than deployed with real capital - this is a WATCH
   recommendation, not a PASS.
+
+## Entry 57: Gap-Family Resolve Scripts Could Strand Positions Past Their Entry Day
+- Found while reviewing why the gap (unfiltered) paper account looked down $720 (2026-09-30
+  check-in): `gap_forward_resolve.py` only ever resolved positions where `entry_date == today`,
+  fetching only today's 15-min bars. A position that didn't resolve on its own entry day - e.g.
+  because that run's `yfinance` call returned empty data, or the scheduled job didn't fire -
+  became permanently invisible to the script: every later run only ever re-checks "today" again,
+  so the stale position just sits open indefinitely with its real stop/target action never
+  checked. The same "entry_date == today" pattern existed in all three sibling scripts
+  (`volume_confirmed_gap_resolve.py` for NQ, `volume_confirmed_gap_ym_resolve.py`,
+  `volume_confirmed_gap_es_resolve.py`) - it just hadn't bitten them yet.
+- Concretely: a gap-unfiltered SHORT entered 2026-09-24 at 30473 (stop 30513, 40pt) hit its stop
+  within 15 minutes of entry - the 09:00 ET bar's high was 30519.5, per the archived
+  `data/raw/nq_15m_2026-09-24.csv`. `gapresolve_log.txt` shows a "WARNING: No data returned from
+  Yahoo Finance" entry right around that period. The position then sat open, unresolved and
+  unmarked, for 6 calendar days, because no later run would ever look at it again.
+- This is the same silent-failure *shape* as Entry 35 (Fade trading for 3 weeks after an
+  already-failed backtest with no guard) - a strategy's real state silently diverging from what
+  the dashboard reports, with nothing flagging it. Different mechanism (stale resolve window vs.
+  missing retirement guard), same underlying lesson: anything that only checks "today" needs an
+  explicit answer for "what happens if today's check doesn't happen."
+- Fix, applied to all four resolve scripts: every open position is now checked against its OWN
+  entry day's bars (fetching a 60-day `yfinance` window instead of 5 days, so a position stuck for
+  a while can still be caught up against its real entry-day price action), using the same
+  stop/target-then-EOD-fallback logic as before. A position only stays open after a run now if
+  there's genuinely no bar data yet for ITS entry day - never because "today" moved on without it.
+  All four files compile clean (`py_compile`).
+- The already-stuck 2026-09-24 position was resolved using the archived historical bars directly
+  (network to Yahoo Finance isn't reachable from the environment this fix was authored in, but the
+  entry-day CSV archive already had the real price action): closed SHORT at the stop (30513,
+  -40pts, -$80 @ $2/pt MNQ), via the same `PaperBroker.close_position()` + `record_trade_result()`
+  path the fixed script itself would have used. Gap (unfiltered) balance corrected from $9,280 to
+  $9,200, 0 open positions.
+- Separately noted, not yet fixed: that same account's very first trade (2026-09-08) was closed by
+  a pre-fix version of this script and got booked at the default `point_value=20` (full NQ)
+  instead of `2` (MNQ), inflating a real -$80 loss into a recorded -$800 - most of why the account
+  looked down $720 in the first place rather than flat. Net raw points across the account's 9
+  closed trades are exactly 0 (3 wins at +80pts, 6 losses at -40pts) before that one mispriced
+  record. Planned as a follow-up correction, not done in this entry.
+- Verdict: infrastructure/bug fix, not a strategy finding - doesn't change any strategy's
+  backtested performance or scorecard verdict, only whether the live resolve scripts can actually
+  be trusted to mark every open position to its real stop/target outcome instead of silently
+  losing track of one.
+- Reasoning: a resolve step that only ever looks at "today" is quietly assuming every run succeeds
+  and every position closes same-day - neither assumption held here. Caught by manually checking
+  the gap account after the user noticed they "keep losing money," tracing the loss to a single
+  stuck position whose entry-day bars (available in the local archive) showed it should have
+  closed almost immediately.

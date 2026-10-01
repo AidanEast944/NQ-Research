@@ -12,9 +12,23 @@ TARGET_POINTS = 80
 POINT_VALUE = 2  # MNQ micro contract
 STATE_FILE = "data/gap_paper_account.json"
 
-# Resolves any position gap_forward_check.py opened today, using the FULL day's bars (this runs
-# after market close, unlike the check step which runs 7 minutes after the open) - see
-# research_log.md Entry 32 for why this split exists.
+# Resolves open gap-continuation positions against real price action (runs after market close,
+# unlike the check step which runs 7 minutes after the open - see research_log.md Entry 32 for why
+# this split exists).
+#
+# FIX (2026-09-30, research_log.md - stale-position resolve bug): this used to only look at
+# positions where entry_date == today, fetching only today's bars. That meant a position that
+# didn't resolve on its own entry day - e.g. because Yahoo Finance returned no data that run, or
+# the job didn't fire - became permanently invisible to this script, since every later run would
+# only ever check "today" again. It would sit open indefinitely with its real stop/target action
+# silently ignored, even though this strategy is intraday-only by design (every position is
+# supposed to close same-day, via stop/target or the EOD fallback below).
+#
+# Now every open position is checked, each against its OWN entry day's bars (catching up a missed
+# run on the correct historical day rather than today's), with the same stop/target-then-EOD logic
+# as before. A position only stays open after this script runs if there's genuinely no bar data
+# yet for its entry day (i.e. it's today's position and the market hasn't closed/data hasn't
+# landed yet) - never because it's "not today" anymore.
 
 
 def notify(title, message):
@@ -33,36 +47,44 @@ def notify(title, message):
 broker = PaperBroker(starting_balance=10000, state_file=STATE_FILE)
 
 today = date.today()
-todays_positions = [p for p in broker.positions if p.get("entry_date") == str(today)]
 
-if not todays_positions:
+if not broker.positions:
     print(f"No open gap position to resolve for {today}.")
     sys.exit()
 
 nq = yf.Ticker("NQ=F")
-history = nq.history(period="5d", interval="15m")
+# 60d (not 5d) so a position stuck open for a while can still be caught up against its own real
+# entry-day bars, not just whatever the last few days happen to cover.
+history = nq.history(period="60d", interval="15m")
 
 if history.empty:
     print("WARNING: No data returned from Yahoo Finance. Skipping this run.")
     sys.exit()
 
 history["date"] = history.index.date
+history["time"] = history.index.time
 
-today_bars = history[
-    (history["date"] == today)
-    & (history.index.time > pd.Timestamp("08:30").time())
-    & (history.index.time <= pd.Timestamp("16:00").time())
-]
+session_bars = history[
+    (history["time"] > pd.Timestamp("08:30").time())
+    & (history["time"] <= pd.Timestamp("16:00").time())
+].sort_index()
 
-for position in todays_positions:
+for position in list(broker.positions):
+    entry_date = date.fromisoformat(position["entry_date"])
     signal = position["direction"]
     stop_price = position["stop_price"]
     target_price = position["target_price"]
 
+    entry_day_bars = session_bars[session_bars["date"] == entry_date]
+
+    if entry_day_bars.empty:
+        print(f"No bars available yet to resolve the position from {entry_date} - try again later.")
+        continue
+
     exit_price = None
     exit_reason = None
 
-    for _, bar in today_bars.iterrows():
+    for _, bar in entry_day_bars.iterrows():
         if signal == "LONG":
             hit_stop = bar["Low"] <= stop_price
             hit_target = bar["High"] >= target_price
@@ -77,13 +99,9 @@ for position in todays_positions:
             exit_price, exit_reason = target_price, "target"
             break
 
-    if exit_price is None and not today_bars.empty:
-        exit_price = today_bars.iloc[-1]["Close"]
-        exit_reason = "eod"
-
     if exit_price is None:
-        print(f"No bars available yet to resolve today's position - try again later.")
-        continue
+        exit_price = entry_day_bars.iloc[-1]["Close"]
+        exit_reason = "eod"
 
     broker.close_position(position, exit_price, reason=exit_reason, point_value=POINT_VALUE)
     refresh_dashboard()

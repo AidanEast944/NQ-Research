@@ -1,7 +1,13 @@
 """
-Resolves any positions volume_confirmed_gap_forward_check.py opened today, for BOTH the 1.2x and
-1.5x tracks independently, using the full day's bars (runs after market close). See
-research_log.md Entry 32 for why the open/resolve split exists.
+Resolves open positions from volume_confirmed_gap_forward_check.py, for BOTH the 1.2x and 1.5x
+tracks independently, against real price action (runs after market close). See research_log.md
+Entry 32 for why the open/resolve split exists.
+
+FIX (2026-09-30, research_log.md - stale-position resolve bug): used to only check positions where
+entry_date == today, using only today's bars - see gap_forward_resolve.py's docstring for the full
+reasoning (same bug, same fix, applied here too). Now every open position is checked against its
+own entry day's bars, so a position that missed its same-day resolve run can't get stranded open
+indefinitely.
 """
 import sys
 import subprocess
@@ -43,51 +49,54 @@ def notify(title, message):
 
 today = date.today()
 
-any_open = False
-for label, cfg in THRESHOLDS.items():
-    broker = PaperBroker(starting_balance=10000, state_file=cfg["account_file"])
-    todays_positions = [p for p in broker.positions if p.get("entry_date") == str(today)]
-    if todays_positions:
-        any_open = True
-        break
+any_open = any(
+    PaperBroker(starting_balance=10000, state_file=cfg["account_file"]).positions
+    for cfg in THRESHOLDS.values()
+)
 
 if not any_open:
     print(f"No open volume-confirmed positions to resolve for {today}.")
     sys.exit()
 
 nq = yf.Ticker("NQ=F")
-history = nq.history(period="5d", interval="15m")
+history = nq.history(period="60d", interval="15m")
 
 if history.empty:
     print("WARNING: No data returned from Yahoo Finance. Skipping this run.")
     sys.exit()
 
 history["date"] = history.index.date
+history["time"] = history.index.time
 
-today_bars = history[
-    (history["date"] == today)
-    & (history.index.time > pd.Timestamp("08:30").time())
-    & (history.index.time <= pd.Timestamp("16:00").time())
-]
+session_bars = history[
+    (history["time"] > pd.Timestamp("08:30").time())
+    & (history["time"] <= pd.Timestamp("16:00").time())
+].sort_index()
 
 for label, cfg in THRESHOLDS.items():
     print(f"\n--- Threshold {label} ---")
     broker = PaperBroker(starting_balance=10000, state_file=cfg["account_file"])
-    todays_positions = [p for p in broker.positions if p.get("entry_date") == str(today)]
 
-    if not todays_positions:
+    if not broker.positions:
         print(f"No open {label} position to resolve for {today}.")
         continue
 
-    for position in todays_positions:
+    for position in list(broker.positions):
+        entry_date = date.fromisoformat(position["entry_date"])
         signal = position["direction"]
         stop_price = position["stop_price"]
         target_price = position["target_price"]
 
+        entry_day_bars = session_bars[session_bars["date"] == entry_date]
+
+        if entry_day_bars.empty:
+            print(f"No bars available yet to resolve the {label} position from {entry_date} - try again later.")
+            continue
+
         exit_price = None
         exit_reason = None
 
-        for _, bar in today_bars.iterrows():
+        for _, bar in entry_day_bars.iterrows():
             if signal == "LONG":
                 hit_stop = bar["Low"] <= stop_price
                 hit_target = bar["High"] >= target_price
@@ -102,13 +111,9 @@ for label, cfg in THRESHOLDS.items():
                 exit_price, exit_reason = target_price, "target"
                 break
 
-        if exit_price is None and not today_bars.empty:
-            exit_price = today_bars.iloc[-1]["Close"]
-            exit_reason = "eod"
-
         if exit_price is None:
-            print("No bars available yet to resolve today's position - try again later.")
-            continue
+            exit_price = entry_day_bars.iloc[-1]["Close"]
+            exit_reason = "eod"
 
         broker.close_position(position, exit_price, reason=exit_reason, point_value=POINT_VALUE)
         refresh_dashboard()
