@@ -1618,3 +1618,44 @@ definitions.
   the gap account after the user noticed they "keep losing money," tracing the loss to a single
   stuck position whose entry-day bars (available in the local archive) showed it should have
   closed almost immediately.
+
+## Entry 58: Standing Stale-Position Check + Fixed the Same Resolve Bug in Vol+Momentum Reversal
+- Follow-up to Entry 57. Two things, both prompted by the same conversation: (1) a general,
+  strategy-agnostic daily check that verifies no open position has been silently stranded, rather
+  than relying on each strategy's own resolve script to correctly report its own state, and (2)
+  while reviewing every resolve script for the Entry 57 bug class, found the identical
+  `entry_date == today` pattern in `vol_momentum_reversal_resolve.py` - hadn't bitten it yet only
+  because that strategy has never had a signal fire, but the same silent-stranding failure mode
+  was latent there too. Fixed using the same approach as Entry 57 (check every open position
+  against its own entry day's bars, 60-day fetch window).
+- New script: `src/check_stale_positions.py`. Deliberately does NOT reuse any strategy's own
+  resolve logic - it reads each account file directly and (a) flags any "intraday" strategy's
+  position whose entry_date isn't today as STALE, since those are designed to always close same
+  day, and (b) for "multiday" strategies (pairs), flags a position only once held past a generous
+  reference threshold (25 calendar days, vs. the pairs scripts' own 15-*trading*-day time-stop).
+  Where a current local price archive exists for the traded instrument, it also independently
+  checks whether price has already crossed the position's stop/target since entry - this is the
+  part that doesn't trust the strategy's own resolve script's correctness at all, and would have
+  caught Entry 57's bug on its first day rather than needing a manual review six days later.
+- Known limitation, not fixed here: YM and ES local archives (`data/raw_ym`, `data/raw_es`, and
+  the `*_extended` variants) stopped updating around 2026-09-09, so the independent price-check
+  only runs for NQ-based positions for now. The script says so explicitly rather than silently
+  skipping or assuming OK for YM/ES.
+- Ran it against current state as a first real test: correctly reported 0 stale positions across
+  every intraday strategy (gap unfiltered now closed out per Entry 57; volume-confirmed gap
+  variants all flat) and all pairs positions within normal range.
+- Also surfaced, while checking pairs state directly: the long-running ES/YM pairs position
+  (SHORT since 2026-09-09, flagged as the project's longest-held open position in recent check-ins)
+  hit its 15-trading-day time stop and closed today (2026-09-30, exit z=1.43) -
+  `pairs_esym_forward_state.json` records it with `orphaned_no_broker_record: true`, the same
+  pre-risk-wiring orphaned-position condition documented in Entry 32. No P&L was fabricated for it
+  (consistent with Entry 32's original defensive handling) - it simply has no matching
+  `pairs_paper_account.json` record to update. Not a new bug, just that orphaned record finally
+  reaching its resolution.
+- Added `launchd/com.nqresearch.stalepositioncheck.plist` (5:25 PM PT, after the day's other
+  resolve/dashboard jobs) - not yet loaded, needs `launchctl load` on the actual machine.
+- Verdict: infrastructure, not a strategy finding. Both fixes compile clean (`py_compile`).
+- Reasoning: a check that depends on the thing it's checking is not a check - this one reads
+  account state and real price history directly, independent of whatever each strategy's own
+  resolve script believes happened, which is exactly the property that would have made Entry 57's
+  bug visible on day one instead of day six.
