@@ -11,6 +11,7 @@ Gated via live_gate.py - must be explicitly added to LIVE_STRATEGIES before this
 real position, regardless of what this script's own logic decides.
 """
 import sys
+import time
 import yfinance as yf
 import pandas as pd
 from datetime import date
@@ -61,18 +62,36 @@ if not is_signal:
     sys.exit()
 
 today = date.today()
-intraday = nq.history(period="5d", interval="15m")
-if intraday.empty:
-    print("WARNING: No intraday data returned. Skipping.")
-    sys.exit()
-
-intraday["date"] = intraday.index.date
-today_bars = intraday[intraday["date"] == today]
 entry_t = pd.Timestamp(ENTRY_TIME).time()
-open_bar = today_bars[today_bars.index.time == entry_t]
 
-if open_bar.empty:
-    print(f"No {ENTRY_TIME} candle yet for {today}.")
+# FIX (2026-10-02, research_log.md - 08:30 candle timing bug): see gap_forward_check.py's
+# docstring for the full reasoning - same bug, same fix, applied here too.
+MAX_RETRIES = 5
+RETRY_SLEEP_SECONDS = 90
+
+open_bar = None
+today_bars = None
+
+for attempt in range(1, MAX_RETRIES + 1):
+    candidate_intraday = nq.history(period="5d", interval="15m")
+    if candidate_intraday.empty:
+        print(f"WARNING: No intraday data returned (attempt {attempt}/{MAX_RETRIES}).")
+    else:
+        candidate_intraday["date"] = candidate_intraday.index.date
+        candidate_today_bars = candidate_intraday[candidate_intraday["date"] == today]
+        candidate_open_bar = candidate_today_bars[candidate_today_bars.index.time == entry_t]
+        if not candidate_open_bar.empty:
+            today_bars = candidate_today_bars
+            open_bar = candidate_open_bar
+            break
+
+    if attempt < MAX_RETRIES:
+        print(f"No {ENTRY_TIME} candle yet for {today} (attempt {attempt}/{MAX_RETRIES}) - retrying in {RETRY_SLEEP_SECONDS}s.")
+        time.sleep(RETRY_SLEEP_SECONDS)
+
+if open_bar is None:
+    print(f"No {ENTRY_TIME} candle for {today} after {MAX_RETRIES} attempts "
+          f"({(MAX_RETRIES - 1) * RETRY_SLEEP_SECONDS}s total) - giving up for today.")
     sys.exit()
 
 entry_price = open_bar.iloc[0]["Open"]

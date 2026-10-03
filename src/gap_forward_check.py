@@ -1,4 +1,5 @@
 import sys
+import time
 import yfinance as yf
 import pandas as pd
 from datetime import date
@@ -21,18 +22,40 @@ STATE_FILE = "data/gap_paper_account.json"
 # 2026-09-10 - see research_log.md Entry 32.
 
 nq = yf.Ticker("NQ=F")
-history = nq.history(period="5d", interval="15m")
-
-if history.empty:
-    print("WARNING: No data returned. Skipping.")
-    sys.exit()
-
-history["date"] = history.index.date
 today = date.today()
-today_bars = history[history["date"] == today]
 
-if today_bars.empty:
-    print(f"No data yet for {today}.")
+# FIX (2026-10-02, research_log.md - 08:30 candle timing bug): this job runs 7 minutes after the
+# open, but yfinance's 15-min candle isn't always posted that fast - this silently skipped the
+# signal check entirely on 2026-09-29, 09-30, 10-01, and 10-02, with no retry. Same "silent gap in
+# coverage" shape as Entries 57/58, just upstream of the resolve step instead of downstream.
+MAX_RETRIES = 5
+RETRY_SLEEP_SECONDS = 90
+
+history = None
+open_bar = None
+today_bars = None
+
+for attempt in range(1, MAX_RETRIES + 1):
+    candidate_history = nq.history(period="5d", interval="15m")
+    if candidate_history.empty:
+        print(f"WARNING: No data returned (attempt {attempt}/{MAX_RETRIES}).")
+    else:
+        candidate_history["date"] = candidate_history.index.date
+        candidate_today_bars = candidate_history[candidate_history["date"] == today]
+        candidate_open_bar = candidate_today_bars[candidate_today_bars.index.time == pd.Timestamp("08:30").time()]
+        if not candidate_open_bar.empty:
+            history = candidate_history
+            today_bars = candidate_today_bars
+            open_bar = candidate_open_bar
+            break
+
+    if attempt < MAX_RETRIES:
+        print(f"No 08:30 candle yet for {today} (attempt {attempt}/{MAX_RETRIES}) - retrying in {RETRY_SLEEP_SECONDS}s.")
+        time.sleep(RETRY_SLEEP_SECONDS)
+
+if open_bar is None:
+    print(f"No 08:30 candle for {today} after {MAX_RETRIES} attempts "
+          f"({(MAX_RETRIES - 1) * RETRY_SLEEP_SECONDS}s total) - giving up for today.")
     sys.exit()
 
 prior_days = history[history["date"] < today]
@@ -43,11 +66,6 @@ if prior_days.empty:
 most_recent_day = prior_days["date"].max()
 prior_day_bars = prior_days[prior_days["date"] == most_recent_day]
 prior_close = prior_day_bars.iloc[-1]["Close"]
-
-open_bar = today_bars[today_bars.index.time == pd.Timestamp("08:30").time()]
-if open_bar.empty:
-    print(f"No 08:30 candle yet for {today}.")
-    sys.exit()
 
 open_price = open_bar.iloc[0]["Open"]
 gap_points = open_price - prior_close

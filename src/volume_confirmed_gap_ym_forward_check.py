@@ -11,6 +11,7 @@ Uses MYM (Dow micro contract, $0.50/point) sizing, not MNQ - YM's point value is
 NQ's, and a fixed-points stop/target needs a matching point value to size risk correctly.
 """
 import sys
+import time
 import yfinance as yf
 import pandas as pd
 from datetime import date
@@ -39,18 +40,39 @@ THRESHOLDS = {
 }
 
 ym = yf.Ticker("YM=F")
-history = ym.history(period="60d", interval="15m")
-
-if history.empty:
-    print("WARNING: No data returned. Skipping.")
-    sys.exit()
-
-history["date"] = history.index.date
 today = date.today()
-today_bars = history[history["date"] == today]
+entry_t = pd.Timestamp(ENTRY_TIME).time()
 
-if today_bars.empty:
-    print(f"No data yet for {today}.")
+# FIX (2026-10-02, research_log.md - 08:30 candle timing bug): see gap_forward_check.py's
+# docstring for the full reasoning - same bug, same fix, applied here too.
+MAX_RETRIES = 5
+RETRY_SLEEP_SECONDS = 90
+
+history = None
+open_bar = None
+today_bars = None
+
+for attempt in range(1, MAX_RETRIES + 1):
+    candidate_history = ym.history(period="60d", interval="15m")
+    if candidate_history.empty:
+        print(f"WARNING: No data returned (attempt {attempt}/{MAX_RETRIES}).")
+    else:
+        candidate_history["date"] = candidate_history.index.date
+        candidate_today_bars = candidate_history[candidate_history["date"] == today]
+        candidate_open_bar = candidate_today_bars[candidate_today_bars.index.time == entry_t]
+        if not candidate_open_bar.empty:
+            history = candidate_history
+            today_bars = candidate_today_bars
+            open_bar = candidate_open_bar
+            break
+
+    if attempt < MAX_RETRIES:
+        print(f"No {ENTRY_TIME} candle yet for {today} (attempt {attempt}/{MAX_RETRIES}) - retrying in {RETRY_SLEEP_SECONDS}s.")
+        time.sleep(RETRY_SLEEP_SECONDS)
+
+if open_bar is None:
+    print(f"No {ENTRY_TIME} candle for {today} after {MAX_RETRIES} attempts "
+          f"({(MAX_RETRIES - 1) * RETRY_SLEEP_SECONDS}s total) - giving up for today.")
     sys.exit()
 
 prior_days = history[history["date"] < today]
@@ -61,13 +83,6 @@ if prior_days.empty:
 most_recent_day = prior_days["date"].max()
 prior_day_bars = prior_days[prior_days["date"] == most_recent_day]
 prior_close = prior_day_bars.iloc[-1]["Close"]
-
-entry_t = pd.Timestamp(ENTRY_TIME).time()
-
-open_bar = today_bars[today_bars.index.time == entry_t]
-if open_bar.empty:
-    print(f"No {ENTRY_TIME} candle yet for {today}.")
-    sys.exit()
 
 open_price = open_bar.iloc[0]["Open"]
 today_entry_volume = open_bar.iloc[0]["Volume"]

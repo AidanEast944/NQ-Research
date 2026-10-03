@@ -1689,3 +1689,37 @@ definitions.
   silently keeps re-reporting the same stale number isn't actually monitoring anything. Worth
   re-verifying after this that `com.nqresearch.databentorefresh` is actually loaded going forward
   (confirmed via `launchctl list` after this entry), not just present in the repo.
+
+## Entry 60: 08:30 Candle Retry Fix - Morning Checks Were Silently Skipping Signal Days
+- Found during a routine "anything fire today?" check-in (2026-10-02). Every morning check script
+  (gap unfiltered, volume-confirmed gap NQ/YM/ES, vol+momentum reversal) runs 7 minutes after the
+  open and makes exactly one yfinance call looking for the 08:30 ET candle. If that candle isn't
+  posted yet at that exact moment, the script printed "No 08:30 candle yet" and exited - with no
+  retry, and no later run to catch up (unlike the resolve-side bug in Entries 57/58, there's no
+  second script scheduled later in the day for the open/check step).
+- Logs show this happened 4 trading days in a row (2026-09-29, 09-30, 10-01, 10-02) across the gap
+  family - meaning no entry signal could be evaluated at all on those days, independent of whether
+  real conditions would have qualified. Same "silent gap in coverage" shape as Entries 57/58, just
+  upstream (at signal detection) instead of downstream (at resolve).
+- Fix, applied to all five live-strategy check scripts (`gap_forward_check.py`,
+  `volume_confirmed_gap_forward_check.py`, `volume_confirmed_gap_ym_forward_check.py`,
+  `volume_confirmed_gap_es_forward_check.py`, `vol_momentum_reversal_forward_check.py`): the
+  08:30-candle fetch now retries up to 5 times, 90 seconds apart (6 extra minutes), re-fetching
+  fresh history each attempt, before giving up for the day. Effectively extends the window from
+  7 minutes post-open to ~13 minutes post-open. `fade_paper_check.py` wasn't touched - its
+  STRATEGY_RETIRED guard exits before reaching the candle fetch, so it was never affected
+  operationally.
+- Deliberately did NOT change the launchd schedule time (pushing the whole job back a few minutes
+  would only shift the problem, not fix it, since the lag isn't a fixed offset) - a retry handles
+  the actual variability instead of guessing a new fixed delay.
+- All five files compile clean (`py_compile`). Not yet verified against a live run (would need to
+  wait for tomorrow's market open to see a real retry succeed), but the fallback behavior (retries
+  exhausted, same "giving up for today" message as before) is unchanged from the prior failure
+  mode, so this can't make things worse even if the real cause turns out to be something other
+  than pure posting lag.
+- Verdict: infrastructure, not a strategy finding - doesn't change any strategy's backtested
+  performance, only whether its live signal-detection step can actually be trusted to run every
+  day instead of silently going dark for a run of days.
+- Reasoning: a single yfinance call with no retry is a point-in-time bet that the data provider's
+  posting latency is always under the job's buffer - that bet quietly stopped paying off a few
+  weeks ago (or maybe always rolled some inherent risk) and nothing was watching for it specifically.
