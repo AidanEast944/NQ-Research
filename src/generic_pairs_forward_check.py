@@ -8,6 +8,7 @@ from paper_broker import PaperBroker
 from position_sizing import fixed_fractional_size
 import risk_limits
 from live_gate import gate_new_entry
+import coverage_log as cov
 
 LOOKBACK = 20
 ENTRY_Z = 2.0
@@ -37,6 +38,7 @@ def run_pairs_check(symbol_a, symbol_b, state_file, label, tag_a, tag_b,
     the wrong pair's leg. avg_loss_per_unit is that pair's average losing-trade size at 1x leg-A
     sizing from Entry 23's backtest - used as the position-sizing basis (see
     pairs_forward_check.py's AVG_LOSS_PER_UNIT_DOLLARS for the full explanation)."""
+    cov.start(strategy_key, f"Pairs {label}")
     def load_state():
         if os.path.exists(state_file):
             with open(state_file, "r") as f:
@@ -83,6 +85,7 @@ def run_pairs_check(symbol_a, symbol_b, state_file, label, tag_a, tag_b,
     current_a_price = merged.loc[merged.index == today, "close_a"].iloc[0]
     current_b_price = merged.loc[merged.index == today, "close_b"].iloc[0]
     print(f"[{label}] Current z-score: {current_z:.2f}")
+    cov.evaluated(strategy_key, f"z-score {current_z:.2f}")
 
     broker = PaperBroker(starting_balance=PAIRS_STARTING_BALANCE, state_file=PAIRS_ACCOUNT_FILE)
 

@@ -8,6 +8,8 @@ from paper_broker import PaperBroker
 from position_sizing import fixed_fractional_size
 import risk_limits
 from live_gate import gate_new_entry
+import coverage_log as cov
+cov.start("pairs_nq_es", "Pairs NQ/ES")
 
 LOOKBACK = 20
 ENTRY_Z = 2.0
@@ -93,6 +95,7 @@ current_z = merged.loc[merged.index == today, "zscore"].iloc[0]
 current_nq_price = merged.loc[merged.index == today, "close_nq"].iloc[0]
 current_es_price = merged.loc[merged.index == today, "close_es"].iloc[0]
 print(f"Current NQ/ES z-score: {current_z:.2f}")
+cov.evaluated("pairs_nq_es", f"z-score {current_z:.2f}")
 
 # Symbols are tagged with the pair name (not just "MNQ"/"MES") because PAIRS_ACCOUNT_FILE and
 # PAIRS_RISK_STATE_FILE are shared across all three pairs scripts (that's what makes the risk

@@ -6,6 +6,8 @@ from datetime import date
 from paper_broker import PaperBroker
 from risk_limits import check_trade_allowed
 from live_gate import gate_new_entry
+import coverage_log as cov
+cov.start("gap_unfiltered", "Gap (unfiltered)")
 
 MIN_GAP_POINTS = 30
 STOP_POINTS = 40
@@ -69,6 +71,7 @@ prior_close = prior_day_bars.iloc[-1]["Close"]
 
 open_price = open_bar.iloc[0]["Open"]
 gap_points = open_price - prior_close
+cov.evaluated("gap_unfiltered", f"gap {gap_points:.2f}pt")
 
 broker = PaperBroker(starting_balance=10000, state_file=STATE_FILE)
 

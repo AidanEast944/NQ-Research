@@ -1723,3 +1723,27 @@ definitions.
 - Reasoning: a single yfinance call with no retry is a point-in-time bet that the data provider's
   posting latency is always under the job's buffer - that bet quietly stopped paying off a few
   weeks ago (or maybe always rolled some inherent risk) and nothing was watching for it specifically.
+
+## Entry 61: Forming-bar volume bug and a daily coverage heartbeat (2026-10-05)
+- Context: Entry 60's retry fix was verified live on 10/5 and the 08:30 candle was found. But the
+  three volume-confirmed gap scripts then read a volume near zero (~0.02x ratio). The retry
+  returns the 08:30 bar while it is still forming, so its volume is partial. A volume-ratio
+  filter fed a partial-bar volume cannot be trusted.
+- Fix 1 (volume scripts: NQ, YM, ES): the script now waits until the 08:45 bar exists, so the
+  08:30 bar's volume is final. Retries raised to 12 x 60s. Entry price is unchanged (08:30 bar
+  Open, as in the backtest). Compiled; NOT yet verified live (first real test is the 10/6 open).
+- Caveat on history: earlier live volume checks may also have read partial bars. Any past
+  "volume filter failed" outcome for these tracks is suspect, and NQ's -76.75pt gap on 10/5
+  qualified on size alone with its true volume ratio unknown. To be recomputed from the
+  archive after the 10/5 save. No past result is rewritten.
+- Fix 2 (coverage heartbeat): new `src/coverage_log.py` and `src/coverage_report.py`. Each of
+  the 7 live check scripts (8 tracks) registers at start and marks EVALUATED only once it has
+  genuinely looked at the day's conditions (gap computed, volume ratio computed, z-score
+  computed). An atexit handler writes `data/coverage_log.json` whatever the exit path, and
+  never downgrades an EVALUATED record the same day. `coverage_report.py` runs 5:35 PM PT
+  (`com.nqresearch.coveragereport`) and sends a macOS notification for any NOT_EVALUATED or
+  MISSING strategy on a weekday. Same silent-gap shape as Entries 35, 57, 58 and 60, now
+  monitored directly.
+- Known quirk, not fixed: both pairs scripts set `last_run_date` before data checks, so a
+  "no data yet" run still marks the day processed. The coverage report would catch it.
+- Verdict: infrastructure, not a strategy finding. No trial count change.

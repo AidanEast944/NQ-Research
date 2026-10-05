@@ -19,6 +19,8 @@ from paper_broker import PaperBroker
 from risk_limits import check_trade_allowed
 from dashboard_trigger import refresh_dashboard
 from live_gate import gate_new_entry
+import coverage_log as cov
+cov.start("vol_momentum_reversal_nq", "Vol+Momentum Reversal NQ")
 
 STRATEGY_KEY = "vol_momentum_reversal_nq"
 VOL_LOOKBACK = 10
@@ -59,6 +61,7 @@ print(f"Signal conditions met: {is_signal}")
 
 if not is_signal:
     print("No signal today.")
+    cov.evaluated("vol_momentum_reversal_nq", "signal conditions not met")
     sys.exit()
 
 today = date.today()
@@ -95,6 +98,7 @@ if open_bar is None:
     sys.exit()
 
 entry_price = open_bar.iloc[0]["Open"]
+cov.evaluated("vol_momentum_reversal_nq", "signal fired, entry candle found")
 stop_price = entry_price + STOP_POINTS
 target_price = entry_price - TARGET_POINTS
 

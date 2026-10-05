@@ -16,6 +16,8 @@ from datetime import date
 from paper_broker import PaperBroker
 from risk_limits import check_trade_allowed
 from live_gate import gate_new_entry
+import coverage_log as cov
+cov.start("volume_confirmed_gap_es", "Volume-Confirmed Gap ES")
 from dashboard_trigger import refresh_dashboard
 
 MIN_GAP_POINTS = 6
@@ -39,8 +41,14 @@ entry_t = pd.Timestamp(ENTRY_TIME).time()
 
 # FIX (2026-10-02, research_log.md - 08:30 candle timing bug): see gap_forward_check.py's
 # docstring for the full reasoning - same bug, same fix, applied here too.
-MAX_RETRIES = 5
-RETRY_SLEEP_SECONDS = 90
+# 2026-10-05 (research_log.md Entry 61): the retry above caught the 08:30 candle the moment it
+# appeared, while it was still FORMING - volume read as ~0 (NQ 0, YM 0.02x, ES 0.03x of normal), so
+# every volume-confirmed track rejected a valid -76pt gap. The volume filter is defined on the
+# COMPLETE 15-min bar, so we now also require the next bar (08:45) to exist before trusting it,
+# and poll longer (12 x 60s) to cover posting lag past 08:45.
+MAX_RETRIES = 12
+RETRY_SLEEP_SECONDS = 60
+NEXT_BAR_T = (pd.Timestamp(ENTRY_TIME) + pd.Timedelta(minutes=15)).time()
 
 history = None
 open_bar = None
@@ -54,14 +62,15 @@ for attempt in range(1, MAX_RETRIES + 1):
         candidate_history["date"] = candidate_history.index.date
         candidate_today_bars = candidate_history[candidate_history["date"] == today]
         candidate_open_bar = candidate_today_bars[candidate_today_bars.index.time == entry_t]
-        if not candidate_open_bar.empty:
+        entry_bar_complete = not candidate_today_bars[candidate_today_bars.index.time == NEXT_BAR_T].empty
+        if not candidate_open_bar.empty and entry_bar_complete:
             history = candidate_history
             today_bars = candidate_today_bars
             open_bar = candidate_open_bar
             break
 
     if attempt < MAX_RETRIES:
-        print(f"No {ENTRY_TIME} candle yet for {today} (attempt {attempt}/{MAX_RETRIES}) - retrying in {RETRY_SLEEP_SECONDS}s.")
+        print(f"No {ENTRY_TIME} candle not complete yet for {today} (attempt {attempt}/{MAX_RETRIES}) - retrying in {RETRY_SLEEP_SECONDS}s.")
         time.sleep(RETRY_SLEEP_SECONDS)
 
 if open_bar is None:
@@ -92,6 +101,7 @@ if len(prior_entry_bars) < max(5, VOLUME_LOOKBACK // 2):
 
 trailing_avg_volume = prior_entry_bars.tail(VOLUME_LOOKBACK).mean()
 volume_ratio = today_entry_volume / trailing_avg_volume if trailing_avg_volume else float("nan")
+cov.evaluated("volume_confirmed_gap_es", f"gap {gap_points:.2f}pt, volume ratio {volume_ratio:.2f}x")
 
 print(f"[ES] Prior close: {prior_close}, Today's open: {open_price}, Gap: {gap_points:.2f} points")
 print(f"[ES] Today's {ENTRY_TIME} volume: {today_entry_volume:,.0f}, trailing {VOLUME_LOOKBACK}-day avg: "
