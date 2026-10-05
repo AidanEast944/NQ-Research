@@ -1778,3 +1778,20 @@ definitions.
 - Reasoning: with ~30 trades per pair, a PF of 2.4 is well within what luck produces across many
   pairs and variants tried. The pattern (in-sample good, OOS negative) is the same one that
   killed most earlier candidates.
+
+## Entry 63: Corrected the Mispriced 9/8 Gap Trade (2026-10-05)
+- Finding (from the "I keep losing money" review): the first gap_unfiltered paper trade (MNQ LONG,
+  entered 2026-09-08, stopped out for -40 points) was booked with PaperBroker's default
+  point_value=20 (full NQ) instead of MNQ's $2/pt, recording -$800 instead of the correct -$80.
+  The trade record had no `point_value_used`. Every later trade passed point_value correctly.
+- Fix (surgical, as in Entries 52/53): backed up `data/gap_paper_account.json` to
+  `data/gap_paper_account.json.bak_pre_entry63`, added `point_value_used: 2` and a correction note
+  to that one trade, and raised the balance by +$720, $9,200.00 to $9,920.00. Nothing else was
+  touched; the open 2026-10-05 MNQ short is unaffected.
+- Verification: recomputing the balance from scratch ($10,000 + sum of points x point value over
+  all 10 closed trades) gives exactly $9,920.00, matching the corrected balance.
+- Verdict: bookkeeping error, not a strategy result. The account had understated performance by
+  $720 and made the early record look worse than it was. The account file is git-ignored, so this
+  entry plus the backup are the audit trail.
+- Reasoning: an unflagged default of 20 in close_position() is the root cause; any caller that
+  omits point_value silently mis-states P&L. Worth making point_value a required argument.
