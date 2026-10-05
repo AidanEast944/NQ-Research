@@ -1747,3 +1747,34 @@ definitions.
 - Known quirk, not fixed: both pairs scripts set `last_run_date` before data checks, so a
   "no data yet" run still marks the day processed. The coverage report would catch it.
 - Verdict: infrastructure, not a strategy finding. No trial count change.
+
+## Entry 62: RTY Pairs Test - NQ/RTY, ES/RTY, YM/RTY (2026-10-05)
+- Hypothesis set, declared before running: the same z-score pairs mean-reversion logic used for
+  NQ/ES, NQ/YM and ES/YM (Entries 9/13/23) might also work on pairs involving the Russell 2000
+  (RTY, micro M2K at $5/pt). Exactly three pairs, run once, no parameter tuning. Same parameters
+  (lookback 20, entry z 2.0, exit z 0.5, stop z 3.5, max hold 15 trading days), same micro sizing
+  and per-leg cost model as `pairs_scorecard_v2.py`. Script: `src/research/pairs_rty_scorecard.py`.
+  Archive data: data/raw_{nq,es,ym,rty}_extended, 2024 through Sept 2026.
+- Results (all FAIL, as run):
+  - NQ/RTY: 32 trades, 0/7 checks. PF 1.09 gross / 1.06 net, max DD 49.0%, OOS expectancy
+    -$255.68/trade vs +$179.88 in-sample, 2/4 walk-forward windows profitable, DSR 0.134.
+  - ES/RTY: 31 trades, 1/7 checks. PF 0.94 gross / 0.88 net, max DD 21.4%, OOS expectancy
+    -$178.13/trade vs +$58.32 in-sample, 3/4 windows, DSR 0.076.
+  - YM/RTY: 30 trades, 3/7 checks (PF 2.44 gross / 2.24 net, max DD 13.0%, cost check pass).
+    Fails sample size (30 vs 100), OOS sample (9 vs 20), OOS expectancy (-$45.16/trade vs
+    +$218.99 in-sample) and DSR (0.743). Walk-forward 3/4 windows profitable, but the most recent
+    window (2025-10 to 2026-08) was negative, and one window (7 trades, 100% wins) carries a lot of
+    the profit.
+- Trial counting caveat: `trial_count.count_research_trials()` takes the max of the log-entry
+  count and an AST count of run_scorecard() call sites. Adding this entry raises the entry count
+  by only 1 even though three hypotheses were tested, so num_trials here was 61 when it should
+  arguably be 64. The DSR figures above are therefore slightly generous. YM/RTY's 0.743 is still a
+  fail, so no verdict changes, but this is the same undercount the module warns about. Treat
+  num_trials as at least 64 from here on.
+- Verdict: no RTY pair is viable. YM/RTY is the only one worth watching and only as a research
+  curiosity: it needs far more trades and a positive out-of-sample record. NOT added to
+  live_gate.py, no paper tracking started, nothing promoted. Do not revisit with tweaked
+  parameters; any re-test is a new, counted trial.
+- Reasoning: with ~30 trades per pair, a PF of 2.4 is well within what luck produces across many
+  pairs and variants tried. The pattern (in-sample good, OOS negative) is the same one that
+  killed most earlier candidates.
