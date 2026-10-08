@@ -52,7 +52,7 @@ entry_t = pd.Timestamp(ENTRY_TIME).time()
 # every volume-confirmed track rejected a valid -76pt gap. The volume filter is defined on the
 # COMPLETE 15-min bar, so we now also require the next bar (08:45) to exist before trusting it,
 # and poll longer (12 x 60s) to cover posting lag past 08:45.
-MAX_RETRIES = 12
+MAX_RETRIES = 25
 RETRY_SLEEP_SECONDS = 60
 NEXT_BAR_T = (pd.Timestamp(ENTRY_TIME) + pd.Timedelta(minutes=15)).time()
 

@@ -1795,3 +1795,17 @@ definitions.
   entry plus the backup are the audit trail.
 - Reasoning: an unflagged default of 20 in close_position() is the root cause; any caller that
   omits point_value silently mis-states P&L. Worth making point_value a required argument.
+
+## Entry 64: Volume-Gap Retry Window Too Short - NQ and YM Gave Up on 2026-10-08
+- Finding: on 2026-10-08 the NQ and YM volume-confirmed checks exhausted all 12 retries (660s) and
+  gave up, registering NOT_EVALUATED in the coverage log. ES evaluated normally. On 10/6 ES had
+  needed ~10 retries and on 10/7 all three evaluated, so Entry 61's window was marginal, not
+  broken. The job starts 8:38 ET and must wait for the 08:45 bar (needed so the 08:30 bar's
+  volume is final); 12 x 60s ends ~8:49 ET, only a few minutes after that bar can exist, and
+  yfinance posting latency varies day to day.
+- Fix: MAX_RETRIES raised 12 to 25 in all three volume scripts (window ends ~9:02 ET). Compiled.
+  Entry price is still the 08:30 bar Open, so a later start does not change the backtested entry.
+- Effect on results: 10/8 NQ and YM volume-confirmed tracks were skipped for infrastructure
+  reasons, not because the signal failed. No trade is invented after the fact; the 10/8 volume
+  ratios will be recomputed from the archive for the record only.
+- Verdict: infrastructure. The coverage heartbeat (Entry 61) caught this on its first real use.
