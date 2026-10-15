@@ -15,6 +15,7 @@ A rerun later the same day never downgrades an EVALUATED record to NOT_EVALUATED
 rerun that hits an "already processed today" early exit).
 """
 import atexit
+import fcntl
 import json
 import os
 from datetime import date, datetime
@@ -61,15 +62,20 @@ def _flush(key):
     if rec is None:
         return
     try:
-        today = str(date.today())
-        data = _load()
-        day = data.setdefault(today, {})
-        existing = day.get(key)
-        if existing and existing.get("status") == "EVALUATED" and rec["status"] != "EVALUATED":
-            return
-        day[key] = {**rec, "recorded_at": datetime.now().isoformat(timespec="seconds")}
-        for old_day in sorted(data)[:-KEEP_DAYS]:
-            del data[old_day]
-        _save(data)
+        # Several check scripts fire at the same minute and each runs this at exit. Without a lock,
+        # two processes load the file, add their own record and save, and the later save silently
+        # drops the earlier one (Entry 65: false MISSING alerts for scripts that ran fine).
+        with open(COVERAGE_FILE + ".lock", "w") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            today = str(date.today())
+            data = _load()
+            day = data.setdefault(today, {})
+            existing = day.get(key)
+            if existing and existing.get("status") == "EVALUATED" and rec["status"] != "EVALUATED":
+                return
+            day[key] = {**rec, "recorded_at": datetime.now().isoformat(timespec="seconds")}
+            for old_day in sorted(data)[:-KEEP_DAYS]:
+                del data[old_day]
+            _save(data)
     except Exception as e:
         print(f"(coverage log write failed, non-fatal: {e})")

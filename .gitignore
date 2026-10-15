@@ -41,3 +41,4 @@ results/morning_brief.html
 
 # One-off diagnostic scratch file, safe to delete.
 data/_debug_combined_nq.csv
+data/coverage_log.json.lock

@@ -1809,3 +1809,17 @@ definitions.
   reasons, not because the signal failed. No trade is invented after the fact; the 10/8 volume
   ratios will be recomputed from the archive for the record only.
 - Verdict: infrastructure. The coverage heartbeat (Entry 61) caught this on its first real use.
+
+## Entry 65: Coverage Heartbeat Race Condition - False "MISSING" Alerts (2026-10-14)
+- Finding: the 10/13 and 10/14 coverage reports flagged Volume-Confirmed Gap NQ (10/13) and Volume-Confirmed
+  Gap YM plus Vol+Momentum Reversal NQ (10/14) as MISSING ("script never ran"). All three had run: the YM
+  check opened two paper trades on 10/14 and the Vol+Momentum log shows its normal "No signal today."
+- Root cause: `coverage_log.py` (Entry 61) did load -> add record -> save at exit with no lock. Several
+  check scripts fire in the same minute, so two processes could load the same file and the later save
+  overwrote the earlier record. The report then saw a missing record.
+- Fix: the read-modify-write is now inside an exclusive `fcntl.flock` on `data/coverage_log.json.lock`
+  (lock file added to .gitignore). A scratch test of 8 simultaneous writers kept all 8 records. Not yet
+  verified against tomorrow's real morning run.
+- Impact: no trading effect. The false alarms were a monitoring bug; the scripts and trades were fine.
+  Records for 10/13 and 10/14 are NOT edited after the fact.
+- Verdict: infrastructure. A monitor that cries wolf gets ignored, so it had to be fixed.
