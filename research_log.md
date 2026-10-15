@@ -1823,3 +1823,15 @@ definitions.
 - Impact: no trading effect. The false alarms were a monitoring bug; the scripts and trades were fine.
   Records for 10/13 and 10/14 are NOT edited after the fact.
 - Verdict: infrastructure. A monitor that cries wolf gets ignored, so it had to be fixed.
+
+## Entry 66: Coverage Log Still Raced Despite the Lock - Hardened Again (2026-10-15)
+- Finding: on 2026-10-15 the gap, NQ volume and ES volume check logs each showed
+  "coverage log write failed: No such file or directory: data/coverage_log.json.tmp -> data/coverage_log.json",
+  even though Entry 65's lock was already live. The 10/15 coverage log nonetheless held all 5 morning
+  records, so nothing was lost that day, but a failed write is a lost-record risk and I could not fully
+  explain why the lock did not prevent it (cause is partly unexplained, stated plainly).
+- Fix: (1) each process now writes a uniquely named temp file (`.<pid>.tmp`) so one writer can no
+  longer consume another's temp file; (2) after writing, the record is re-read and verified, with up
+  to 5 retries and a short random pause, so correctness no longer depends on the lock being honoured.
+  A scratch test with 12 simultaneous writers kept all 12 records. Not yet verified on a real morning run.
+- Verdict: infrastructure, monitoring only. No trade, signal or account is affected.

@@ -16,6 +16,8 @@ rerun that hits an "already processed today" early exit).
 """
 import atexit
 import fcntl
+import random
+import time
 import json
 import os
 from datetime import date, datetime
@@ -36,7 +38,9 @@ def _load():
 
 
 def _save(data):
-    tmp = COVERAGE_FILE + ".tmp"
+    # Per-process temp name: a shared ".tmp" let one writer's os.replace consume another writer's
+    # temp file (Entry 66: ENOENT on replace, seen on 2026-10-15 even with the Entry 65 lock).
+    tmp = f"{COVERAGE_FILE}.{os.getpid()}.tmp"
     with open(tmp, "w") as f:
         json.dump(data, f, indent=2, sort_keys=True)
     os.replace(tmp, COVERAGE_FILE)
@@ -61,21 +65,28 @@ def _flush(key):
     rec = _pending.get(key)
     if rec is None:
         return
-    try:
-        # Several check scripts fire at the same minute and each runs this at exit. Without a lock,
-        # two processes load the file, add their own record and save, and the later save silently
-        # drops the earlier one (Entry 65: false MISSING alerts for scripts that ran fine).
-        with open(COVERAGE_FILE + ".lock", "w") as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX)
-            today = str(date.today())
-            data = _load()
-            day = data.setdefault(today, {})
-            existing = day.get(key)
-            if existing and existing.get("status") == "EVALUATED" and rec["status"] != "EVALUATED":
-                return
-            day[key] = {**rec, "recorded_at": datetime.now().isoformat(timespec="seconds")}
-            for old_day in sorted(data)[:-KEEP_DAYS]:
-                del data[old_day]
-            _save(data)
-    except Exception as e:
-        print(f"(coverage log write failed, non-fatal: {e})")
+    last_error = None
+    # Lock, write, then re-read to confirm our own record is really there; retry a few times with a
+    # small random pause if it is not. Belt and braces: does not depend on flock being honoured.
+    for attempt in range(5):
+        try:
+            with open(COVERAGE_FILE + ".lock", "a") as lock:
+                fcntl.flock(lock, fcntl.LOCK_EX)
+                today = str(date.today())
+                data = _load()
+                day = data.setdefault(today, {})
+                existing = day.get(key)
+                if existing and existing.get("status") == "EVALUATED" and rec["status"] != "EVALUATED":
+                    return
+                day[key] = {**rec, "recorded_at": datetime.now().isoformat(timespec="seconds")}
+                for old_day in sorted(data)[:-KEEP_DAYS]:
+                    del data[old_day]
+                _save(data)
+                saved = _load().get(today, {}).get(key)
+                if saved and saved.get("status") == rec["status"]:
+                    return
+                last_error = "record not present after write"
+        except Exception as e:
+            last_error = e
+        time.sleep(random.uniform(0.1, 0.6))
+    print(f"(coverage log write failed after retries, non-fatal: {last_error})")
