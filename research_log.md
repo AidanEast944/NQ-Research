@@ -1835,3 +1835,24 @@ definitions.
   to 5 retries and a short random pause, so correctness no longer depends on the lock being honoured.
   A scratch test with 12 simultaneous writers kept all 12 records. Not yet verified on a real morning run.
 - Verdict: infrastructure, monitoring only. No trade, signal or account is affected.
+
+## Entry 67: Refinement Plan Started - Roll-Day Check Plus Pre-Registered Frozen-Rules Test (2026-10-20)
+- Context: after reviewing what the archive could support, the agreed plan is to (1) extend NQ/ES/YM
+  history backward on Databento, (2) rule out roll-day artifacts, (3) run the CURRENT frozen gap rules on
+  the unseen older data, and only then (4) test a few bounded, pre-declared variants. No strategy rule is
+  changed by this entry.
+- Roll-day check (done, in-sample 2024-2026): 6 of the 487 NQ gap trades fall on the 10 quarterly-expiry
+  Fridays where the continuous series stops at 09:15 ET (they resolve at 09:15 instead of 16:00). Those
+  6 are net winners (+131 pts); excluding them moves profit factor 1.19 -> 1.18 (481 trades). The largest
+  gaps (+546 on 2026-03-23, -624 on 2026-06-23) are real overnight moves: ES shows the same days at about a
+  quarter of the size. The contract-roll basis jump sits between the expiry-Friday 09:15 bar and the Sunday
+  reopen, so it never falls inside a Monday gap window. Conclusion: the backtest is not a roll artifact.
+- Noted, not acted on: trades within +-7 days of a quarterly expiry had PF 1.41 (85 trades) vs 1.15
+  (402 trades) otherwise. An unplanned subset cut, so it is a curiosity, not a finding. Also noted: the
+  "gap" is measured from the prior 23:45 close to the 08:30 open (an overnight move), which matches live.
+- Built: `src/research/extend_archive_backward.py` (quote-only by default; pulls only with --pull, an
+  explicit --start and a --max-cost the quote must stay under) and `src/research/gap_frozen_oos_test.py`
+  (pre-registered; docstring fixes rules, 6 declared trials, descriptive-only 1.5x, pass criteria PF >= 1.10
+  on >= 100 trades). The test was committed BEFORE any older data exists. Nothing has been spent.
+- Trial accounting: 6 scorecards are pre-declared; the test passes num_trials = max(count, 68) + 6 = 74.
+- Verdict: infrastructure and pre-registration only. Next: Databento cost quote, then the user decides the start date.
