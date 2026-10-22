@@ -11,7 +11,7 @@ TWO MODES - nothing is ever spent in the default mode:
   PULL (explicit): requires --pull, a --start date, and --max-cost. It re-quotes, refuses if the
   quote is above --max-cost, then pulls one calendar year at a time and writes one CSV per
   Eastern day in exactly the same format as refresh_databento_archive.py. Existing files are never
-  shrunk or overwritten with fewer rows. Safe to re-run: it resumes where it stopped.
+  shrunk or overwritten with fewer rows. Safe to re-run: years already on disk are skipped and not re-bought.
       python3 src/research/extend_archive_backward.py --pull --start 2018-01-01 --max-cost 5.00 --symbols NQ,ES,YM
 
 END of the new range is the day before each folder's earliest archived file, so it joins the
@@ -116,7 +116,7 @@ def main():
         if first is None:
             print(f"{s}: no existing archive folder, skipping.")
             continue
-        ends[s] = first  # exclusive end = earliest archived day
+        ends[s] = date(2024, 1, 1)  # fixed exclusive end: the original archive starts 2024-01-01
 
     if not args.pull:
         print("QUOTE ONLY - nothing is being pulled or spent.\n")
@@ -139,27 +139,38 @@ def main():
         print("--pull requires both --start YYYY-MM-DD and --max-cost.")
         sys.exit(1)
     start = date.fromisoformat(args.start)
+    import time
+
+    def year_done(folder, prefix, y):
+        # a year is complete if it already has >= 300 day files (a full year is ~310)
+        return len(glob.glob(f"{folder}/{prefix}_{y}-*.csv")) >= 300
+
+    chunks = []  # (symbol, seg_start, seg_end_excl, quote)
     total = 0.0
-    plan = []
     for s, end in ends.items():
-        c = quote(s, start, end)
-        plan.append((s, end, c))
-        total += c
-        print(f"{s}: {start} -> {end - timedelta(days=1)}  quote ${c:.4f}")
-    print(f"TOTAL quote ${total:.4f}  (limit ${args.max_cost:.2f})")
+        dbn, folder, prefix = SYMBOLS[s]
+        for y in range(start.year, end.year + 1):
+            seg_start = max(start, date(y, 1, 1))
+            seg_end_excl = min(end, date(y + 1, 1, 1))
+            if seg_start >= seg_end_excl:
+                continue
+            if year_done(folder, prefix, y):
+                print(f"{s} {y}: already on disk, skipping (no charge)")
+                continue
+            c = quote(s, seg_start, seg_end_excl)
+            chunks.append((s, seg_start, seg_end_excl, c))
+            total += c
+            print(f"{s} {y}: needs pull, quote ${c:.4f}")
+    print(f"TOTAL quote for MISSING chunks only: ${total:.4f}  (limit ${args.max_cost:.2f})")
     if total > args.max_cost:
         print("REFUSING: quote exceeds --max-cost. Nothing pulled.")
         sys.exit(1)
 
-    for s, end, _ in plan:
+    for s, seg_start, seg_end_excl, c in chunks:
         dbn, folder, prefix = SYMBOLS[s]
-        y = start.year
-        while True:
-            seg_start = max(start, date(y, 1, 1))
-            if seg_start >= end:
-                break
-            seg_end_excl = min(end, date(y + 1, 1, 1))
-            print(f"Pulling {s} {seg_start} -> {seg_end_excl - timedelta(days=1)} ...")
+        ok = False
+        for attempt in range(1, 4):
+            print(f"Pulling {s} {seg_start.year} (attempt {attempt}/3) ...")
             try:
                 store = client.timeseries.get_range(
                     dataset="GLBX.MDP3", symbols=[dbn], schema="ohlcv-1m",
@@ -168,15 +179,18 @@ def main():
                 raw = store.to_df()
             except Exception as e:
                 print(f"  FAILED: {e}")
-                y += 1
+                time.sleep(15 * attempt)
                 continue
             if raw.empty:
                 print("  no data returned")
             else:
                 n = resample_and_save(raw, folder, prefix, seg_start, seg_end_excl - timedelta(days=1))
                 print(f"  saved {n} day file(s)")
-            y += 1
-    print(f"\nDone. Quoted total ${total:.4f}")
+            ok = True
+            break
+        if not ok:
+            print(f"  GAVE UP on {s} {seg_start.year} - rerun later; completed years are skipped")
+    print("\nDone.")
 
 
 if __name__ == "__main__":

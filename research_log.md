@@ -1856,3 +1856,32 @@ definitions.
   on >= 100 trades). The test was committed BEFORE any older data exists. Nothing has been spent.
 - Trial accounting: 6 scorecards are pre-declared; the test passes num_trials = max(count, 68) + 6 = 74.
 - Verdict: infrastructure and pre-registration only. Next: Databento cost quote, then the user decides the start date.
+
+## Entry 68: Frozen Gap Rules on Unseen 2015-2023 History - Pre-Registered Test Result (2026-10-21)
+- Setup: Databento backfill of NQ/ES/YM 2015-01-01 -> 2023-12-31 (27 symbol-years, quoted total about $33.8,
+  three attempts because of gateway timeouts; first script version would have re-bought saved years, fixed so
+  completed years are skipped and the end date is the constant 2024-01-01). Test and criteria were committed
+  as Entry 67 before any older data existed. Rules were frozen (live parameters); 6 declared trials;
+  num_trials = 74. Output saved to results/gap_frozen_oos_output.txt.
+- Results (older history only; PF gross -> after the scorecard cost model; trades):
+  NQ unfiltered 1.01 -> 0.89 (809) | NQ vol>=1.2x 1.19 -> 1.05 (230)
+  ES unfiltered 1.10 -> 0.81 (1128) | ES vol>=1.2x 1.26 -> 0.94 (304)
+  YM unfiltered 1.13 -> 0.78 (1543) | YM vol>=1.2x 1.47 -> 1.02 (417)
+  Scorecards: NQ 3/7 and 4/7, ES 4/7 and 4/7, YM 3/7 and 5/7. Best DSR was 0.097 (YM vol>=1.2x).
+- Against the pre-registered criteria: (1) "holds up" = PF after costs >= 1.10 on >= 100 trades: NO market
+  does, filtered or not (best is NQ vol 1.05 and YM vol 1.02). (2) Volume confirmation adds value if it beats
+  unfiltered on >= 2 of 3 markets: YES, on all 3, both gross and after costs. The descriptive-only 1.5x cut
+  showed gross PF 1.23 / 1.38 / 1.52 (NQ/ES/YM) on 169 / 208 / 281 trades; it is not a scorecarded trial and
+  must not be treated as a finding.
+- Reading: the unfiltered NQ gap strategy (what gap_unfiltered trades live) had essentially no edge in
+  2015-2023 (gross PF 1.01), so its 2024-2026 PF of 1.19 looks regime-specific or lucky, which fits the live
+  win rate (26%) sitting below the backtest's 36%. The volume filter is the only consistent signal: it
+  improved every market in both periods, but the gross edge is small enough that costs absorb nearly all of
+  it. Caveat on costs: the standard model charges $4.50 commission per round trip, which on MYM ($0.5/pt) is
+  worth 9 points, so the YM after-cost figure is especially harsh; the verdict is judged on the standard model
+  as pre-registered.
+- Not yet done: Databento flagged some days as degraded (e.g. 2017-11-13, 2019-01-15, 2019-02-22,
+  2019-03-13, 2020-02-27/28, 2020-05-05; several others are Sundays). At most a handful of the 800+ trades can
+  touch them; I have not re-run with those excluded.
+- Verdict: the frozen strategies are NOT confirmed out of sample. No live rule or LIVE_STRATEGIES entry is
+  changed. Volume-confirmed gap stays paper-only, unfiltered gap has no out-of-sample support.
