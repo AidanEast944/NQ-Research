@@ -1898,3 +1898,26 @@ definitions.
   PF after costs >= 1.10 on >= 100 trades for 2015-2023, and >= 1.10 for 2024+; supported on >= 2 of 3
   markets earns a paper-only shadow track, never a LIVE_STRATEGIES entry.
 - Script `src/research/gap_vol15_wide_test.py` committed before running. No result yet.
+
+## Entry 70: Stricter Volume-Confirmed Gap Variant - Not Supported (2026-10-21)
+- Result of the Entry 69 pre-registered test (vol >= 1.5x and min gap x1.5). The script printed num_trials = 81
+  (the count had already risen to 69 entries), one higher than the 80 declared, which is the more conservative
+  figure. Output in results/gap_vol15_wide_output.txt.
+  Market  Period     Trades  Win%  GrossPF  NetPF
+  NQ      2015-2023   127    36%    1.13     1.00
+  NQ      2024+        77    49%    1.95     1.73
+  ES      2015-2023   157    43%    1.43     1.08
+  ES      2024+        67    51%    2.06     1.57
+  YM      2015-2023   226    44%    1.55     1.08
+  YM      2024+        83    46%    1.69     1.18
+- Against the pre-registered criteria (net PF >= 1.10 on >= 100 trades in 2015-2023, and >= 1.10 in 2024+):
+  NQ fails (1.00), ES fails (1.08), YM fails (1.08). Supported on 0 of 3 markets. No shadow track is created.
+  ES and YM missed by 0.02; the threshold was fixed in advance and is not being relaxed after the fact.
+- Observation, not a finding: every market is far stronger in 2024+ than in 2015-2023 (gross PF 1.7-2.1 vs
+  1.1-1.55). Either that window is a favourable regime or it carries the selection bias of being the period
+  the live strategies were built on. The 2015-2023 net PFs of 1.00-1.08 show costs absorb nearly all of the
+  edge outside it. 2024+ trade counts (67-83) are below the 100-trade bar and Check 7 (DSR) failed everywhere.
+- Trial accounting: 12 scorecards on this archive family across Entries 68-70 (6 + 6), num_trials now 81+.
+  The gap-variant search is closed: further variants on the same data would mostly add trials, not evidence.
+- Verdict: no gap variant is confirmed out of sample. No live rule or LIVE_STRATEGIES entry changes. The
+  forward paper results remain the only evidence that will move the decision.
