@@ -1977,3 +1977,20 @@ definitions.
 - Tested: smoke runs on real accounts, refusal paths (untracked script, over-budget, rerun, unknown test, modified
   script), and a full register/run/verdict cycle in a throwaway repo.
 - Verdict: infrastructure only.
+
+## Entry 74: Pre-Registration - Time-of-Day Window Scan (2026-10-22)
+- Why: the live strategies all act once a day (the 08:30 ET bar). Entry 44 swept entry times for the fade strategy
+  only (no effect) and Entry 5 (opening-range breakout) failed. This tests whether ANY part of the day has an edge,
+  using the new 2015-2023 data.
+- Clarification worth recording: 08:30 ET is the US economic-data release time, one hour BEFORE the 09:30 ET cash
+  open. The gap strategy trades the pre-open data-release bar, not the stock-market open. Labels in the dashboard
+  map and earlier summaries that called 08:30 "the NY open" were loose.
+- Design: 8 windows (ASIA 18-02, EUROPE 02-08:30, PRE 08:30-09:30, OPEN 09:30-10:30, MID 10:30-12, LUNCH 12-14,
+  AFTERNOON 14-15, CLOSE 15-16 ET) x NQ/ES/YM, measured as percent moves so 2015 and 2026 prices are comparable.
+  Direction fixed from the discovery era (2015-2023); confirmation era 2024+. Costs charged in percent terms.
+- Declared 8 trials (the windows; markets are replication). 24 tests run, so the significance bar is Bonferroni
+  adjusted: |t| >= 3.1. Candidate = |t| >= 3.1, beats costs, same direction positive after costs in 2024+, and a
+  second market agrees at |t| >= 2.0. A candidate is not a strategy; it earns a separate pre-registered test.
+- Budget: registered via research_runner.py (tod_windows), trials now 92 of 100. Only 8 remain after this.
+- Script `src/research/time_of_day_windows_test.py` committed before running; code path smoke-tested on a few months
+  around 2024-01-01 only. No result yet.
