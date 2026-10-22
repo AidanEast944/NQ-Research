@@ -1,0 +1,13 @@
+{
+  "note": "expected_win_rate comes from a pre-registered or logged backtest; null means no trustworthy figure yet, so only the breakeven and milestone checks apply. Breakeven 1/3 comes from the 40/80 and 10/20 stop/target (2:1 reward-to-risk), ignoring costs and end-of-day exits.",
+  "breakeven_win_rate": 0.3333,
+  "milestones": [25, 50, 100],
+  "tracks": {
+    "gap_unfiltered": {"label": "Gap (unfiltered) MNQ", "account": "data/gap_paper_account.json", "expected_win_rate": 0.378, "expected_source": "487-trade 2024-26 backtest (Entry 16 / roll check 2026-10-20)"},
+    "volume_gap_nq_1_2x": {"label": "Vol-confirmed gap NQ 1.2x", "account": "data/volume_gap_1_2x_paper_account.json", "expected_win_rate": null},
+    "volume_gap_nq_1_5x": {"label": "Vol-confirmed gap NQ 1.5x", "account": "data/volume_gap_1_5x_paper_account.json", "expected_win_rate": null},
+    "volume_gap_es_1_2x": {"label": "Vol-confirmed gap ES 1.2x", "account": "data/volume_gap_es_1_2x_paper_account.json", "expected_win_rate": null},
+    "volume_gap_ym_1_2x": {"label": "Vol-confirmed gap YM 1.2x", "account": "data/volume_gap_ym_1_2x_paper_account.json", "expected_win_rate": null},
+    "volume_gap_ym_1_5x": {"label": "Vol-confirmed gap YM 1.5x", "account": "data/volume_gap_ym_1_5x_paper_account.json", "expected_win_rate": null}
+  }
+}

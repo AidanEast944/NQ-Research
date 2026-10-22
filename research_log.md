@@ -1955,3 +1955,25 @@ definitions.
   profit depends on a few large winners and its DSR is 0.000. It stays a watch item, not a strategy.
 - Verdict: not supported. Nothing added to LIVE_STRATEGIES; no shadow track created. Trials declared across
   Entries 67-72: 16 scorecards, num_trials now 84.
+
+## Entry 73: Research Runner, Decay Monitor and Promotion Queue (2026-10-22)
+- Built as the bounded alternative to an automatic strategy-discovery engine. None of the three can invent a
+  test or deploy a strategy. All are infrastructure; no strategy, signal or account changes.
+- `src/research_runner.py` + `registry/research_registry.json`: runs only PRE-REGISTERED tests; refuses a script
+  that is untracked, modified since commit, or changed since registration; keeps the trial ledger
+  (baseline 68 + registered tests = 84, budget 100, so 16 left; raising the budget is a deliberate edit with a
+  reason in this log); records every run in results/research_runs.jsonl; verdicts are written by a human.
+  Seeded with the three scored tests (Entries 68, 70, 72).
+- `src/decay_monitor.py` + `registry/track_expectations.json`: per paper track, flags 25/50/100-trade milestones,
+  win rate improbably below the backtest rate (binomial p < 0.05) or below the 1/3 breakeven (p < 0.10) from 15
+  trades, drawdown over 20% of $10k, and 8+ loss streaks; macOS notification only for NEW flags. Only
+  gap_unfiltered has a trustworthy expected win rate (37.8%); the volume tracks get breakeven and milestone checks.
+  First run: gap 6/20 wins (30%), no flags, no milestone yet. Scheduled 5:45 PM PT via launchd/com.nqresearch.decaymonitor.plist
+  (to be loaded by hand).
+- `src/promotion_queue.py` + `registry/promotion_queue.json`: stage gate paper -> micro_live (100 forward trades,
+  forward net PF >= 1.10, positive net dollars, no decay flags, one supported pre-registered test). `approve` only
+  records a human decision and refuses while a requirement is unmet unless --override "reason" is given (stored
+  permanently). It never edits live_gate.py. Current state: all six tracks BLOCKED, as expected.
+- Tested: smoke runs on real accounts, refusal paths (untracked script, over-budget, rerun, unknown test, modified
+  script), and a full register/run/verdict cycle in a throwaway repo.
+- Verdict: infrastructure only.

@@ -1,0 +1,34 @@
+{
+  "baseline_trials": 68,
+  "trial_budget_total": 100,
+  "note": "baseline_trials is the honest floor from Entries 1-66 (log count 66 plus 2 collapsed in Entry 62). Each registered test adds its declared trials. The runner refuses to register a test that would exceed trial_budget_total. Raise the budget only on purpose, in writing.",
+  "tests": {
+    "gap_frozen_oos": {
+      "script": "src/research/gap_frozen_oos_test.py",
+      "declared_trials": 6,
+      "description": "Frozen live gap rules (unfiltered and vol>=1.2x) on NQ/ES/YM 2015-2023",
+      "status": "scored",
+      "verdict": "not_supported",
+      "log_entry": 68,
+      "output": "results/gap_frozen_oos_output.txt"
+    },
+    "gap_vol15_wide": {
+      "script": "src/research/gap_vol15_wide_test.py",
+      "declared_trials": 6,
+      "description": "Stricter variant: vol>=1.5x and min gap x1.5, 2015-2023 and 2024+",
+      "status": "scored",
+      "verdict": "not_supported",
+      "log_entry": 70,
+      "output": "results/gap_vol15_wide_output.txt"
+    },
+    "overnight_drift_oos": {
+      "script": "src/research/overnight_drift_oos_test.py",
+      "declared_trials": 4,
+      "description": "Overnight drift with stop on 2015-2023 (NQ all, NQ Wed, ES, YM)",
+      "status": "scored",
+      "verdict": "not_supported",
+      "log_entry": 72,
+      "output": "results/overnight_drift_oos_output.txt"
+    }
+  }
+}

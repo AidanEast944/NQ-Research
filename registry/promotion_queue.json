@@ -1,0 +1,21 @@
+{
+  "note": "Stages: backtest -> paper -> micro_live. The machine only reports blockers and records a human's approval. It never edits live_gate.py, never places a trade and never moves a strategy by itself. Putting a strategy on LIVE_STRATEGIES / real money remains a manual edit by you.",
+  "stages": ["backtest", "paper", "micro_live"],
+  "gates": {
+    "paper_to_micro_live": {
+      "min_forward_trades": 100,
+      "min_forward_net_profit_factor": 1.10,
+      "min_forward_net_dollars": 0,
+      "require_no_decay_flags": true,
+      "require_supported_test": true
+    }
+  },
+  "strategies": {
+    "gap_unfiltered":     {"track": "gap_unfiltered",     "stage": "paper", "supporting_tests": [], "approvals": []},
+    "volume_gap_nq_1_2x": {"track": "volume_gap_nq_1_2x", "stage": "paper", "supporting_tests": [], "approvals": []},
+    "volume_gap_nq_1_5x": {"track": "volume_gap_nq_1_5x", "stage": "paper", "supporting_tests": [], "approvals": []},
+    "volume_gap_es_1_2x": {"track": "volume_gap_es_1_2x", "stage": "paper", "supporting_tests": [], "approvals": []},
+    "volume_gap_ym_1_2x": {"track": "volume_gap_ym_1_2x", "stage": "paper", "supporting_tests": [], "approvals": []},
+    "volume_gap_ym_1_5x": {"track": "volume_gap_ym_1_5x", "stage": "paper", "supporting_tests": [], "approvals": []}
+  }
+}
