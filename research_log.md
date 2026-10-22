@@ -1933,3 +1933,25 @@ definitions.
 - Pass criteria: >= 100 trades and net PF >= 1.10; drawdown < 30% of $10k at 1 micro; top-5 trades < 50% of
   after-cost profit. NQ-Wednesday must also beat NQ-all-weekdays. Script `overnight_drift_oos_test.py`
   committed before running. No result yet.
+
+## Entry 72: Overnight Drift With Stop on Unseen 2015-2023 History - Not Supported (2026-10-22)
+- Result of the Entry 71 pre-registered test (LONG prior 16:00 close -> 08:30 open, stop NQ 100 / ES 25 /
+  YM 200; fills assumed at the stop, which is optimistic). num_trials = 84. Output in
+  results/overnight_drift_oos_output.txt.
+  Slice (2015-2023)          Trades  Gross PF  Net PF  Max DD   Top-5 share of profit
+  NQ all weekdays             1790     1.04     0.89    70.2%    n/a (net loss, -$8,427)
+  NQ Wednesday-only            461     1.32     1.12    20.8%    143%
+  ES all weekdays             1791     0.97     0.70    47.5%    n/a (net loss, -$18,527)
+  YM all weekdays             1789     1.02     0.82    33.4%    n/a (net loss, -$8,272)
+  2024+ (descriptive only): NQ net PF 1.04 (541 trades), ES 0.94, YM 0.87.
+- Against the pre-registered criteria (>= 100 trades and net PF >= 1.10; drawdown < 30%; top-5 trades < 50% of
+  profit): NQ, ES and YM all-weekdays fail on net PF and on drawdown. NQ Wednesday-only passes net PF (1.12)
+  and drawdown (20.8%) and beats NQ all-weekdays, but FAILS the tail test: its five best trades are 143% of
+  total after-cost profit, i.e. the other 456 trades together lose money. Supported on 0 of 4 slices.
+- Reading: overnight drift has no edge on 2015-2023 in any of the three indexes once costs are paid, and
+  out-of-sample expectancy was negative for NQ, ES and YM, so the Entry 17 / Entry 20 result looks like a
+  2024-2026 feature. The one partial survivor, NQ Wednesday, did replicate in direction on never-seen data
+  (gross PF 1.32, median trade +$5.50), which is more than most Wednesday-style findings manage, but its
+  profit depends on a few large winners and its DSR is 0.000. It stays a watch item, not a strategy.
+- Verdict: not supported. Nothing added to LIVE_STRATEGIES; no shadow track created. Trials declared across
+  Entries 67-72: 16 scorecards, num_trials now 84.
