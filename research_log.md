@@ -2004,8 +2004,9 @@ definitions.
   of 1.6 to 1.9.
 - Costs are the main reason nothing works: the average move in every window is 0.00% to 0.02% of price, while one
   round trip on a micro contract costs roughly 0.04% to 0.07% of price (1 point of slippage + $4.50). Every one of
-  the 24 window-market combinations has a negative net mean in discovery, and 21 of 24 are negative in 2024+ as well
-  (NQ ASIA, NQ EUROPE and ES/YM windows with positive confirmation t-stats were still negative or near zero after costs).
+  the 24 window-market combinations has a negative net mean in discovery, and 22 of 24 are negative in 2024+
+  as well. The only exceptions are NQ ASIA and NQ EUROPE (+0.0135% and +0.0124% per trade after costs, t about 1.5
+  and 1.6, not significant and failing the discovery bar).
 - What this does and does not show: it shows that simply being long or short during a fixed part of the day does not
   pay for itself. It says nothing about conditional signals inside a window (a gap, a volume surge, a news release),
   which is what the existing strategies use. The upward drift of index futures is visible as mostly-positive LONG
