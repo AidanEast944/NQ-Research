@@ -34,9 +34,15 @@
       "script": "src/research/time_of_day_windows_test.py",
       "declared_trials": 8,
       "description": "Time-of-day window scan: 8 windows x NQ/ES/YM, discovery 2015-2023, confirmation 2024+",
-      "status": "registered",
+      "status": "scored",
       "registered_at": "2026-10-22T19:54:00",
-      "script_commit": "12d77edcf6dd605972407814f01c09df49323308"
+      "script_commit": "12d77edcf6dd605972407814f01c09df49323308",
+      "output": "results/tod_windows_output.txt",
+      "last_run": "2026-10-22T14:59:33",
+      "verdict": "not_supported",
+      "log_entry": 75,
+      "verdict_note": "No window reached |t|>=3.1; all discovery net means negative after costs",
+      "scored_at": "2026-10-22T22:00:21"
     }
   }
 }

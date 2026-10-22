@@ -1994,3 +1994,20 @@ definitions.
 - Budget: registered via research_runner.py (tod_windows), trials now 92 of 100. Only 8 remain after this.
 - Script `src/research/time_of_day_windows_test.py` committed before running; code path smoke-tested on a few months
   around 2024-01-01 only. No result yet.
+
+## Entry 75: Time-of-Day Window Scan - No Edge Found (2026-10-22)
+- Result of the Entry 74 pre-registered scan, run through research_runner.py (tod_windows, script commit 12d77edc,
+  trials used 92 of 100). Output in results/tod_windows_output.txt.
+- No window reached the Bonferroni bar (|t| >= 3.1) on any market, so there are NO candidates. The strongest
+  discovery-era signals were NQ AFTERNOON (14-15 ET, t = 2.42, long) and NQ ASIA (t = 2.17, long), both below the bar
+  and both negative after costs in discovery (-0.026% and -0.021% per trade). The other markets' best windows had t
+  of 1.6 to 1.9.
+- Costs are the main reason nothing works: the average move in every window is 0.00% to 0.02% of price, while one
+  round trip on a micro contract costs roughly 0.04% to 0.07% of price (1 point of slippage + $4.50). Every one of
+  the 24 window-market combinations has a negative net mean in discovery, and 21 of 24 are negative in 2024+ as well
+  (NQ ASIA, NQ EUROPE and ES/YM windows with positive confirmation t-stats were still negative or near zero after costs).
+- What this does and does not show: it shows that simply being long or short during a fixed part of the day does not
+  pay for itself. It says nothing about conditional signals inside a window (a gap, a volume surge, a news release),
+  which is what the existing strategies use. The upward drift of index futures is visible as mostly-positive LONG
+  directions, but it is far too small to cover costs on micro contracts.
+- Verdict: not supported. 8 trials used by the scan; 8 remain in the budget. Nothing added to LIVE_STRATEGIES.

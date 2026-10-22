@@ -1,0 +1,41 @@
+loading NQ ...
+/Users/aidaneast/nq-research/src/research/time_of_day_windows_test.py:69: DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific unit instead.
+  sh = df.index + pd.Timedelta(hours=6)
+loading ES ...
+/Users/aidaneast/nq-research/src/research/time_of_day_windows_test.py:69: DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific unit instead.
+  sh = df.index + pd.Timedelta(hours=6)
+loading YM ...
+/Users/aidaneast/nq-research/src/research/time_of_day_windows_test.py:69: DeprecationWarning: The 'generic' unit for NumPy timedelta is deprecated, and will raise an error in the future. This includes implicit conversion of bare integers (e.g. `+ 1`).Please use a specific unit instead.
+  sh = df.index + pd.Timedelta(hours=6)
+
+WINDOW SCAN (percent moves; direction fixed from the discovery era)
+mkt window      dir  nDisc   mean%      t  netDisc%  nConf  netConf%  tConf
+NQ  ASIA       LONG   2319  0.0231   2.17   -0.0207    708    0.0135   1.54
+NQ  EUROPE     LONG   2322  0.0155   1.46   -0.0284    709    0.0124   1.61
+NQ  PRE       SHORT   2319 -0.0043  -0.61   -0.0396    709   -0.0183  -0.35
+NQ  OPEN       LONG   2284  0.0149   1.28   -0.0289    697   -0.0183  -0.17
+NQ  MID        LONG   2284  0.0110   1.05   -0.0328    697   -0.0121   0.15
+NQ  LUNCH     SHORT   2211 -0.0038  -0.39   -0.0400    671   -0.0432  -1.35
+NQ  AFTERNOON  LONG   2211  0.0183   2.42   -0.0256    671   -0.0273  -1.05
+NQ  CLOSE     SHORT   2211 -0.0021  -0.21   -0.0418    671   -0.0103   0.32
+ES  ASIA       LONG   2320  0.0151   1.60   -0.0506    716   -0.0126   1.46
+ES  EUROPE     LONG   2324  0.0154   1.70   -0.0503    717   -0.0112   1.54
+ES  PRE        LONG   2322  0.0016   0.27   -0.0641    717   -0.0244   0.81
+ES  OPEN       LONG   2284  0.0073   0.90   -0.0584    705   -0.0275   0.26
+ES  MID        LONG   2284  0.0085   1.05   -0.0572    705   -0.0326  -0.12
+ES  LUNCH     SHORT   2211 -0.0017  -0.21   -0.0641    679   -0.0540  -1.34
+ES  AFTERNOON  LONG   2211  0.0119   1.86   -0.0539    679   -0.0349  -0.41
+ES  CLOSE      LONG   2211  0.0002   0.02   -0.0655    679   -0.0364  -0.50
+YM  ASIA       LONG   2318  0.0146   1.59   -0.0259    703   -0.0213   0.12
+YM  EUROPE     LONG   2321  0.0135   1.49   -0.0270    708   -0.0137   0.68
+YM  PRE        LONG   2317  0.0002   0.04   -0.0402    709   -0.0149   0.97
+YM  OPEN       LONG   2282  0.0045   0.55   -0.0359    697   -0.0125   0.70
+YM  MID        LONG   2282  0.0061   0.78   -0.0344    697   -0.0255  -0.24
+YM  LUNCH     SHORT   2208 -0.0009  -0.12   -0.0396    671   -0.0386  -1.01
+YM  AFTERNOON  LONG   2208  0.0085   1.40   -0.0320    671   -0.0201   0.27
+YM  CLOSE      LONG   2209  0.0024   0.28   -0.0381    671   -0.0281  -0.58
+
+CANDIDATES under the pre-registered rule (all four conditions):
+  none
+
+Judge ONLY against the pass criteria in this file's docstring.

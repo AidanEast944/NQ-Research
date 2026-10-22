@@ -1,0 +1,1 @@
+{"id": "tod_windows", "started": "2026-10-22T14:59:26", "finished": "2026-10-22T14:59:33", "script": "src/research/time_of_day_windows_test.py", "script_commit": "12d77edcf6dd605972407814f01c09df49323308", "exit_code": 0, "output": "results/tod_windows_output.txt", "rerun": false, "declared_trials": 8}
