@@ -1921,3 +1921,15 @@ definitions.
   The gap-variant search is closed: further variants on the same data would mostly add trials, not evidence.
 - Verdict: no gap variant is confirmed out of sample. No live rule or LIVE_STRATEGIES entry changes. The
   forward paper results remain the only evidence that will move the decision.
+
+## Entry 71: Pre-Registration - Overnight Drift With Stop on Unseen 2015-2023 History (2026-10-21)
+- Why: Entries 17/20 found a consistent overnight-long drift on 2024-2026 (PF 1.13 with a 100pt stop, 38%
+  drawdown, and 92% of profit from the top 5 trades) plus a Wednesday-only slice that was the best of 5
+  weekday buckets. 2015-2023 is genuinely unseen for this rule, so it is a clean out-of-sample test.
+- Frozen rule: LONG prior-day 16:00 close -> 08:30 open, bar-by-bar stop (NQ 100, ES 25, YM 200 points, about
+  0.5% of price each; fills assumed at the stop, which is optimistic). 4 declared scorecards on 2015-2023:
+  NQ all weekdays, NQ Wednesday-only, ES all weekdays, YM all weekdays. 2024+ printed descriptively only.
+  num_trials = max(84, trial_count + 4).
+- Pass criteria: >= 100 trades and net PF >= 1.10; drawdown < 30% of $10k at 1 micro; top-5 trades < 50% of
+  after-cost profit. NQ-Wednesday must also beat NQ-all-weekdays. Script `overnight_drift_oos_test.py`
+  committed before running. No result yet.
