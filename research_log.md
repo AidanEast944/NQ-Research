@@ -1885,3 +1885,16 @@ definitions.
   touch them; I have not re-run with those excluded.
 - Verdict: the frozen strategies are NOT confirmed out of sample. No live rule or LIVE_STRATEGIES entry is
   changed. Volume-confirmed gap stays paper-only, unfiltered gap has no out-of-sample support.
+
+## Entry 69: Pre-Registration - Stricter Volume-Confirmed Gap Variant (2026-10-21)
+- Why: Entry 68 showed the 1.2x volume filter beat unfiltered on all three markets but the edge was eaten by
+  costs, and the descriptive-only 1.5x cut looked stronger (gross PF 1.23 / 1.38 / 1.52). This tests one
+  stricter variant, fixed before running: volume >= 1.5x AND min gap x1.5 (NQ/YM 45, ES 9); stops, targets and
+  entry time unchanged.
+- Honesty: the 1.5x threshold was already seen on 2015-2023, so that window is not a clean test for it. The
+  2024+ window is the only unseen one for this exact variant, but the live strategies were built on it and
+  trade counts will be well under 100, so it is directional only. Stated up front so a pass is not oversold.
+- Declared: 6 scorecards (3 markets x 2 periods), num_trials = max(count, 68) + 12 = 80. Pass criteria:
+  PF after costs >= 1.10 on >= 100 trades for 2015-2023, and >= 1.10 for 2024+; supported on >= 2 of 3
+  markets earns a paper-only shadow track, never a LIVE_STRATEGIES entry.
+- Script `src/research/gap_vol15_wide_test.py` committed before running. No result yet.
