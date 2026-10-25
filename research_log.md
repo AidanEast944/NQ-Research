@@ -2064,3 +2064,18 @@ definitions.
 - Tested: current archives report ok; simulated Tue 10/27 clean; simulated 11/03 flags all four. The strategy
   coverage check is unchanged. No trading, signal or account logic touched.
 - Verdict: infrastructure.
+
+## Entry 79: Research Lab Scaffold Added Alongside the Existing System (2026-10-25)
+- Why: Aidan wants a human-supervised, agent-assisted research workflow. Built additively: nothing in src/, registry/,
+  data/ or launchd/ was modified. New code is in src/lab/, design and policy in lab/, tests in src/tests/test_lab.py.
+- What: deterministic Research Director (submit/approve/reject/status), spec validation with fingerprint duplicate
+  detection (rejections are logged on purpose), budget and weekly-allowance guards (2 lab trials/week, never above the
+  registry's remaining budget), sealed-holdout rule (RTY + forward data; discovery specs may not use it), truncation-based
+  look-ahead test, deterministic validator vetoes, weekly reporter. Agent decisions are logged with spec hash and git commit.
+- Agents: Claude proposes specs in a session (no paid API). Agents have no write path to live_gate.py, risk_limits.py,
+  paper accounts or the trial registry; a test scans the source to assert this. Approval only records a human decision.
+- Honest limits: no spec-to-script compiler yet (phase 2), so approved specs are still hand-built into pre-registered
+  scripts and run through research_runner.py. The 2015-2026 NQ/ES/YM history is contaminated by earlier tests, so true
+  out-of-sample evidence will come from RTY and forward paper data only.
+- Tested: 18 unit tests pass (duplicates, budget, weekly cap, holdout, planted look-ahead, validator vetoes, no-live-authority).
+- Verdict: infrastructure. No trials used.

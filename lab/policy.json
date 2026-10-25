@@ -1,0 +1,11 @@
+{
+  "weekly_trial_allowance": 2,
+  "max_concurrent_experiments": 1,
+  "lab_start_date": "2026-10-25",
+  "discovery_symbols_allowed": ["NQ", "ES", "YM"],
+  "holdout_symbols": ["RTY"],
+  "required_cost_model": {"slippage_points": 1.0, "commission_round_trip": 4.5},
+  "min_trades": 100,
+  "min_oos_trades": 20,
+  "note": "Changing this file is a human decision. Agents never edit it."
+}
