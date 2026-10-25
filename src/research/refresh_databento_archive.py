@@ -198,6 +198,8 @@ if total_cost > MAX_COST_PER_RUN_USD:
 
 # --- Step 2: actually pull and save ---
 print(f"\nProceeding - total cost ${total_cost:.4f} is under the ${MAX_COST_PER_RUN_USD:.2f} cap.\n")
+spent = 0.0  # quoted cost of pulls that actually succeeded (failed pulls are not counted)
+failed = []
 for p in plan:
     print(f"Pulling {p['label']} ({p['start']} -> {END_DATE})...")
     try:
@@ -207,8 +209,10 @@ for p in plan:
             stype_in="continuous",
         )
         raw_df = store.to_df()
+        spent += p["cost"]
     except Exception as e:
         print(f"  FAILED to pull {p['label']}: {e}")
+        failed.append(p["label"])
         continue
 
     if raw_df.empty:
@@ -221,4 +225,6 @@ for p in plan:
     else:
         print(f"  Nothing saved for {p['label']} this run (all candidate days were skipped - see above).")
 
-print(f"\nDone. Total spent this run: ${total_cost:.4f}")
+if failed:
+    print(f"\nWARNING: pulls FAILED for {', '.join(failed)} - archive not updated for those symbols.")
+print(f"\nDone. Quoted cost of pulls that succeeded: ${spent:.4f}")

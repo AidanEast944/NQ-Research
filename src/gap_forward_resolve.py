@@ -1,4 +1,5 @@
 import sys
+import yahoo_retry
 import subprocess
 import yfinance as yf
 import pandas as pd
@@ -55,10 +56,11 @@ if not broker.positions:
 nq = yf.Ticker("NQ=F")
 # 60d (not 5d) so a position stuck open for a while can still be caught up against its own real
 # entry-day bars, not just whatever the last few days happen to cover.
-history = nq.history(period="60d", interval="15m")
+history = yahoo_retry.fetch_history(nq, "Gap resolve")
 
 if history.empty:
     print("WARNING: No data returned from Yahoo Finance. Skipping this run.")
+    yahoo_retry.alert_unresolved("Gap resolve")
     sys.exit()
 
 history["date"] = history.index.date

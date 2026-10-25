@@ -10,6 +10,7 @@ own entry day's bars, so a position that missed its same-day resolve run can't g
 indefinitely.
 """
 import sys
+import yahoo_retry
 import yfinance as yf
 import pandas as pd
 from datetime import date
@@ -37,10 +38,11 @@ if not any_open:
     sys.exit()
 
 ym = yf.Ticker("YM=F")
-history = ym.history(period="60d", interval="15m")
+history = yahoo_retry.fetch_history(ym, "Volume gap YM resolve")
 
 if history.empty:
     print("WARNING: No data returned. Skipping.")
+    yahoo_retry.alert_unresolved("Volume gap YM resolve")
     sys.exit()
 
 history["date"] = history.index.date

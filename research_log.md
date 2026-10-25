@@ -2012,3 +2012,26 @@ definitions.
   which is what the existing strategies use. The upward drift of index futures is visible as mostly-positive LONG
   directions, but it is far too small to cover costs on micro contracts.
 - Verdict: not supported. 8 trials used by the scan; 8 remain in the budget. Nothing added to LIVE_STRATEGIES.
+
+## Entry 76: Yahoo Retry on Evening Resolve Jobs; Databento Refresh Failure Diagnosed, Not Yet Fixed (2026-10-24)
+- Finding 1: the 2026-10-22 5:05 PM gap resolve got an empty reply from Yahoo ("$NQ=F: possibly delisted; no price
+  data found", a transient outage), printed "Skipping this run" and left the 10/22 paper SHORT open overnight.
+  The resolve scripts had no retry and no alert.
+- Fix: new `src/yahoo_retry.py` (fetch_history: up to 5 tries a minute apart, exceptions and empty frames both retried;
+  alert_unresolved: Mac notification). Wired into the five resolve scripts that fetch Yahoo (gap, volume gap NQ/ES/YM,
+  vol+momentum). The alert fires only when a position is open and no data could be fetched. The retired fade resolver
+  is untouched. Helper unit-tested with a fake ticker (recovers after an empty frame and an exception, gives up cleanly).
+  No trade, signal or account logic changed. Not yet seen on a real Yahoo outage.
+- Finding 2: the Databento archive refresh has failed every day since 2026-09-30 (422 dataset_unavailable_range, 75
+  failures in the log); the NQ/ES/YM/RTY archives end on 2026-09-29. Live checks use Yahoo, so no paper trading
+  was affected, but the research archive is about 3.5 weeks stale. The pre-2024 backfill (2015-2023) worked, so older
+  data is accessible.
+- What the evidence rules out: get_cost() quotes succeed for the same ranges that fail to pull, so a quote proves
+  nothing about access; and the error's "try again with an end time before X" hint equals the time of the request, so
+  it is not a usable boundary. My earlier plan to clamp the end time to that hint would not have worked. Cause is
+  still unknown (licence or plan change around 9/30 is the main suspect; I cannot see the account).
+- Fix so far: the refresh log's final line used to say "Total spent" with the QUOTED cost even when every pull failed.
+  It now counts only pulls that succeeded and prints a WARNING naming symbols that failed.
+- Next: `src/research/probe_databento_license_boundary.py` pulls a single 1-minute bar at nine dates to find where
+  access stops (well under one cent). Fix the refresh only after seeing the result.
+- Verdict: infrastructure.

@@ -10,6 +10,7 @@ yet since it had never opened a trade, but the same silent-stranding failure mod
 too. Now every open position is checked against its own entry day's bars.
 """
 import sys
+import yahoo_retry
 import yfinance as yf
 import pandas as pd
 from datetime import date
@@ -31,10 +32,11 @@ if not broker.positions:
     sys.exit()
 
 nq = yf.Ticker("NQ=F")
-history = nq.history(period="60d", interval="15m")
+history = yahoo_retry.fetch_history(nq, "Vol+Momentum resolve")
 
 if history.empty:
     print("WARNING: No data returned. Skipping.")
+    yahoo_retry.alert_unresolved("Vol+Momentum resolve")
     sys.exit()
 
 history["date"] = history.index.date
