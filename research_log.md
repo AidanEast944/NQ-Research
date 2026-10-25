@@ -2053,3 +2053,14 @@ definitions.
 - Unexplained: why the same 3 AM run succeeded before 9/30 is still unknown (the embargo may have been shorter
   or the job timed differently). Stated plainly rather than guessed.
 - Verdict: infrastructure. Research archives have been about 3.5 weeks stale; no live trading was affected.
+
+## Entry 78: Archive Freshness Added to the Coverage Report (2026-10-24)
+- Why: the Databento refresh (Entries 76/77) failed every day from 2026-09-30 to 2026-10-24 and nothing noticed for
+  about 3.5 weeks, because the coverage report only checked that the morning trading scripts ran.
+- Change (src/coverage_report.py, 5:35 PM PT weekdays): for NQ, ES, YM and RTY it finds the newest archived day and
+  counts weekdays after it (before today) with no file. Two or more missing weekdays raises a Mac notification
+  ("data archive stale") and an ARCHIVE GAP line in the report log; a single market holiday gives one and stays quiet.
+  Replaying the real failure: it would have flagged on Friday 2026-10-02, three days after the last good file.
+- Tested: current archives report ok; simulated Tue 10/27 clean; simulated 11/03 flags all four. The strategy
+  coverage check is unchanged. No trading, signal or account logic touched.
+- Verdict: infrastructure.

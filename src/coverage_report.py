@@ -7,13 +7,21 @@ today and which didn't. Fires a macOS notification when a weekday has gaps, so a
 Run after the morning checks and the 5 PM resolve jobs (scheduled 5:35 PM PT). Purely diagnostic.
 Usage: python3 src/coverage_report.py [YYYY-MM-DD]   (date optional, defaults to today)
 """
+import glob
 import json
 import os
 import subprocess
 import sys
-from datetime import date
+from datetime import date, timedelta
 
 COVERAGE_FILE = "data/coverage_log.json"
+
+# Archive freshness (research_log.md Entry 78). The Databento refresh failed silently from 2026-09-30 to
+# 2026-10-24 because nothing watched the research archives. The newest archived day should normally be yesterday
+# or the last trading day; a gap of this many missing WEEKDAYS (a single market holiday gives one) raises an alert.
+ARCHIVES = {"NQ": "data/raw_nq_extended", "ES": "data/raw_es_extended",
+            "YM": "data/raw_ym_extended", "RTY": "data/raw_rty_extended"}
+MAX_MISSING_WEEKDAYS = 2
 
 EXPECTED = {
     "gap_unfiltered": "Gap (unfiltered)",
@@ -39,12 +47,48 @@ def notify(title, message):
         print(f"(notification failed, non-fatal: {e})")
 
 
+def check_archives(day):
+    """Return (lines, stale_messages). A symbol is stale when 2 or more weekdays between its newest archived day
+    and today (exclusive) have no file."""
+    today = date.fromisoformat(day)
+    lines, stale = [], []
+    for sym, folder in ARCHIVES.items():
+        files = sorted(glob.glob(os.path.join(folder, "*.csv")))
+        if not files:
+            stale.append(f"{sym}: no archive files found in {folder}")
+            lines.append(f"  ARCHIVE EMPTY  {sym}")
+            continue
+        newest = date.fromisoformat(os.path.basename(files[-1]).replace(".csv", "")[-10:])
+        have = {os.path.basename(f).replace(".csv", "")[-10:] for f in files}
+        d, missing = newest + timedelta(days=1), 0
+        while d < today:
+            if d.weekday() < 5 and d.isoformat() not in have:
+                missing += 1
+            d += timedelta(days=1)
+        if missing >= MAX_MISSING_WEEKDAYS:
+            stale.append(f"{sym} archive ends {newest} ({missing} weekdays behind)")
+            lines.append(f"  ARCHIVE STALE  {sym}: newest {newest}, {missing} weekdays missing")
+        else:
+            lines.append(f"  archive ok     {sym}: newest {newest}")
+    return lines, stale
+
+
 def main():
     day = sys.argv[1] if len(sys.argv) > 1 else str(date.today())
     weekday = date.fromisoformat(day).weekday()
     if weekday >= 5:
         print(f"{day} is a weekend - futures closed, nothing expected to evaluate. OK.")
         return
+
+    arch_lines, arch_stale = check_archives(day)
+    print(f"=== Data archive freshness for {day} ===")
+    for line in arch_lines:
+        print(line)
+    if arch_stale:
+        amsg = "Research data archive is behind: " + "; ".join(arch_stale) + ". Check data/databentorefresh_log.txt."
+        print("ARCHIVE GAP: " + amsg)
+        notify("NQ Research - data archive stale", amsg)
+    print()
 
     data = {}
     if os.path.exists(COVERAGE_FILE):
