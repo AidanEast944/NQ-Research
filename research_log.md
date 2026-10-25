@@ -2035,3 +2035,21 @@ definitions.
 - Next: `src/research/probe_databento_license_boundary.py` pulls a single 1-minute bar at nine dates to find where
   access stops (well under one cent). Fix the refresh only after seeing the result.
 - Verdict: infrastructure.
+
+## Entry 77: Databento Refresh Failure - Cause Found and Fixed (2026-10-24)
+- Probe result (single 1-minute NQ bars, well under a cent): every date from 9/28 through 10/23 pulled fine, so there
+  was no licence cutoff at 9/30 as I had suspected in Entry 76. The free get_dataset_range() reported a dataset end
+  of 21:50:24Z at a request time of 05:50:24Z, exactly 8 hours earlier. Databento serves data older than a
+  rolling 8 hours only, and the error's "try again with an end time before X" is that same boundary (so my
+  Entry 76 remark that it equals the request time was wrong; it equals request time minus 8 hours).
+- Cause: the 3 AM PT (10:00Z) refresh asked for data through midnight Eastern (04:00Z), which is two hours past the
+  boundary (02:00Z), so Databento rejected the whole request. Checked against the real 10/23 failure: requested end
+  04:00:00Z, boundary 02:00:29Z, matches the logged error to the second.
+- Fix (src/research/refresh_databento_archive.py): every request's end is now min(midnight Eastern after the target
+  day, now - 9 hours floored to a 15-minute mark), i.e. 8 hours of embargo plus a 1 hour margin; and the start is the
+  last archived day itself (re-pulled) so a partial day from a capped run is completed on the next run. The existing
+  shrink guard still prevents any file being overwritten with fewer rows. Cost stays under the $1 per-run cap, which
+  the run checks before pulling. The catch-up from 9/29 is expected to be a few tenths of a dollar.
+- Unexplained: why the same 3 AM run succeeded before 9/30 is still unknown (the embargo may have been shorter
+  or the job timed differently). Stated plainly rather than guessed.
+- Verdict: infrastructure. Research archives have been about 3.5 weeks stale; no live trading was affected.

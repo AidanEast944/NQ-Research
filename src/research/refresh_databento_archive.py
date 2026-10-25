@@ -41,7 +41,7 @@ import os
 import sys
 import glob
 import pandas as pd
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 MAX_COST_PER_RUN_USD = 1.00  # circuit breaker - refuses to spend more than this in one run
@@ -93,6 +93,23 @@ SYMBOLS = {
 }
 
 END_DATE = date.today() - timedelta(days=1)  # "yesterday" - see docstring on the access delay
+
+# 2026-10-24 (research_log.md Entry 76): from 2026-09-30 every pull failed with 422 dataset_unavailable_range.
+# Cause: Databento only serves data older than a rolling 8 hours (the free metadata get_dataset_range() "end" is
+# exactly now - 8h; the error's "try again with an end time before X" is that same boundary). A run at 3 AM PT
+# asked for data through midnight Eastern, which is 2 hours past that boundary. So the end of every request is
+# now capped at now - 9h (8h embargo + 1h margin), floored to a 15-minute mark so no half-built bar is saved.
+EMBARGO_HOURS = 9
+
+
+def _end_dt(end_date):
+    cap = datetime.now(timezone.utc) - timedelta(hours=EMBARGO_HOURS)
+    cap = cap.replace(minute=(cap.minute // 15) * 15, second=0, microsecond=0)
+    return min(datetime(end_date.year, end_date.month, end_date.day, tzinfo=EASTERN) + timedelta(days=1), cap)
+
+
+END_DT = _end_dt(END_DATE)
+END_ISO = END_DT.isoformat()
 
 
 def last_archived_date(folder):
@@ -161,7 +178,7 @@ for label, (dbn_symbol, folder, prefix) in SYMBOLS.items():
               f"an existing archive, it doesn't bootstrap a new one from scratch).")
         continue
 
-    start = last_date + timedelta(days=1)
+    start = last_date  # re-pull the last archived day: it may be a partial day from an earlier capped run (rows never shrink)
     if start > END_DATE:
         print(f"{label}: already current through {last_date}. Nothing to do.")
         continue
@@ -169,7 +186,7 @@ for label, (dbn_symbol, folder, prefix) in SYMBOLS.items():
     try:
         cost = client.metadata.get_cost(
             dataset="GLBX.MDP3", symbols=[dbn_symbol], schema="ohlcv-1m",
-            start=eastern_midnight_iso(start), end=eastern_midnight_iso(END_DATE + timedelta(days=1)),
+            start=eastern_midnight_iso(start), end=END_ISO,
             stype_in="continuous",
         )
     except Exception as e:
@@ -205,7 +222,7 @@ for p in plan:
     try:
         store = client.timeseries.get_range(
             dataset="GLBX.MDP3", symbols=[p["dbn_symbol"]], schema="ohlcv-1m",
-            start=eastern_midnight_iso(p["start"]), end=eastern_midnight_iso(END_DATE + timedelta(days=1)),
+            start=eastern_midnight_iso(p["start"]), end=END_ISO,
             stype_in="continuous",
         )
         raw_df = store.to_df()
