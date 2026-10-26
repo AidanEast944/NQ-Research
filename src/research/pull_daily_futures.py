@@ -58,7 +58,9 @@ def main():
     import databento as db
     client = db.Historical()
     syms = [s.strip().upper() for s in a.symbols.split(",")] if a.symbols else universe()
-    end = date.today()   # exclusive: yesterday's bar is the last one requested; recent-day embargo is covered by the 1-day margin
+    # Exclusive end = yesterday (Eastern midnight). Today's date at Eastern midnight is 04:00 UTC, which is AFTER the dataset's
+    # available end (today 00:00 UTC) and made every quote fail with 422 on the first attempt (2026-10-26).
+    end = date.today() - timedelta(days=1)
     total, quotes = 0.0, {}
     for s in syms:
         try:
@@ -69,11 +71,16 @@ def main():
         quotes[s] = c
         total += 0 if c != c else c
         print(f"{s:<4} quote ${c:.4f}")
-    print(f"TOTAL quote ${total:.4f} for {len(syms)} symbols, {START} -> {end - timedelta(days=1)}")
+    failed = [x for x, c in quotes.items() if c != c]
+    print(f"TOTAL quote ${total:.4f} for {len(syms) - len(failed)} of {len(syms)} symbols, {START} -> {end - timedelta(days=1)}")
+    if failed:
+        print(f"WARNING: {len(failed)} quote(s) FAILED ({', '.join(failed)}); the total above is incomplete and no pull is allowed.")
     if not a.pull:
         print("\nQUOTE ONLY - nothing pulled or spent. To pull: --pull --max-cost N"); return
     if a.max_cost is None:
         print("--pull requires --max-cost."); sys.exit(1)
+    if failed:
+        print("REFUSING: some quotes failed, so the real cost is unknown. Nothing pulled."); sys.exit(1)
     if total > a.max_cost:
         print(f"REFUSING: quote ${total:.4f} is above --max-cost ${a.max_cost:.2f}. Nothing pulled."); sys.exit(1)
     os.makedirs(OUT_DIR, exist_ok=True)

@@ -2212,3 +2212,12 @@ _Note (added 2026-10-26): this log has no Entry 36 - numbering jumps from 35 to 
 - Next: quote the daily-bar data cost (src/research/pull_daily_futures.py, no spend), then pull with a --max-cost cap, then draft the
   first spec through the lab.
 - Trials used: none (0 of 12 in the family; global ledger unchanged at 95 of 100). Verdict: governance.
+
+## Entry 88: Daily-Futures Puller End-Date Bug (2026-10-26)
+- What happened: the first quote run (Aidan's Mac) failed for all 19 symbols with 422 data_schema_not_fully_available. The script
+  used today's Eastern midnight (04:00 UTC) as the exclusive end, which is later than the dataset's available end (today 00:00 UTC).
+  Same family of mistake as Entries 76/77: an end bound that ignored what the feed has published.
+- Worse, the script printed "TOTAL quote $0.0000" because failed quotes counted as zero. A reader could take that as "free".
+- Fix: end is now yesterday (Eastern midnight); the total line says how many quotes succeeded and warns when any failed, and --pull
+  refuses outright if any quote failed. Nothing was pulled or spent. No data looked at, no trial used.
+- Verdict: bug fix.
