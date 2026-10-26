@@ -132,6 +132,20 @@ def decide(root, spec_id, decision, note):
     return False, f"{spec_id} not found in queued state"
 
 
+def mark_registered(root, spec_id, registry_id):
+    """Called after the human/runner registered the approved spec in research_registry.json, so the lab
+    stops double-counting its reserved trials. Does not touch the registry itself."""
+    P = paths(root)
+    queue = guard.load_json(P["queue"], [])
+    for q in queue:
+        if q["spec"]["id"] == spec_id and q["status"] == "approved":
+            q["status"], q["registry_id"] = "registered", registry_id
+            save_queue(root, queue)
+            log_event(root, "registered", id=spec_id, registry_id=registry_id)
+            return True
+    return False
+
+
 def status(root):
     P = paths(root)
     policy, reg = guard.load_json(P["policy"]), guard.load_json(P["registry"])
@@ -152,6 +166,7 @@ def main():
     s = sub.add_parser("submit"); s.add_argument("spec")
     for c in ("approve", "reject"):
         d = sub.add_parser(c); d.add_argument("id"); d.add_argument("--note", default="")
+    m = sub.add_parser("mark-registered"); m.add_argument("id"); m.add_argument("--registry-id", required=True)
     v = sub.add_parser("validate"); v.add_argument("result")
     a = ap.parse_args()
     if a.cmd == "status":
@@ -164,6 +179,8 @@ def main():
         print("ACCEPTED" if ok else "REFUSED"); print("\n".join(" - " + m for m in msgs)); sys.exit(0 if ok else 1)
     elif a.cmd in ("approve", "reject"):
         ok, m = decide(ROOT, a.id, "approved" if a.cmd == "approve" else "rejected", a.note); print(m); sys.exit(0 if ok else 1)
+    elif a.cmd == "mark-registered":
+        print("ok" if mark_registered(ROOT, a.id, a.registry_id) else "not found in approved state")
     elif a.cmd == "validate":
         with open(a.result) as f:
             res = json.load(f)

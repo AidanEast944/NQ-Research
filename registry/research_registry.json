@@ -43,6 +43,14 @@
       "log_entry": 75,
       "verdict_note": "No window reached |t|>=3.1; all discovery net means negative after costs",
       "scored_at": "2026-10-22T22:00:21"
+    },
+    "pct_gap_nq_es": {
+      "script": "src/research/pct_gap_nq_es_test.py",
+      "declared_trials": 2,
+      "description": "Live gap rules in percent of price, NQ/ES 2015-2023 (lab spec pct_gap_nq_es)",
+      "status": "registered",
+      "registered_at": "2026-10-26T01:41:14",
+      "script_commit": "be72133dea9e47f5bf9f38127970205597ffe309"
     }
   }
 }
