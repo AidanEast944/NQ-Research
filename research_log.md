@@ -2202,3 +2202,13 @@ _Note (added 2026-10-26): this log has no Entry 36 - numbering jumps from 35 to 
   (2) run the quote, then the pull; (3) only then may the first spec be drafted. Daily bars are UTC-day bars; roll-day returns are
   set to 0 (a small understatement of about 4-12 days a year per market), documented in futures_daily.py.
 - Trials used: none. Verdict: infrastructure.
+
+## Entry 87: Approval of the Diversified Low-Turnover Family Budget (2026-10-26)
+- Decision (Aidan, 2026-10-26 10:27 PT): approved the family exactly as proposed in Entry 86: 12 trials, counted separately from
+  the global 100, DSR num_trials rule = family trials + 20. Recorded in registry/families.json (approved_by_human=true).
+- Made BEFORE any data for this family has been pulled or looked at, so it cannot have been shaped by results.
+- Standing rule: the budget is not to be raised after results are seen (lowering is always fine). Any increase would need a written
+  reason in this log and would be treated as evidence of a problem, not a normal change.
+- Next: quote the daily-bar data cost (src/research/pull_daily_futures.py, no spend), then pull with a --max-cost cap, then draft the
+  first spec through the lab.
+- Trials used: none (0 of 12 in the family; global ledger unchanged at 95 of 100). Verdict: governance.
