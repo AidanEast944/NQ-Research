@@ -2137,3 +2137,11 @@ definitions.
   stop fits a $10k account's 2% risk); the evidence that could move it is forward trades, which are not contaminated by
   data already used. The micro YM live track stays as is; its costs are the problem, not its signal.
 - Trials: 95 of 100 used, 5 remain.
+
+## Entry 83: YM Mini Shadow Ledger (forward evidence, no trial used) (2026-10-25)
+- Why: Entry 82 left YM mini inconclusive (6/7, DSR 0.084). Only forward trades can add evidence not already used in
+  2015-2023, so src/shadow_ym_mini.py re-costs the live YM volume>=1.2x paper trades as a mini ($5/pt, default costs).
+  Read-only: edits no account, places no trade, touches no live file. Output results/ym_mini_shadow.json.
+- First run: 7 closed trades, 2 wins, net -$266.50, net PF 0.75, max drawdown $838. Meaningless at n=7 (a coin-flip-sized
+  sample for a rule with roughly 50 trades a year); recorded as the baseline, to be re-read at 25, 50 and 100 trades.
+- Verdict: infrastructure. No trials used.

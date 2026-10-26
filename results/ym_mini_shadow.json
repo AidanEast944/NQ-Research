@@ -1,0 +1,11 @@
+{
+  "source": "data/volume_gap_ym_1_2x_paper_account.json",
+  "contract": "YM mini ($5/pt)",
+  "closed_trades": 7,
+  "wins": 2,
+  "net_dollars": -266.5,
+  "net_pf": 0.75,
+  "max_drawdown_dollars": 838.0,
+  "target_trades": 100,
+  "last_trade": "2026-10-20"
+}
