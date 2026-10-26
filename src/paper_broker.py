@@ -27,12 +27,18 @@ class PaperBroker:
         self.save_state()
         return order
 
-    def close_position(self, order, exit_price, reason="manual", point_value=20):
+    def close_position(self, order, exit_price, reason="manual", point_value=None):
         """point_value MUST match the contract actually being traded (e.g. 20 for NQ,
         2 for MNQ, 50 for ES, 5 for MES, 5 for YM, 0.50 for MYM, 50 for RTY, 5 for M2K).
         Defaults to 20 (full-size NQ) for backward compatibility with existing callers -
         pass it explicitly for anything else. Getting this wrong silently mis-states P&L
-        by whatever multiple separates the intended contract from a full NQ contract."""
+        by whatever multiple separates the intended contract from a full NQ contract.
+
+        REQUIRED (changed 2026-10-26): there is no default any more. A forgotten point_value used to be
+        silently treated as full-size NQ ($20/pt), which is exactly the kind of quiet error that mis-states P&L."""
+        if point_value is None:
+            raise ValueError("close_position() requires an explicit point_value for the contract traded "
+                             "(e.g. 2 for MNQ, 5 for MES, 0.5 for MYM, 20 for NQ)")
         order["exit_price"] = exit_price
         order["status"] = "CLOSED"
         order["reason"] = reason

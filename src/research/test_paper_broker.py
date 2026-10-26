@@ -13,7 +13,7 @@ trade = broker.place_order(
 )
 
 # Simulate that trade later hitting its target
-broker.close_position(trade, exit_price=29560, reason="target hit")
+broker.close_position(trade, exit_price=29560, reason="target hit", point_value=20)
 
 # Simulate a second trade that hits its stop instead
 trade2 = broker.place_order(
@@ -23,6 +23,6 @@ trade2 = broker.place_order(
     stop_price=29630,
     target_price=29540
 )
-broker.close_position(trade2, exit_price=29630, reason="stop hit")
+broker.close_position(trade2, exit_price=29630, reason="stop hit", point_value=20)
 
 broker.summary()

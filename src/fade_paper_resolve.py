@@ -61,7 +61,7 @@ for position in todays_positions:
         exit_reason = "eod"
 
     if exit_price is not None:
-        broker.close_position(position, exit_price, reason=exit_reason)
+        broker.close_position(position, exit_price, reason=exit_reason, point_value=20)  # explicit: same as the old implicit default
         refresh_dashboard()
 
 broker.summary()

@@ -19,7 +19,8 @@ for _, row in signals.iterrows():
     broker.close_position(
         trade,
         exit_price=row["exit_price"],
-        reason=row["exit_reason"]
+        reason=row["exit_reason"],
+        point_value=20
     )
 
 broker.summary()
