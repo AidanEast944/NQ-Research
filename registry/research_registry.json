@@ -62,9 +62,15 @@
       "script": "src/research/ym_mini_vol12_test.py",
       "declared_trials": 1,
       "description": "YM mini volume>=1.2x gap rule, formal scorecard 2015-2023 (lab spec ym_mini_vol12)",
-      "status": "registered",
+      "status": "scored",
       "registered_at": "2026-10-26T02:04:40",
-      "script_commit": "a82c8c56e16ee46a3585268a7c5833b16f96b8e7"
+      "script_commit": "a82c8c56e16ee46a3585268a7c5833b16f96b8e7",
+      "output": "results/ym_mini_vol12_output.txt",
+      "last_run": "2026-10-25T19:05:03",
+      "verdict": "inconclusive",
+      "log_entry": 82,
+      "verdict_note": "6/7, DSR 0.084; net PF 1.36 both halves",
+      "scored_at": "2026-10-26T02:05:24"
     }
   }
 }

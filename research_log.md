@@ -2117,3 +2117,23 @@ definitions.
   structure, not the signal, may be what has been failing the scorecard for the volume-filtered variants.
 - Next (needs Aidan): real broker fees per contract, then at most ONE pre-registered test (e.g. YM vol>=1.2x on mini, 2015-2023,
   net PF bar set in advance), costing 1 of the 6 remaining trials.
+
+## Entry 82: YM Mini Volume-Filtered Gap Rule, Formal Scorecard 2015-2023 (lab test 2) (2026-10-25)
+- Why: Entry 81 showed the volume >= 1.2x YM gap rule surviving costs on a mini contract ($5/pt, cost about 1.9 pts) but not
+  on a micro. Lab spec ym_mini_vol12 (approved by Aidan 2026-10-25 19:04) froze the live rule and ran it once on 2015-2023
+  through the full 7-check scorecard with default costs. 1 trial declared. Disclosed up front: NOT a blind test (Entry 81 had
+  shown net PF about 1.36 on this slice and the 1.2x threshold was chosen after seeing 2024+).
+- Result: 417 trades, net PF 1.36 (2015-2020 PF 1.36, +$11,020, n=259; 2021-2023 PF 1.37, +$7,099, n=158). Gross PF 1.47, net
+  expectancy $43.45/trade. Scorecard 6/7: sample, gross PF, drawdown, OOS sample, OOS expectancy, cost-adjusted PF all pass.
+  Check 7, Deflated Sharpe Ratio: 0.084 (8.4% probability of genuine skill) FAIL. Look-ahead truncation test passed.
+  Max drawdown printed as 30.0% of $10,000 on a "need under 30%" check that passed, so it is borderline.
+- Verdict: INCONCLUSIVE under the pre-registered criteria (all conditions met, DSR failed).
+- What it means: on a mini contract the volume-filtered YM rule survives costs and is stable across both halves of 2015-2023,
+  which the micro version could not do. But with about 82-95 strategy ideas tried on this data, a PF of 1.36 over 417 trades is
+  not yet distinguishable from the best of many lucky finds. DSR 0.084 is far from the 0.95 bar, and the log-based
+  num_trials of 82 understates the registry's 95, so the honest figure would be lower still. The rule's edge is also concentrated
+  in a filter threshold picked after the fact.
+- Position: nothing changes live. YM mini would be the first candidate for a longer paper test at mini sizing (about a $200
+  stop fits a $10k account's 2% risk); the evidence that could move it is forward trades, which are not contaminated by
+  data already used. The micro YM live track stays as is; its costs are the problem, not its signal.
+- Trials: 95 of 100 used, 5 remain.

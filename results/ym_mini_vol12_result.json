@@ -1,0 +1,15 @@
+{
+  "YM": {
+    "n_trades": 417,
+    "n_oos_trades": 158,
+    "net_pf": 1.3646233724416896,
+    "scorecard_run": true,
+    "leakage_test_passed": true,
+    "cost_model": {
+      "slippage_points": 1.0,
+      "commission_round_trip": 4.5
+    },
+    "holdout_touched": false,
+    "declared_trials": 1
+  }
+}
