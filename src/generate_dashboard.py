@@ -27,6 +27,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 import plotly.graph_objects as go
 import portfolio_analytics as pa
+import dashboard_interactive as di
 
 STARTING_BALANCE = 10000
 
@@ -63,7 +64,7 @@ def colorval(v, prefix="$"):
     return f'<span class="{cls}">{sign}{prefix}{v:,.2f}</span>'
 
 
-def panel(title, rows, accent="#2fa8ff", subtitle=None, warning=None):
+def panel(title, rows, accent="#2fa8ff", subtitle=None, warning=None, extra_html="", is_open=False):
     row_html = "".join(
         f'<div class="row"><span class="label">{k}</span><span class="value">{v}</span></div>'
         for k, v in rows
@@ -71,9 +72,9 @@ def panel(title, rows, accent="#2fa8ff", subtitle=None, warning=None):
     sub_html = f'<div class="panel-sub">{subtitle}</div>' if subtitle else ""
     warn_html = f'<div class="panel-warning">&#9888; {warning}</div>' if warning else ""
     return f"""
-    <div class="panel">
+    <div class="panel" data-open="{1 if is_open else 0}">
         <div class="panel-header" style="border-left: 3px solid {accent};">{title}{sub_html}</div>
-        <div class="panel-body">{row_html}{warn_html}</div>
+        <div class="panel-body">{row_html}{warn_html}{extra_html}</div>
     </div>
     """
 
@@ -94,7 +95,10 @@ def live_panel(title, path, accent, note=None, warning=None):
         ("RECORD", f'{s["wins"]}W - {s["losses"]}L' if s["trades"] else "-"),
         ("OPEN POSITIONS", s["open_positions"]),
         ("LAST TRADE", last_str),
-    ], accent=accent, subtitle=note, warning=warning)
+    ], accent=accent, subtitle=note, warning=warning,
+        extra_html=di.trade_table_html((load_json(path) or {}).get("trade_history", []),
+                                       {a["path"]: a["default_point_value"] for a in pa.BROKER_ACCOUNTS}.get(path, 2)),
+        is_open=s["open_positions"] > 0)
 
 
 def trend_panel():
@@ -579,6 +583,7 @@ html = f"""
     .readiness-bar-fill {{ background: #00e5a0; height: 100%; }}
     .readiness-count {{ color: #cfd3dc; text-align: right; font-weight: 600; }}
     .readiness-eta {{ color: #8b909c; font-size: 10px; }}
+{di.INTERACTIVE_CSS}
 </style>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 </head>
@@ -587,6 +592,8 @@ html = f"""
         <h1>NQ RESEARCH TERMINAL</h1>
         <div class="timestamp">LAST UPDATE: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</div>
     </div>
+
+    {di.TOOLBAR_HTML}
 
         <div class="chart-panel" style="margin-bottom: 20px;">
         <div class="chart-title">RESEARCH STATUS — HONEST ASSESSMENT (updated w/ Deflated Sharpe Ratio, 2026-09-12)</div>
@@ -628,6 +635,7 @@ html = f"""
         <div class="chart-title">EQUITY CURVE — LIVE PAPER / FORWARD ACCOUNTS (PER STRATEGY)</div>
         {equity_curve_html}
     </div>
+{di.INTERACTIVE_JS}
 </body>
 </html>
 """

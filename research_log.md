@@ -2167,3 +2167,15 @@ _Note (added 2026-10-26): this log has no Entry 36 - numbering jumps from 35 to 
 - Not done: Mac sleep/wake settings (needs sudo on the Mac, given to Aidan as commands); the 2015-2023 bar backfill
   (about 11,000 files) is still untracked by git and is covered by the weekly backup instead.
 - Trials used: none. Verdict: infrastructure.
+
+## Entry 85: Interactive Dashboard (2026-10-26)
+- Why: the dashboard was a static page. Added, in a new module src/dashboard_interactive.py plus small hooks in
+  generate_dashboard.py: filter chips (all / open now / live / retired), panel search, click-to-collapse panels with
+  collapse/expand all, an expandable sortable closed-trade table per paper track, and remembered choices (localStorage,
+  safe if blocked). Pure client-side formatting of numbers that were already on the page; no data, strategy or job changed.
+- Checked: all previous page text still present (only the timestamp differs); headless-browser test of every control
+  (filters 14/1/2/10 panels, search, collapse, sort) passed with no page errors; trade tables first overflowed their panels,
+  caught by the test and fixed (5 columns, scroll container). 52 tests pass.
+- Known stale content, NOT changed here: the "RESEARCH STATUS - HONEST ASSESSMENT" text block is dated 2026-09-12 and still
+  describes the 43-variation DSR and pre-Entry-68 conclusions. Needs a deliberate rewrite against Entries 68-84.
+- Trials used: none. Verdict: infrastructure.
