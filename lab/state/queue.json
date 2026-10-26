@@ -1,0 +1,60 @@
+[
+  {
+    "status": "approved",
+    "submitted_at": "2026-10-25T23:51:30",
+    "spec": {
+      "id": "pct_gap_nq_es",
+      "title": "Live gap rules translated to percent of price (NQ, ES)",
+      "hypothesis": "The live gap rules are fixed in points, so they mean very different things in 2015 (NQ ~4,500, ES ~2,100) than now (NQ ~29,000, ES ~7,700). If the gap-continuation effect is proportional to price, the same rules expressed in percent should behave consistently across 2015-2023, where the point-based rules failed.",
+      "symbols": [
+        "NQ",
+        "ES"
+      ],
+      "discovery_data": {
+        "start": "2015-01-01",
+        "end": "2020-12-31"
+      },
+      "oos_data": {
+        "start": "2021-01-01",
+        "end": "2023-12-31"
+      },
+      "rules": {
+        "signal": "gap = open of 08:30 ET bar minus prior 23:45 ET close, as % of prior close; trade in gap direction (continuation)",
+        "entry": "08:30 ET bar open",
+        "exit": "stop, target, or 16:00 ET, whichever first",
+        "filter": "none (unfiltered variant only; volume variant would be a separate registered test)"
+      },
+      "parameters": {
+        "NQ": {
+          "min_gap_pct": 0.1,
+          "stop_pct": 0.14,
+          "target_pct": 0.27
+        },
+        "ES": {
+          "min_gap_pct": 0.08,
+          "stop_pct": 0.13,
+          "target_pct": 0.26
+        },
+        "translation_basis": "live point rules divided by the 2026-10-23 close (NQ 29175, ES 7672.5), rounded to 2 decimals, frozen, NOT tuned"
+      },
+      "declared_trials": 2,
+      "cost_model": {
+        "slippage_points": 1.0,
+        "commission_round_trip": 4.5
+      },
+      "holdout_confirmation": false,
+      "author": "claude",
+      "pass_criteria": {
+        "per_symbol": "net profit factor >= 1.3 on 2015-2023 AND positive net in both 2015-2020 and 2021-2023 AND >= 100 trades",
+        "supported": "at least one symbol meets per_symbol, with no re-tuning",
+        "not_supported": "otherwise; result recorded in the log either way"
+      },
+      "notes": "2024+ data is treated as seen (live rules were built on it). RTY is not used. Costs stay in fixed points/dollars so cost drag is realistic as price rises."
+    },
+    "fingerprint": "af0d4555ab115c16",
+    "family": "4aa2f33db6bc7bef",
+    "spec_hash": "947dce15a7553abf",
+    "decision_note": "Aidan approved 2026-10-25 18:40 as written",
+    "decided_at": "2026-10-26T01:40:17"
+  }
+]
