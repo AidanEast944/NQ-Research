@@ -2079,3 +2079,20 @@ definitions.
   out-of-sample evidence will come from RTY and forward paper data only.
 - Tested: 18 unit tests pass (duplicates, budget, weekly cap, holdout, planted look-ahead, validator vetoes, no-live-authority).
 - Verdict: infrastructure. No trials used.
+
+## Entry 80: Percent-Scaled Gap Rules, 2015-2023 (first lab-originated test) (2026-10-25)
+- Why: the live gap rules are fixed in points, so they mean different things at NQ 4,500 (2015) vs 29,000 (2026). Lab spec
+  pct_gap_nq_es (approved by Aidan 2026-10-25 18:40) froze the same rules in percent of price (NQ 0.10/0.14/0.27%,
+  ES 0.08/0.13/0.26%, derived from the 2026-10-23 close, not tuned) and ran them once on 2015-2023. 2 trials declared.
+- Result: NQ 1,766 trades, gross PF 0.98, net PF 0.68 (2015-2020 0.57, 2021-2023 0.79). ES 1,796 trades, gross PF 1.01,
+  net PF 0.53 (0.42 / 0.67). Scorecards 3/7 and 4/7. About two thirds of trades hit the stop. Look-ahead truncation test passed.
+- Verdict: NOT SUPPORTED. Both symbols fail the pre-registered bar (net PF >= 1.3, positive in both halves).
+- What it means: scaling the rules to price does not create an edge. Gross profit factor is about 1.0, so there is no
+  edge before costs; costs (about $6.50 per NQ micro trade, $9.50 per ES micro trade) then take it well below 1. Combined with
+  Entries 68-72, the unfiltered gap rules show no edge on 2015-2023 in points or in percent. The 2024+ results that
+  motivated the live track remain unconfirmed by older data and may be regime-specific or selection-biased.
+- Process notes: this was the first test through the lab (spec -> approval -> script -> runner). My code reproduced
+  strategy.py exactly in points mode (47/47 trades on a 2022 slice). Smoke run on NQ 2022 happened before the full run;
+  no parameter changed after it. Known inconsistency: the DSR in this run used num_trials=81 (log/AST count + 2) while the
+  registry budget counts 94 used; the registry figure is the more conservative one. A DSR of 0.000 would not change either way.
+- Trials: 94 of 100 used, 6 remain.

@@ -1,0 +1,28 @@
+{
+  "NQ": {
+    "n_trades": 1766,
+    "n_oos_trades": 627,
+    "net_pf": 0.6767962679656494,
+    "scorecard_run": true,
+    "leakage_test_passed": true,
+    "cost_model": {
+      "slippage_points": 1.0,
+      "commission_round_trip": 4.5
+    },
+    "holdout_touched": false,
+    "declared_trials": 2
+  },
+  "ES": {
+    "n_trades": 1796,
+    "n_oos_trades": 621,
+    "net_pf": 0.5250002742378567,
+    "scorecard_run": true,
+    "leakage_test_passed": true,
+    "cost_model": {
+      "slippage_points": 1.0,
+      "commission_round_trip": 4.5
+    },
+    "holdout_touched": false,
+    "declared_trials": 2
+  }
+}

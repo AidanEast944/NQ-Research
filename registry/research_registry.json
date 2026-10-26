@@ -48,9 +48,15 @@
       "script": "src/research/pct_gap_nq_es_test.py",
       "declared_trials": 2,
       "description": "Live gap rules in percent of price, NQ/ES 2015-2023 (lab spec pct_gap_nq_es)",
-      "status": "registered",
+      "status": "scored",
       "registered_at": "2026-10-26T01:41:14",
-      "script_commit": "be72133dea9e47f5bf9f38127970205597ffe309"
+      "script_commit": "be72133dea9e47f5bf9f38127970205597ffe309",
+      "output": "results/pct_gap_nq_es_output.txt",
+      "last_run": "2026-10-25T18:48:24",
+      "verdict": "not_supported",
+      "log_entry": 80,
+      "verdict_note": "gross PF ~1.0, net PF 0.68/0.53",
+      "scored_at": "2026-10-26T01:48:50"
     }
   }
 }

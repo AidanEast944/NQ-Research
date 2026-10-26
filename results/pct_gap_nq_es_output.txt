@@ -1,0 +1,79 @@
+num_trials (DSR) = 81
+
+NQ look-ahead truncation test on the gap feature: PASS - identical across 5 truncation points
+=== NQ: 1766 trades 2015-01-02 -> 2023-12-27
+   exits: {'stop': 1166, 'target': 585, 'eod': 15}
+   NET PF all 0.68 | 2015-2020 PF 0.57 net $-8,225 (n=1139) | 2021-2023 PF 0.79 net $-3,937 (n=627)
+============================================================
+SCORECARD: NQ gap PERCENT-scaled (2015-2023, frozen)
+============================================================
+
+[1] Sample size: 1766 trades (need 100+)
+    PASS
+
+[2] Profit factor (gross): 0.98 (need 1.3+)
+    FAIL
+
+[3] Max drawdown: $2,467.23 (24.7% of $10,000 account, need under 30%)
+    PASS
+
+[4] Out-of-sample sample size: 530 trades (need 20+)
+    PASS
+
+[5] Out-of-sample expectancy: $-0.25/trade vs in-sample $-0.44/trade
+    FAIL - out-of-sample expectancy is negative or zero
+
+[6] Cost-adjusted profit factor: 0.68 (need 1.3+; gross was 0.98)
+    Cost model: 1.0pt slippage + $4.5 commission per trade, at point_value=2
+    Net expectancy: $-6.89/trade (gross was $-0.39/trade)
+    FAIL - the edge doesn't survive realistic trading costs
+
+[7] Deflated Sharpe Ratio: 0.000 (0.0% probability of genuine skill, num_trials=81)
+    FAIL - not yet distinguishable from a lucky find among many trials
+
+============================================================
+OVERALL: 3/7 checks passed
+VERDICT: FAIL - not currently a viable strategy
+============================================================
+
+ES look-ahead truncation test on the gap feature: PASS - identical across 5 truncation points
+=== ES: 1796 trades 2015-01-02 -> 2023-12-29
+   exits: {'stop': 1177, 'target': 583, 'eod': 36}
+   NET PF all 0.53 | 2015-2020 PF 0.42 net $-12,025 (n=1175) | 2021-2023 PF 0.67 net $-4,808 (n=621)
+============================================================
+SCORECARD: ES gap PERCENT-scaled (2015-2023, frozen)
+============================================================
+
+[1] Sample size: 1796 trades (need 100+)
+    PASS
+
+[2] Profit factor (gross): 1.01 (need 1.3+)
+    FAIL
+
+[3] Max drawdown: $1,682.92 (16.8% of $10,000 account, need under 30%)
+    PASS
+
+[4] Out-of-sample sample size: 539 trades (need 20+)
+    PASS
+
+[5] Out-of-sample expectancy: $1.30/trade vs in-sample $-0.37/trade
+    PASS
+
+[6] Cost-adjusted profit factor: 0.53 (need 1.3+; gross was 1.01)
+    Cost model: 1.0pt slippage + $4.5 commission per trade, at point_value=5
+    Net expectancy: $-9.37/trade (gross was $0.13/trade)
+    FAIL - the edge doesn't survive realistic trading costs
+
+[7] Deflated Sharpe Ratio: 0.000 (0.0% probability of genuine skill, num_trials=81)
+    FAIL - not yet distinguishable from a lucky find among many trials
+
+============================================================
+OVERALL: 4/7 checks passed
+VERDICT: FAIL - not currently a viable strategy
+============================================================
+
+
+Mechanical check against the pre-registered criteria (a human still scores it):
+   NQ: does not meet criteria
+   ES: does not meet criteria
+   Criteria say: SUPPORTED only if at least one symbol meets all of them.
