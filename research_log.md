@@ -1072,6 +1072,8 @@ definitions.
   out of `readiness_scorecard()` while remaining in `combined_book_summary()`, exactly as intended.
 - **Verdict:** FAIL (reaffirmed, not new) - Fade. Retired. Nothing else changes.
 
+_Note (added 2026-10-26): this log has no Entry 36 - numbering jumps from 35 to 37. Found during an engineering audit; the cause is unknown and nothing was fabricated to fill it. Deliberately not written as a header so it does not change the log-based trial count in trial_count.py._
+
 ## Entry 37: Databento Refresh Script Corrupted 4 Archive Files on Its First Real Run (Caught and Fixed)
 - **What happened:** `refresh_databento_archive.py`'s first real run (following the cost-check
   approval in Entry 36) passed bare `date.isoformat()` strings (e.g. `"2026-09-02"`) as
@@ -2145,3 +2147,23 @@ definitions.
 - First run: 7 closed trades, 2 wins, net -$266.50, net PF 0.75, max drawdown $838. Meaningless at n=7 (a coin-flip-sized
   sample for a rule with roughly 50 trades a year); recorded as the baseline, to be re-read at 25, 50 and 100 trades.
 - Verdict: infrastructure. No trials used.
+
+## Entry 84: Engineering Hardening Pass (2026-10-26)
+- Why: an honest review judged the research process strong but the engineering fragile (single Mac, silent failures,
+  thin tests). Nothing about any strategy, signal, threshold or live gate was changed.
+- Added: src/heartbeat.py (6:10 PM PT) checks every com.nqresearch launchd job loaded, exited 0, ran when due, and kept
+  its stderr empty, with one Mac notification on any problem; src/backup_state.py (5:55 PM PT) daily state backup (paper
+  accounts, forward logs, registry, results, lab, log, plists; never .env) plus weekly (Sunday) bar-archive backup, to
+  iCloud Drive if present else ~/Backups/nq-research; src/status.py one-command overview.
+- Changed: PaperBroker.close_position() no longer defaults point_value to 20 (full NQ); it raises ValueError if omitted
+  (fade_paper_resolve.py and two research demos now pass 20 explicitly, same behaviour as before). Dashboard now shows the
+  ES 1.2x and YM 1.2x/1.5x paper tracks, and the combined book counts pairs as round trips (legs/2) instead of legs.
+  Before/after dashboard check: existing panels unchanged; total live trades 37 -> 50 (+15 newly shown, -2 pairs legs).
+- Tests: 51 passing (broker, scorecard, portfolio analytics, heartbeat, backup, lab, plus a guard that no new script omits
+  num_trials). 15 legacy research scripts that no longer run were documented in src/research/LEGACY_BROKEN_SCRIPTS.md and
+  deliberately not edited (trial_count.py scans them; re-running one would be a new trial).
+- Housekeeping: .gitignore covers lock files and generated state; research output files from Entries 68-72 that were never
+  committed are now committed. Paper account files remain gitignored on purpose, so the backup is their only copy off the Mac.
+- Not done: Mac sleep/wake settings (needs sudo on the Mac, given to Aidan as commands); the 2015-2023 bar backfill
+  (about 11,000 files) is still untracked by git and is covered by the weekly backup instead.
+- Trials used: none. Verdict: infrastructure.

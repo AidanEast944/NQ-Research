@@ -1,0 +1,226 @@
+(num_trials = 64, from research_log.md's highest entry number - conservative floor)
+
+============================================================
+SCORECARD: Gap Continuation (unfiltered, corrected)
+============================================================
+
+[1] Sample size: 487 trades (need 100+)
+    PASS
+
+[2] Profit factor (gross): 1.19 (need 1.3+)
+    FAIL
+
+[3] Max drawdown: $1,280.00 (12.8% of $10,000 account, need under 30%)
+    PASS
+
+[4] Out-of-sample sample size: 147 trades (need 20+)
+    PASS
+
+[5] Out-of-sample expectancy: $17.53/trade vs in-sample $5.89/trade
+    PASS
+
+[6] Cost-adjusted profit factor: 1.05 (need 1.3+; gross was 1.19)
+    Cost model: 1.0pt slippage + $4.5 commission per trade, at point_value=2
+    Net expectancy: $2.90/trade (gross was $9.40/trade)
+    FAIL - the edge doesn't survive realistic trading costs
+
+[7] Deflated Sharpe Ratio: 0.000 (0.0% probability of genuine skill, num_trials=64)
+    FAIL - not yet distinguishable from a lucky find among many trials
+
+============================================================
+OVERALL: 4/7 checks passed
+VERDICT: FAIL - not currently a viable strategy
+============================================================
+
+============================================================
+SCORECARD: Volume-Confirmed Gap NQ (1.2x)
+============================================================
+
+[1] Sample size: 136 trades (need 100+)
+    PASS
+
+[2] Profit factor (gross): 1.53 (need 1.3+)
+    PASS
+
+[3] Max drawdown: $880.00 (8.8% of $10,000 account, need under 30%)
+    PASS
+
+[4] Out-of-sample sample size: 41 trades (need 20+)
+    PASS
+
+[5] Out-of-sample expectancy: $31.22/trade vs in-sample $21.05/trade
+    PASS
+
+[6] Cost-adjusted profit factor: 1.36 (need 1.3+; gross was 1.53)
+    Cost model: 1.0pt slippage + $4.5 commission per trade, at point_value=2
+    Net expectancy: $17.62/trade (gross was $24.12/trade)
+    PASS
+
+[7] Deflated Sharpe Ratio: 0.342 (34.2% probability of genuine skill, num_trials=64)
+    FAIL - not yet distinguishable from a lucky find among many trials
+
+============================================================
+OVERALL: 6/7 checks passed
+VERDICT: PARTIAL - promising but not yet trustworthy, keep watching
+============================================================
+
+============================================================
+SCORECARD: Volume-Confirmed Gap YM (1.2x)
+============================================================
+
+[1] Sample size: 137 trades (need 100+)
+    PASS
+
+[2] Profit factor (gross): 1.56 (need 1.3+)
+    PASS
+
+[3] Max drawdown: $220.00 (2.2% of $10,000 account, need under 30%)
+    PASS
+
+[4] Out-of-sample sample size: 42 trades (need 20+)
+    PASS
+
+[5] Out-of-sample expectancy: $10.00/trade vs in-sample $4.63/trade
+    PASS
+
+[6] Cost-adjusted profit factor: 1.45 (need 1.3+; gross was 1.56)
+    Cost model: 0.5pt slippage + $0.74 commission per trade, at point_value=0.5
+    Net expectancy: $5.29/trade (gross was $6.28/trade)
+    PASS
+
+[7] Deflated Sharpe Ratio: 0.377 (37.7% probability of genuine skill, num_trials=64)
+    FAIL - not yet distinguishable from a lucky find among many trials
+
+============================================================
+OVERALL: 6/7 checks passed
+VERDICT: PARTIAL - promising but not yet trustworthy, keep watching
+============================================================
+
+============================================================
+SCORECARD: Volume-Confirmed Gap ES (1.2x, scaled)
+============================================================
+
+[1] Sample size: 117 trades (need 100+)
+    PASS
+
+[2] Profit factor (gross): 1.49 (need 1.3+)
+    PASS
+
+[3] Max drawdown: $400.00 (4.0% of $10,000 account, need under 30%)
+    PASS
+
+[4] Out-of-sample sample size: 36 trades (need 20+)
+    PASS
+
+[5] Out-of-sample expectancy: $16.67/trade vs in-sample $12.96/trade
+    PASS
+
+[6] Cost-adjusted profit factor: 1.41 (need 1.3+; gross was 1.49)
+    Cost model: 0.25pt slippage + $0.74 commission per trade, at point_value=5
+    Net expectancy: $12.11/trade (gross was $14.10/trade)
+    PASS
+
+[7] Deflated Sharpe Ratio: 0.302 (30.2% probability of genuine skill, num_trials=64)
+    FAIL - not yet distinguishable from a lucky find among many trials
+
+============================================================
+OVERALL: 6/7 checks passed
+VERDICT: PARTIAL - promising but not yet trustworthy, keep watching
+============================================================
+
+============================================================
+SCORECARD: NQ/ES Pairs
+============================================================
+
+[1] Sample size: 40 trades (need 100+)
+    FAIL - 60 more trades needed before this is trustworthy
+
+[2] Profit factor (gross): 2.00 (need 1.3+)
+    PASS
+
+[3] Max drawdown: $1,512.45 (15.1% of $10,000 account, need under 30%)
+    PASS
+
+[4] Out-of-sample sample size: 12 trades (need 20+)
+    FAIL - too few out-of-sample trades to trust the next check
+
+[5] Out-of-sample expectancy: $143.27/trade vs in-sample $123.91/trade
+    PASS
+
+[6] Cost-adjusted profit factor: 1.95 (need 1.3+; gross was 2.00)
+    Cost model: 1.0pt slippage + $4.5 commission per trade, at point_value=1
+    Net expectancy: $124.22/trade (gross was $129.72/trade)
+    PASS
+
+[7] Deflated Sharpe Ratio: 0.533 (53.3% probability of genuine skill, num_trials=64)
+    FAIL - not yet distinguishable from a lucky find among many trials
+
+============================================================
+OVERALL: 4/7 checks passed
+VERDICT: FAIL - not currently a viable strategy
+============================================================
+
+============================================================
+SCORECARD: NQ/YM Pairs
+============================================================
+
+[1] Sample size: 38 trades (need 100+)
+    FAIL - 62 more trades needed before this is trustworthy
+
+[2] Profit factor (gross): 1.85 (need 1.3+)
+    PASS
+
+[3] Max drawdown: $2,012.41 (20.1% of $10,000 account, need under 30%)
+    PASS
+
+[4] Out-of-sample sample size: 12 trades (need 20+)
+    FAIL - too few out-of-sample trades to trust the next check
+
+[5] Out-of-sample expectancy: $343.17/trade vs in-sample $193.24/trade
+    PASS
+
+[6] Cost-adjusted profit factor: 1.83 (need 1.3+; gross was 1.85)
+    Cost model: 1.0pt slippage + $4.5 commission per trade, at point_value=1
+    Net expectancy: $235.09/trade (gross was $240.59/trade)
+    PASS
+
+[7] Deflated Sharpe Ratio: 0.537 (53.7% probability of genuine skill, num_trials=64)
+    FAIL - not yet distinguishable from a lucky find among many trials
+
+============================================================
+OVERALL: 4/7 checks passed
+VERDICT: FAIL - not currently a viable strategy
+============================================================
+
+============================================================
+SCORECARD: ES/YM Pairs
+============================================================
+
+[1] Sample size: 39 trades (need 100+)
+    FAIL - 61 more trades needed before this is trustworthy
+
+[2] Profit factor (gross): 1.72 (need 1.3+)
+    PASS
+
+[3] Max drawdown: $1,077.63 (10.8% of $10,000 account, need under 30%)
+    PASS
+
+[4] Out-of-sample sample size: 12 trades (need 20+)
+    FAIL - too few out-of-sample trades to trust the next check
+
+[5] Out-of-sample expectancy: $25.06/trade vs in-sample $87.83/trade
+    FAIL - dropped more than 50% from in-sample
+
+[6] Cost-adjusted profit factor: 1.65 (need 1.3+; gross was 1.72)
+    Cost model: 1.0pt slippage + $4.5 commission per trade, at point_value=1
+    Net expectancy: $63.02/trade (gross was $68.52/trade)
+    PASS
+
+[7] Deflated Sharpe Ratio: 0.498 (49.8% probability of genuine skill, num_trials=64)
+    FAIL - not yet distinguishable from a lucky find among many trials
+
+============================================================
+OVERALL: 3/7 checks passed
+VERDICT: FAIL - not currently a viable strategy
+============================================================
+
