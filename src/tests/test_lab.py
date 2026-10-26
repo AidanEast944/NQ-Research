@@ -126,6 +126,14 @@ class TestValidator(unittest.TestCase):
             self.assertFalse(validator.check_result(r, self.pol)["passed_deterministic_checks"], k)
 
 
+class TestValidatorMany(unittest.TestCase):
+    def test_per_symbol_dict(self):
+        good = TestValidator.good
+        out = validator.check_many({"NQ": good, "ES": dict(good, n_trades=5)}, TestValidator.pol)
+        self.assertTrue(out["NQ"]["passed_deterministic_checks"])
+        self.assertFalse(out["ES"]["passed_deterministic_checks"])
+
+
 class TestNoLiveAuthority(unittest.TestCase):
     def test_lab_source_never_touches_live_files(self):
         import ast

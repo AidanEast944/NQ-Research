@@ -25,3 +25,10 @@ def check_result(result, policy):
         vetoes.append("trial count not declared")
     return {"passed_deterministic_checks": not vetoes, "vetoes": vetoes,
             "note": "Passing only means no automatic veto. A human scores against the pre-registered criteria."}
+
+
+def check_many(result, policy):
+    """Accepts one flat result dict, or a dict of per-symbol result dicts (what the test scripts write)."""
+    if result and all(isinstance(v, dict) for v in result.values()):
+        return {k: check_result(v, policy) for k, v in result.items()}
+    return check_result(result, policy)

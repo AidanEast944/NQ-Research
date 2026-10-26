@@ -184,8 +184,9 @@ def main():
     elif a.cmd == "validate":
         with open(a.result) as f:
             res = json.load(f)
-        out = validator.check_result(res, guard.load_json(paths(ROOT)["policy"]))
-        log_event(ROOT, "validated", result=a.result, **out)
+        pol = guard.load_json(paths(ROOT)["policy"])
+        out = validator.check_many(res, pol)
+        log_event(ROOT, "validated", result=a.result, verdicts=out)
         print(json.dumps(out, indent=2))
 
 
