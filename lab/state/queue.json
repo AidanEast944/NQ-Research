@@ -59,7 +59,7 @@
     "registry_id": "pct_gap_nq_es"
   },
   {
-    "status": "approved",
+    "status": "registered",
     "submitted_at": "2026-10-26T02:00:54",
     "spec": {
       "id": "ym_mini_vol12",
@@ -109,6 +109,7 @@
     "family": "89f58277458c362d",
     "spec_hash": "4abba41dc413c8fe",
     "decision_note": "Aidan approved 2026-10-25 19:04 as written",
-    "decided_at": "2026-10-26T02:04:31"
+    "decided_at": "2026-10-26T02:04:31",
+    "registry_id": "ym_mini_vol12"
   }
 ]
