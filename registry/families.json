@@ -1,0 +1,44 @@
+{
+  "note": "Research families (added 2026-10-26, Entry 86). A family is a kind of idea plus the data it may use. FROZEN families accept no new trials. A family needs approved_by_human=true (set by Aidan, by editing this file) before ANY trial can be spent on it. Budgets here are written BEFORE the family's data has been looked at. The lab (src/lab/guard.py) and the runner (research_runner.py register --family) both enforce this file. Agents never edit it.",
+  "families": {
+    "gap_intraday": {
+      "status": "frozen",
+      "reason": "Entries 68-72, 80-82: no gross edge on 2015-2023 in points or percent; the only lead (YM mini, volume>=1.2x) is inconclusive (DSR 0.084) and now gathers forward evidence via src/shadow_ym_mini.py at no trial cost."
+    },
+    "time_of_day": {
+      "status": "frozen",
+      "reason": "Entry 75: 8 windows x 3 markets, not supported; costs exceed the average window move."
+    },
+    "diversified_lowturnover": {
+      "status": "proposed",
+      "approved_by_human": false,
+      "budget_trials": 12,
+      "budget_note": "PROPOSED by Claude 2026-10-26, NOT yet approved. Aidan decides the number. 12 = a handful of canonical rules x a few universe cuts. Counted separately from the global 100-trial ledger because it uses different markets and horizons, with a deliberately high DSR penalty (below) instead.",
+      "dsr_num_trials_rule": "family trials declared so far (including the one being scored) + 20, the +20 being an allowance for informal exploration and literature selection that is never logged. Fixed in advance; do not lower it.",
+      "idea": "Low-turnover, structurally motivated rules across many independent futures markets, where per-trade costs are small relative to expected moves.",
+      "universe": {
+        "equity_index": ["ES", "NQ", "YM", "RTY"],
+        "rates": ["ZN", "ZB", "ZF"],
+        "energy": ["CL", "NG"],
+        "metals": ["GC", "SI", "HG"],
+        "fx": ["6E", "6J", "6B", "6A"],
+        "ags": ["ZC", "ZS", "ZW"]
+      },
+      "data": "daily bars (Databento GLBX.MDP3 ohlcv-1d, continuous front-month, roll days masked), 2010-06-07 to present",
+      "periods": {
+        "discovery": ["2010-06-07", "2019-12-31"],
+        "validation": ["2020-01-01", "2023-12-31"],
+        "sealed_holdout": ["2024-01-01", "2099-12-31"]
+      },
+      "holdout_rule": "The sealed holdout (2024 onward, and all forward data) is touched once per surviving rule, declared in the spec as holdout_confirmation, after the rule is frozen.",
+      "allowed_ideas": [
+        "time-series momentum: sign of trailing return (lookbacks 3, 6, 12 months, last month skipped), risk-scaled, monthly rebalance",
+        "cross-sectional momentum within an asset class, monthly rebalance",
+        "simple carry/roll yield, only after second-contract data is pulled (not in the first pass)"
+      ],
+      "parameter_rule": "Canonical published parameters only. Any other value is a new trial. No tuning on discovery or validation data.",
+      "cost_model": {"slippage_bps_of_notional": 1.0, "commission_round_trip_per_contract": 4.5},
+      "cost_note": "1 bp of notional per side-equivalent plus $4.50 per contract round trip; deliberately harsh for liquid futures, applied to every rebalance trade."
+    }
+  }
+}

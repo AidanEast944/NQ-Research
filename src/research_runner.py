@@ -28,6 +28,7 @@ from datetime import datetime
 
 REGISTRY = "registry/research_registry.json"
 RUNS_LOG = "results/research_runs.jsonl"
+FAMILIES = "registry/families.json"
 
 
 def load():
@@ -43,7 +44,20 @@ def save(reg):
 
 
 def used_trials(reg):
-    return reg["baseline_trials"] + sum(t["declared_trials"] for t in reg["tests"].values())
+    """Global ledger. Tests registered under a family with its own budget (--family) count against that family, not here.
+    Every test registered before families existed has no 'family' key, so this is unchanged for all of them."""
+    return reg["baseline_trials"] + sum(t["declared_trials"] for t in reg["tests"].values() if not t.get("family"))
+
+
+def load_families():
+    if not os.path.exists(FAMILIES):
+        return {"families": {}}
+    with open(FAMILIES) as f:
+        return json.load(f)
+
+
+def family_used(reg, name):
+    return sum(t["declared_trials"] for t in reg["tests"].values() if t.get("family") == name)
 
 
 def git(*args):
@@ -75,6 +89,12 @@ def cmd_budget(reg, _):
     print(f"Trials used: {used} of {reg['trial_budget_total']} "
           f"(baseline {reg['baseline_trials']} + registered {used - reg['baseline_trials']})")
     print(f"Remaining: {reg['trial_budget_total'] - used}")
+    for name, fam in load_families()["families"].items():
+        if fam.get("budget_trials") is not None:
+            st = "APPROVED" if fam.get("approved_by_human") else "NOT APPROVED (no trials may be spent)"
+            print(f"Family {name}: {family_used(reg, name)} of {fam['budget_trials']} used, {st}")
+        elif fam.get("status") == "frozen":
+            print(f"Family {name}: FROZEN")
 
 
 def cmd_register(reg, a):
@@ -83,16 +103,33 @@ def cmd_register(reg, a):
     ok, info = script_is_frozen(a.script)
     if not ok:
         sys.exit(f"REFUSED: {info}")
-    if used_trials(reg) + a.trials > reg["trial_budget_total"]:
+    if a.family:
+        fam = load_families()["families"].get(a.family)
+        if fam is None:
+            sys.exit(f"REFUSED: unknown family '{a.family}' (see {FAMILIES}).")
+        if fam.get("status") == "frozen":
+            sys.exit(f"REFUSED: family '{a.family}' is FROZEN: {fam.get('reason', '')}")
+        if not fam.get("approved_by_human") or fam.get("budget_trials") is None:
+            sys.exit(f"REFUSED: family '{a.family}' has no human-approved budget yet (edit {FAMILIES} deliberately).")
+        if family_used(reg, a.family) + a.trials > fam["budget_trials"]:
+            sys.exit(f"REFUSED: {a.trials} more trials would exceed family '{a.family}' budget "
+                     f"({family_used(reg, a.family)} used of {fam['budget_trials']}).")
+    elif used_trials(reg) + a.trials > reg["trial_budget_total"]:
         sys.exit(f"REFUSED: {a.trials} more trials would exceed the budget "
                  f"({used_trials(reg)} used of {reg['trial_budget_total']}). Raising the budget is a deliberate edit "
                  f"of {REGISTRY}, with a reason in research_log.md.")
     reg["tests"][a.id] = {"script": a.script, "declared_trials": a.trials, "description": a.desc,
                           "status": "registered", "registered_at": datetime.now().isoformat(timespec="seconds"),
                           "script_commit": info}
+    if a.family:
+        reg["tests"][a.id]["family"] = a.family
     save(reg)
-    print(f"Registered {a.id} ({a.trials} trials, script commit {info[:8]}). "
-          f"Now at {used_trials(reg)} of {reg['trial_budget_total']}.")
+    if a.family:
+        print(f"Registered {a.id} ({a.trials} trials, family {a.family}, script commit {info[:8]}). "
+              f"Family now at {family_used(reg, a.family)}; global ledger unchanged at {used_trials(reg)} of {reg['trial_budget_total']}.")
+    else:
+        print(f"Registered {a.id} ({a.trials} trials, script commit {info[:8]}). "
+              f"Now at {used_trials(reg)} of {reg['trial_budget_total']}.")
 
 
 def cmd_run(reg, a):
@@ -158,6 +195,7 @@ def main():
     r = sub.add_parser("register")
     r.add_argument("id"); r.add_argument("--script", required=True)
     r.add_argument("--trials", type=int, required=True); r.add_argument("--desc", required=True)
+    r.add_argument("--family", default=None, help="count against this family's own budget (registry/families.json)")
     u = sub.add_parser("run")
     u.add_argument("id"); u.add_argument("--rerun", action="store_true")
     v = sub.add_parser("verdict")

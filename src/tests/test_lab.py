@@ -15,13 +15,17 @@ def make_root(budget_used=0):
     root = tempfile.mkdtemp()
     os.makedirs(os.path.join(root, "lab", "proposals")); os.makedirs(os.path.join(root, "registry"))
     shutil.copy(os.path.join(REPO, "lab", "policy.json"), os.path.join(root, "lab", "policy.json"))
+    shutil.copy(os.path.join(REPO, "registry", "families.json"), os.path.join(root, "registry", "families.json"))
+    fj = json.load(open(os.path.join(root, "registry", "families.json")))
+    fj["families"]["test_family"] = {"status": "active", "approved_by_human": True}   # global-budget family for legacy tests
+    json.dump(fj, open(os.path.join(root, "registry", "families.json"), "w"))
     reg = {"baseline_trials": 68 + budget_used, "trial_budget_total": 100, "tests": {}}
     json.dump(reg, open(os.path.join(root, "registry", "research_registry.json"), "w"))
     return root
 
 
 def spec(i="s1", trials=1, **kw):
-    s = {"id": i, "title": "t", "hypothesis": "h", "symbols": ["NQ"],
+    s = {"id": i, "family": "test_family", "title": "t", "hypothesis": "h", "symbols": ["NQ"],
          "discovery_data": {"start": "2015-01-01", "end": "2020-12-31"},
          "oos_data": {"start": "2021-01-01", "end": "2023-12-31"},
          "rules": {"entry": "gap>0.2%", "exit": "16:00"}, "parameters": {"k": 1},
@@ -89,6 +93,62 @@ class TestSubmit(unittest.TestCase):
         ok, _ = orch.decide(r, "s1", "approved", "ok"); self.assertTrue(ok)
         reg = json.load(open(os.path.join(r, "registry/research_registry.json")))
         self.assertEqual(reg["tests"], {})  # registry untouched
+
+
+def set_family(root, name, **kw):
+    p = os.path.join(root, "registry", "families.json")
+    fj = json.load(open(p)); fj["families"].setdefault(name, {}).update(kw); json.dump(fj, open(p, "w"))
+
+
+class TestFamilies(unittest.TestCase):
+    def test_frozen_family_refused(self):
+        r = make_root(); ok, m = orch.submit(r, put(r, spec(family="gap_intraday")), NOW)
+        self.assertFalse(ok); self.assertIn("FROZEN", m[0])
+
+    def test_unapproved_family_refused(self):
+        r = make_root()
+        ok, m = orch.submit(r, put(r, spec(family="diversified_lowturnover", symbols=["ZN"],
+                      cost_model={"slippage_bps_of_notional": 1.0, "commission_round_trip_per_contract": 4.5},
+                      discovery_data={"start": "2010-06-07", "end": "2019-12-31"},
+                      oos_data={"start": "2020-01-01", "end": "2023-12-31"})), NOW)
+        self.assertFalse(ok); self.assertIn("not approved", m[0])
+
+    def test_unknown_family_refused(self):
+        r = make_root(); ok, m = orch.submit(r, put(r, spec(family="nope")), NOW)
+        self.assertFalse(ok); self.assertIn("unknown family", m[0])
+
+    def _approved(self, **kw):
+        r = make_root(); set_family(r, "diversified_lowturnover", approved_by_human=True, **kw)
+        base = dict(family="diversified_lowturnover", symbols=["ZN"],
+                    cost_model={"slippage_bps_of_notional": 1.0, "commission_round_trip_per_contract": 4.5},
+                    discovery_data={"start": "2010-06-07", "end": "2019-12-31"},
+                    oos_data={"start": "2020-01-01", "end": "2023-12-31"})
+        return r, base
+
+    def test_approved_family_accepts_and_uses_own_budget_not_global(self):
+        r, base = self._approved()
+        reg_p = os.path.join(r, "registry", "research_registry.json")
+        reg = json.load(open(reg_p)); reg["baseline_trials"] = 100; json.dump(reg, open(reg_p, "w"))  # global budget exhausted
+        ok, m = orch.submit(r, put(r, spec(**base)), NOW); self.assertTrue(ok, m)
+
+    def test_family_budget_enforced(self):
+        r, base = self._approved(budget_trials=1)
+        ok, m = orch.submit(r, put(r, spec("a", trials=2, **base)), NOW)
+        self.assertFalse(ok); self.assertIn("budget", m[0])
+
+    def test_sealed_holdout_period_blocked(self):
+        r, base = self._approved(); base["oos_data"] = {"start": "2020-01-01", "end": "2025-12-31"}
+        ok, m = orch.submit(r, put(r, spec(**base)), NOW)
+        self.assertFalse(ok); self.assertTrue(any("sealed holdout" in x for x in m))
+
+    def test_symbol_outside_universe_blocked(self):
+        r, base = self._approved(); base["symbols"] = ["XYZ"]
+        ok, m = orch.submit(r, put(r, spec(**base)), NOW)
+        self.assertFalse(ok); self.assertTrue(any("outside the family universe" in x for x in m))
+
+    def test_missing_family_field_invalid(self):
+        r = make_root(); s = spec(); del s["family"]
+        ok, m = orch.submit(r, put(r, s), NOW); self.assertFalse(ok)
 
 
 class TestLeakage(unittest.TestCase):

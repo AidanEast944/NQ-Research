@@ -27,6 +27,7 @@ def paths(root):
     st = os.path.join(root, "lab", "state")
     return {"policy": os.path.join(root, "lab", "policy.json"),
             "registry": os.path.join(root, "registry", "research_registry.json"),
+            "families": os.path.join(root, "registry", "families.json"),
             "queue": os.path.join(st, "queue.json"),
             "hyp": os.path.join(st, "hypotheses.jsonl"),
             "log": os.path.join(st, "agent_log.jsonl")}
@@ -85,11 +86,13 @@ def submit(root, spec_path, now=None):
         return False, ["spec must live under lab/proposals/"]
     with open(spec_path) as f:
         spec = json.load(f)
-    problems = specs.validate_shape(spec, policy)
+    families = guard.load_json(P["families"], {"families": {}})
+    fam = families.get("families", {}).get(spec.get("family"))
+    problems = specs.validate_shape(spec, policy, fam)
     if problems:
         log_event(root, "rejected_invalid", id=spec.get("id"), problems=problems)
         return False, problems
-    fp, fam, sh = specs.fingerprint(spec), specs.family_hash(spec), specs.spec_hash(spec)
+    fp, fh, sh = specs.fingerprint(spec), specs.family_hash(spec), specs.spec_hash(spec)
     prior = read_hyp(root)
     dup = [h for h in prior if h["fingerprint"] == fp]
     if dup:
@@ -97,19 +100,33 @@ def submit(root, spec_path, now=None):
         return False, [f"duplicate of {dup[0]['id']} (status {dup[0]['status']}): same rules, parameters and data windows"]
     if any(q["spec"]["id"] == spec["id"] for q in queue):
         return False, [f"id {spec['id']} already used"]
-    problems = guard.holdout_problems(spec, policy) + guard.budget_problems(spec, registry, queue, policy, now)
+    fam_probs, fam = guard.family_problems(spec, families, registry, queue)
+    problems = list(fam_probs)
+    own_budget = fam is not None and fam.get("budget_trials") is not None
+    if not (fam and fam.get("periods")):
+        problems += guard.holdout_problems(spec, policy)       # legacy sealed-symbol rule (RTY) for families without periods
+    if own_budget:
+        # the family has its own trial budget (checked in family_problems); only the weekly allowance is shared
+        cap, used_w = policy["weekly_trial_allowance"], guard.weekly_used(queue, now)
+        if used_w + spec["declared_trials"] > cap:
+            problems.append(f"weekly lab allowance {cap}: {used_w} already submitted this week, "
+                            f"+{spec['declared_trials']} refused")
+    else:
+        own = {n for n, f in families.get("families", {}).items() if f.get("budget_trials") is not None}
+        global_queue = [q for q in queue if q["spec"].get("family") not in own]
+        problems += guard.budget_problems(spec, registry, global_queue, policy, now)
     if problems:
         log_event(root, "rejected_policy", id=spec["id"], problems=problems)
         return False, problems
     msgs = []
-    same_family = [h["id"] for h in prior if h["family"] == fam]
+    same_family = [h["id"] for h in prior if h["family"] == fh]
     if same_family:
         msgs.append(f"WARNING: same rules as {same_family}, only parameters differ - a parameter sweep. "
                     "Declared_trials should count every variant.")
     queue.append({"status": "queued", "submitted_at": now.isoformat(timespec="seconds"),
-                  "spec": spec, "fingerprint": fp, "family": fam, "spec_hash": sh})
+                  "spec": spec, "fingerprint": fp, "family": fh, "spec_hash": sh})
     save_queue(root, queue)
-    append_hyp(root, {"id": spec["id"], "fingerprint": fp, "family": fam, "status": "queued",
+    append_hyp(root, {"id": spec["id"], "fingerprint": fp, "family": fh, "status": "queued",
                       "submitted_at": now.isoformat(timespec="seconds")})
     log_event(root, "queued", id=spec["id"], fingerprint=fp, spec_hash=sh,
               declared_trials=spec["declared_trials"], author=spec["author"])

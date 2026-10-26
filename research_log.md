@@ -2179,3 +2179,26 @@ _Note (added 2026-10-26): this log has no Entry 36 - numbering jumps from 35 to 
 - Known stale content, NOT changed here: the "RESEARCH STATUS - HONEST ASSESSMENT" text block is dated 2026-09-12 and still
   describes the 43-variation DSR and pre-Entry-68 conclusions. Needs a deliberate rewrite against Entries 68-84.
 - Trials used: none. Verdict: infrastructure.
+
+## Entry 86: Pivot Scaffolding - Frozen Families and a New Low-Turnover Family (2026-10-26)
+- Why: after Entries 68-85 the gap / time-of-day line has no pre-cost edge on 2015-2023, the only lead (YM mini, Entry 82) is
+  inconclusive, 5 of 100 global trials remain, and costs dominate intraday index moves. Decision (Aidan, 2026-10-26): stop
+  spending trials there, keep forward evidence collecting at no trial cost (live tracks + shadow ledger), and open a new family
+  built on structurally motivated, low-turnover rules across many independent futures markets. Nothing existing was removed.
+- Written BEFORE any data for the new family has been pulled or looked at:
+  * registry/families.json: gap_intraday and time_of_day FROZEN; diversified_lowturnover PROPOSED, NOT approved, proposed budget
+    12 trials counted separately from the global 100, DSR num_trials rule = family trials + 20 (fixed in advance, do not lower).
+  * Universe 19 futures (ES NQ YM RTY ZN ZB ZF CL NG GC SI HG 6E 6J 6B 6A ZC ZS ZW). Periods: discovery 2010-06-07..2019-12-31,
+    validation 2020-01-01..2023-12-31, sealed holdout 2024-01-01 onward (one confirmation per surviving rule).
+  * Allowed ideas: time-series momentum (3/6/12-month lookbacks, last month skipped, risk-scaled, monthly rebalance), cross-sectional
+    momentum within an asset class, carry only after second-contract data exists. Canonical parameters only; any other value is a new trial.
+  * Cost model: 1 bp of notional plus $4.50 per contract round trip on every rebalance trade.
+- Code: lab refuses frozen / unapproved / unknown families, symbols outside the universe, and data windows reaching into the sealed
+  holdout; specs now require a `family`. research_runner.py: `register --family`, a family's tests count against its own budget
+  (existing tests have no family, so the global ledger is unchanged at 95 of 100), `budget` prints family status.
+  src/research/pull_daily_futures.py (quote-first, --pull needs --max-cost) and src/futures_daily.py (roll-day masked returns).
+  Tests: lab 27, runner 5, futures loader 4; whole suite passes.
+- Open, human decisions: (1) approve or change the 12-trial budget by editing registry/families.json (approved_by_human=true);
+  (2) run the quote, then the pull; (3) only then may the first spec be drafted. Daily bars are UTC-day bars; roll-day returns are
+  set to 0 (a small understatement of about 4-12 days a year per market), documented in futures_daily.py.
+- Trials used: none. Verdict: infrastructure.

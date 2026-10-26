@@ -55,3 +55,14 @@ Deferred: Discovery Researcher, Data Analyst, Risk Analyst (wrap coverage_report
 * Reproducibility: agent_log records spec hash, git commit, config, experiment id, timestamp.
 * Cost control: no paid API calls; concurrency 1; weekly trial cap.
 * Scorecard: unchanged; lab only calls it through registered scripts.
+
+## Research families (added 2026-10-26, Entry 86)
+`registry/families.json` is the allowed-idea map. Every spec must name a `family`.
+* `gap_intraday`, `time_of_day`: FROZEN. The lab refuses new specs; the runner refuses `register --family` for them.
+* `diversified_lowturnover`: PROPOSED, `approved_by_human=false`. No trial can be spent until Aidan edits the file to approve it
+  and fixes the budget (proposed 12, counted separately from the global 100 with a deliberately harsh DSR rule: family trials + 20).
+  Own universe (19 futures: equity index, rates, energy, metals, FX, ags), own periods (discovery 2010-2019, validation 2020-2023,
+  sealed holdout 2024 onward, touched once per surviving rule), own cost model, canonical published parameters only.
+* Specs whose data windows reach into a family's sealed holdout, or that name symbols outside its universe, are refused unless the
+  spec is the declared one-time `holdout_confirmation`.
+* Global-ledger families (no `budget_trials`) keep the old behaviour, including the 100-trial cap.

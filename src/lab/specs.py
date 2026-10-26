@@ -2,7 +2,7 @@
 import hashlib
 import json
 
-REQUIRED = ["id", "title", "hypothesis", "symbols", "discovery_data", "oos_data",
+REQUIRED = ["id", "family", "title", "hypothesis", "symbols", "discovery_data", "oos_data",
             "rules", "parameters", "declared_trials", "cost_model", "author"]
 
 
@@ -26,7 +26,7 @@ def spec_hash(spec):
     return hashlib.sha256(_norm(spec).encode()).hexdigest()[:16]
 
 
-def validate_shape(spec, policy):
+def validate_shape(spec, policy, family=None):
     """Return a list of problems (empty = ok)."""
     problems = []
     for k in REQUIRED:
@@ -47,10 +47,10 @@ def validate_shape(spec, policy):
     if not problems:
         if spec["discovery_data"]["end"] >= spec["oos_data"]["start"]:
             problems.append("discovery_data must end before oos_data starts (no overlap)")
-        cm, req = spec["cost_model"], policy["required_cost_model"]
-        if (cm.get("slippage_points") != req["slippage_points"]
-                or cm.get("commission_round_trip") != req["commission_round_trip"]):
-            problems.append(f"cost_model must equal the project default {req}")
+        cm = spec["cost_model"]
+        req = (family or {}).get("cost_model") or policy["required_cost_model"]
+        if cm != req:
+            problems.append(f"cost_model must equal the required model for this family: {req}")
         if not spec["rules"]:
             problems.append("rules must be explicit and non-empty")
     return problems

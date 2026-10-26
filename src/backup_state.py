@@ -21,7 +21,7 @@ KEEP_DAILY, KEEP_WEEKLY = 14, 4
 DAILY_PATTERNS = ["data/*.json", "data/*.csv", "data/*.txt", "data/*.bak*"]
 DAILY_DIRS = ["registry", "results", "lab", "launchd"]
 DAILY_FILES = ["research_log.md"]
-WEEKLY_DIRS_GLOB = ["data/raw_*_extended", "data/raw"]
+WEEKLY_DIRS_GLOB = ["data/raw_*_extended", "data/raw", "data/futures_daily"]
 EXCLUDE_NAMES = {".env", ".DS_Store"}
 
 

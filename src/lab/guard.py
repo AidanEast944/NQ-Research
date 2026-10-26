@@ -65,3 +65,36 @@ def inside_proposals(path, root):
     """Specs must live under <root>/lab/proposals."""
     base = os.path.realpath(os.path.join(root, "lab", "proposals"))
     return os.path.realpath(path).startswith(base + os.sep)
+
+
+def family_problems(spec, families, registry, queue):
+    """Family must exist, be un-frozen and human-approved, have budget left, use only its universe, and stay out of the
+    sealed holdout unless the spec is its declared one-time holdout confirmation."""
+    fams = (families or {}).get("families", {})
+    name = spec.get("family")
+    fam = fams.get(name)
+    if fam is None:
+        return [f"unknown family '{name}'. Known: {sorted(fams)}"], None
+    if fam.get("status") == "frozen":
+        return [f"family '{name}' is FROZEN: {fam.get('reason', '')}"], fam
+    if not fam.get("approved_by_human"):
+        return [f"family '{name}' is not approved by a human yet (set approved_by_human=true in registry/families.json "
+                f"after deciding its budget)"], fam
+    problems = []
+    used = sum(t["declared_trials"] for t in registry["tests"].values() if t.get("family") == name)
+    reserved = sum(q["spec"]["declared_trials"] for q in queue
+                   if q["spec"].get("family") == name and q["status"] in ("queued", "approved"))
+    left = None if fam.get("budget_trials") is None else fam["budget_trials"] - used - reserved
+    if left is not None and spec["declared_trials"] > left:
+        problems.append(f"family '{name}' budget: {spec['declared_trials']} requested, {left} left "
+                        f"({used} used + {reserved} reserved of {fam['budget_trials']})")
+    universe = {m for ms in fam.get("universe", {}).values() for m in ms}
+    outside = [m for m in spec["symbols"] if universe and m not in universe]
+    if outside:
+        problems.append(f"symbols outside the family universe: {outside}")
+    ho = fam.get("periods", {}).get("sealed_holdout")
+    if ho and not spec.get("holdout_confirmation"):
+        if spec["oos_data"]["end"] >= ho[0] or spec["discovery_data"]["end"] >= ho[0]:
+            problems.append(f"spec data windows reach into the sealed holdout (from {ho[0]}); "
+                            "only a declared holdout_confirmation may")
+    return problems, fam
