@@ -1,0 +1,198 @@
+
+NQ 2015-2023 unfiltered: n=809  gross +0.27 pts/trade (PF 1.01)  = $+0.54 micro / $+5.35 mini per trade
+     project default (1pt slip, $4.50)  micro cost  3.25 pts  net   -2.98 pts  PF 0.89
+     project default (1pt slip, $4.50)  mini  cost  1.23 pts  net   -0.96 pts  PF 0.96
+     0.5pt slip, $2.00                  micro cost  1.50 pts  net   -1.23 pts  PF 0.95
+     0.5pt slip, $2.00                  mini  cost  0.60 pts  net   -0.33 pts  PF 0.99
+     0.25pt slip, $1.00                 micro cost  0.75 pts  net   -0.48 pts  PF 0.98
+     0.25pt slip, $1.00                 mini  cost  0.30 pts  net   -0.03 pts  PF 1.00
+     zero costs                         micro cost  0.00 pts  net   +0.27 pts  PF 1.01
+     zero costs                         mini  cost  0.00 pts  net   +0.27 pts  PF 1.01
+     breakeven cost per trade = 0.27 pts (project default is 3.25 pts micro / 1.23 pts mini)
+
+NQ 2015-2023 vol>=1.2x: n=230  gross +4.51 pts/trade (PF 1.19)  = $+9.02 micro / $+90.17 mini per trade
+     project default (1pt slip, $4.50)  micro cost  3.25 pts  net   +1.26 pts  PF 1.05
+     project default (1pt slip, $4.50)  mini  cost  1.23 pts  net   +3.28 pts  PF 1.14
+     0.5pt slip, $2.00                  micro cost  1.50 pts  net   +3.01 pts  PF 1.12
+     0.5pt slip, $2.00                  mini  cost  0.60 pts  net   +3.91 pts  PF 1.16
+     0.25pt slip, $1.00                 micro cost  0.75 pts  net   +3.76 pts  PF 1.16
+     0.25pt slip, $1.00                 mini  cost  0.30 pts  net   +4.21 pts  PF 1.18
+     zero costs                         micro cost  0.00 pts  net   +4.51 pts  PF 1.19
+     zero costs                         mini  cost  0.00 pts  net   +4.51 pts  PF 1.19
+     breakeven cost per trade = 4.51 pts (project default is 3.25 pts micro / 1.23 pts mini)
+
+NQ 2015-2023 vol>=1.5x: n=169  gross +5.38 pts/trade (PF 1.23)  = $+10.76 micro / $+107.60 mini per trade
+     project default (1pt slip, $4.50)  micro cost  3.25 pts  net   +2.13 pts  PF 1.08
+     project default (1pt slip, $4.50)  mini  cost  1.23 pts  net   +4.16 pts  PF 1.17
+     0.5pt slip, $2.00                  micro cost  1.50 pts  net   +3.88 pts  PF 1.16
+     0.5pt slip, $2.00                  mini  cost  0.60 pts  net   +4.78 pts  PF 1.20
+     0.25pt slip, $1.00                 micro cost  0.75 pts  net   +4.63 pts  PF 1.19
+     0.25pt slip, $1.00                 mini  cost  0.30 pts  net   +5.08 pts  PF 1.21
+     zero costs                         micro cost  0.00 pts  net   +5.38 pts  PF 1.23
+     zero costs                         mini  cost  0.00 pts  net   +5.38 pts  PF 1.23
+     breakeven cost per trade = 5.38 pts (project default is 3.25 pts micro / 1.23 pts mini)
+
+NQ 2024-2026 unfiltered: n=501  gross +4.89 pts/trade (PF 1.20)  = $+9.78 micro / $+97.80 mini per trade
+     project default (1pt slip, $4.50)  micro cost  3.25 pts  net   +1.64 pts  PF 1.06
+     project default (1pt slip, $4.50)  mini  cost  1.23 pts  net   +3.67 pts  PF 1.14
+     0.5pt slip, $2.00                  micro cost  1.50 pts  net   +3.39 pts  PF 1.13
+     0.5pt slip, $2.00                  mini  cost  0.60 pts  net   +4.29 pts  PF 1.17
+     0.25pt slip, $1.00                 micro cost  0.75 pts  net   +4.14 pts  PF 1.16
+     0.25pt slip, $1.00                 mini  cost  0.30 pts  net   +4.59 pts  PF 1.18
+     zero costs                         micro cost  0.00 pts  net   +4.89 pts  PF 1.20
+     zero costs                         mini  cost  0.00 pts  net   +4.89 pts  PF 1.20
+     breakeven cost per trade = 4.89 pts (project default is 3.25 pts micro / 1.23 pts mini)
+
+NQ 2024-2026 vol>=1.2x: n=144  gross +11.67 pts/trade (PF 1.51)  = $+23.33 micro / $+233.33 mini per trade
+     project default (1pt slip, $4.50)  micro cost  3.25 pts  net   +8.42 pts  PF 1.34
+     project default (1pt slip, $4.50)  mini  cost  1.23 pts  net  +10.44 pts  PF 1.44
+     0.5pt slip, $2.00                  micro cost  1.50 pts  net  +10.17 pts  PF 1.43
+     0.5pt slip, $2.00                  mini  cost  0.60 pts  net  +11.07 pts  PF 1.48
+     0.25pt slip, $1.00                 micro cost  0.75 pts  net  +10.92 pts  PF 1.47
+     0.25pt slip, $1.00                 mini  cost  0.30 pts  net  +11.37 pts  PF 1.50
+     zero costs                         micro cost  0.00 pts  net  +11.67 pts  PF 1.51
+     zero costs                         mini  cost  0.00 pts  net  +11.67 pts  PF 1.51
+     breakeven cost per trade = 11.67 pts (project default is 3.25 pts micro / 1.23 pts mini)
+
+NQ 2024-2026 vol>=1.5x: n=103  gross +15.92 pts/trade (PF 1.75)  = $+31.84 micro / $+318.45 mini per trade
+     project default (1pt slip, $4.50)  micro cost  3.25 pts  net  +12.67 pts  PF 1.55
+     project default (1pt slip, $4.50)  mini  cost  1.23 pts  net  +14.70 pts  PF 1.67
+     0.5pt slip, $2.00                  micro cost  1.50 pts  net  +14.42 pts  PF 1.65
+     0.5pt slip, $2.00                  mini  cost  0.60 pts  net  +15.32 pts  PF 1.71
+     0.25pt slip, $1.00                 micro cost  0.75 pts  net  +15.17 pts  PF 1.70
+     0.25pt slip, $1.00                 mini  cost  0.30 pts  net  +15.62 pts  PF 1.73
+     zero costs                         micro cost  0.00 pts  net  +15.92 pts  PF 1.75
+     zero costs                         mini  cost  0.00 pts  net  +15.92 pts  PF 1.75
+     breakeven cost per trade = 15.92 pts (project default is 3.25 pts micro / 1.23 pts mini)
+
+ES 2015-2023 unfiltered: n=1132  gross +0.58 pts/trade (PF 1.10)  = $+2.92 micro / $+29.19 mini per trade
+     project default (1pt slip, $4.50)  micro cost  1.90 pts  net   -1.32 pts  PF 0.81
+     project default (1pt slip, $4.50)  mini  cost  1.09 pts  net   -0.51 pts  PF 0.92
+     0.5pt slip, $2.00                  micro cost  0.90 pts  net   -0.32 pts  PF 0.95
+     0.5pt slip, $2.00                  mini  cost  0.54 pts  net   +0.04 pts  PF 1.01
+     0.25pt slip, $1.00                 micro cost  0.45 pts  net   +0.13 pts  PF 1.02
+     0.25pt slip, $1.00                 mini  cost  0.27 pts  net   +0.31 pts  PF 1.05
+     zero costs                         micro cost  0.00 pts  net   +0.58 pts  PF 1.10
+     zero costs                         mini  cost  0.00 pts  net   +0.58 pts  PF 1.10
+     breakeven cost per trade = 0.58 pts (project default is 1.90 pts micro / 1.09 pts mini)
+
+ES 2015-2023 vol>=1.2x: n=304  gross +1.48 pts/trade (PF 1.26)  = $+7.38 micro / $+73.85 mini per trade
+     project default (1pt slip, $4.50)  micro cost  1.90 pts  net   -0.42 pts  PF 0.94
+     project default (1pt slip, $4.50)  mini  cost  1.09 pts  net   +0.39 pts  PF 1.06
+     0.5pt slip, $2.00                  micro cost  0.90 pts  net   +0.58 pts  PF 1.09
+     0.5pt slip, $2.00                  mini  cost  0.54 pts  net   +0.94 pts  PF 1.15
+     0.25pt slip, $1.00                 micro cost  0.45 pts  net   +1.03 pts  PF 1.17
+     0.25pt slip, $1.00                 mini  cost  0.27 pts  net   +1.21 pts  PF 1.20
+     zero costs                         micro cost  0.00 pts  net   +1.48 pts  PF 1.26
+     zero costs                         mini  cost  0.00 pts  net   +1.48 pts  PF 1.26
+     breakeven cost per trade = 1.48 pts (project default is 1.90 pts micro / 1.09 pts mini)
+
+ES 2015-2023 vol>=1.5x: n=208  gross +2.12 pts/trade (PF 1.38)  = $+10.61 micro / $+106.13 mini per trade
+     project default (1pt slip, $4.50)  micro cost  1.90 pts  net   +0.22 pts  PF 1.03
+     project default (1pt slip, $4.50)  mini  cost  1.09 pts  net   +1.03 pts  PF 1.17
+     0.5pt slip, $2.00                  micro cost  0.90 pts  net   +1.22 pts  PF 1.20
+     0.5pt slip, $2.00                  mini  cost  0.54 pts  net   +1.58 pts  PF 1.27
+     0.25pt slip, $1.00                 micro cost  0.45 pts  net   +1.67 pts  PF 1.29
+     0.25pt slip, $1.00                 mini  cost  0.27 pts  net   +1.85 pts  PF 1.32
+     zero costs                         micro cost  0.00 pts  net   +2.12 pts  PF 1.38
+     zero costs                         mini  cost  0.00 pts  net   +2.12 pts  PF 1.38
+     breakeven cost per trade = 2.12 pts (project default is 1.90 pts micro / 1.09 pts mini)
+
+ES 2024-2026 unfiltered: n=490  gross +0.61 pts/trade (PF 1.10)  = $+3.03 micro / $+30.26 mini per trade
+     project default (1pt slip, $4.50)  micro cost  1.90 pts  net   -1.29 pts  PF 0.83
+     project default (1pt slip, $4.50)  mini  cost  1.09 pts  net   -0.48 pts  PF 0.93
+     0.5pt slip, $2.00                  micro cost  0.90 pts  net   -0.29 pts  PF 0.96
+     0.5pt slip, $2.00                  mini  cost  0.54 pts  net   +0.07 pts  PF 1.01
+     0.25pt slip, $1.00                 micro cost  0.45 pts  net   +0.16 pts  PF 1.02
+     0.25pt slip, $1.00                 mini  cost  0.27 pts  net   +0.34 pts  PF 1.05
+     zero costs                         micro cost  0.00 pts  net   +0.61 pts  PF 1.10
+     zero costs                         mini  cost  0.00 pts  net   +0.61 pts  PF 1.10
+     breakeven cost per trade = 0.61 pts (project default is 1.90 pts micro / 1.09 pts mini)
+
+ES 2024-2026 vol>=1.2x: n=122  gross +2.30 pts/trade (PF 1.39)  = $+11.48 micro / $+114.75 mini per trade
+     project default (1pt slip, $4.50)  micro cost  1.90 pts  net   +0.40 pts  PF 1.06
+     project default (1pt slip, $4.50)  mini  cost  1.09 pts  net   +1.21 pts  PF 1.18
+     0.5pt slip, $2.00                  micro cost  0.90 pts  net   +1.40 pts  PF 1.22
+     0.5pt slip, $2.00                  mini  cost  0.54 pts  net   +1.76 pts  PF 1.28
+     0.25pt slip, $1.00                 micro cost  0.45 pts  net   +1.85 pts  PF 1.30
+     0.25pt slip, $1.00                 mini  cost  0.27 pts  net   +2.03 pts  PF 1.33
+     zero costs                         micro cost  0.00 pts  net   +2.30 pts  PF 1.39
+     zero costs                         mini  cost  0.00 pts  net   +2.30 pts  PF 1.39
+     breakeven cost per trade = 2.30 pts (project default is 1.90 pts micro / 1.09 pts mini)
+
+ES 2024-2026 vol>=1.5x: n=81  gross +4.07 pts/trade (PF 1.77)  = $+20.37 micro / $+203.70 mini per trade
+     project default (1pt slip, $4.50)  micro cost  1.90 pts  net   +2.17 pts  PF 1.34
+     project default (1pt slip, $4.50)  mini  cost  1.09 pts  net   +2.98 pts  PF 1.51
+     0.5pt slip, $2.00                  micro cost  0.90 pts  net   +3.17 pts  PF 1.55
+     0.5pt slip, $2.00                  mini  cost  0.54 pts  net   +3.53 pts  PF 1.63
+     0.25pt slip, $1.00                 micro cost  0.45 pts  net   +3.62 pts  PF 1.65
+     0.25pt slip, $1.00                 mini  cost  0.27 pts  net   +3.80 pts  PF 1.70
+     zero costs                         micro cost  0.00 pts  net   +4.07 pts  PF 1.77
+     zero costs                         mini  cost  0.00 pts  net   +4.07 pts  PF 1.77
+     breakeven cost per trade = 4.07 pts (project default is 1.90 pts micro / 1.09 pts mini)
+
+YM 2015-2023 unfiltered: n=1550  gross +3.15 pts/trade (PF 1.13)  = $+1.57 micro / $+15.75 mini per trade
+     project default (1pt slip, $4.50)  micro cost 10.00 pts  net   -6.85 pts  PF 0.78
+     project default (1pt slip, $4.50)  mini  cost  1.90 pts  net   +1.25 pts  PF 1.05
+     0.5pt slip, $2.00                  micro cost  4.50 pts  net   -1.35 pts  PF 0.95
+     0.5pt slip, $2.00                  mini  cost  0.90 pts  net   +2.25 pts  PF 1.09
+     0.25pt slip, $1.00                 micro cost  2.25 pts  net   +0.90 pts  PF 1.03
+     0.25pt slip, $1.00                 mini  cost  0.45 pts  net   +2.70 pts  PF 1.11
+     zero costs                         micro cost  0.00 pts  net   +3.15 pts  PF 1.13
+     zero costs                         mini  cost  0.00 pts  net   +3.15 pts  PF 1.13
+     breakeven cost per trade = 3.15 pts (project default is 10.00 pts micro / 1.90 pts mini)
+
+YM 2015-2023 vol>=1.2x: n=417  gross +10.59 pts/trade (PF 1.47)  = $+5.29 micro / $+52.95 mini per trade
+     project default (1pt slip, $4.50)  micro cost 10.00 pts  net   +0.59 pts  PF 1.02
+     project default (1pt slip, $4.50)  mini  cost  1.90 pts  net   +8.69 pts  PF 1.36
+     0.5pt slip, $2.00                  micro cost  4.50 pts  net   +6.09 pts  PF 1.24
+     0.5pt slip, $2.00                  mini  cost  0.90 pts  net   +9.69 pts  PF 1.42
+     0.25pt slip, $1.00                 micro cost  2.25 pts  net   +8.34 pts  PF 1.35
+     0.25pt slip, $1.00                 mini  cost  0.45 pts  net  +10.14 pts  PF 1.44
+     zero costs                         micro cost  0.00 pts  net  +10.59 pts  PF 1.47
+     zero costs                         mini  cost  0.00 pts  net  +10.59 pts  PF 1.47
+     breakeven cost per trade = 10.59 pts (project default is 10.00 pts micro / 1.90 pts mini)
+
+YM 2015-2023 vol>=1.5x: n=281  gross +11.68 pts/trade (PF 1.52)  = $+5.84 micro / $+58.42 mini per trade
+     project default (1pt slip, $4.50)  micro cost 10.00 pts  net   +1.68 pts  PF 1.06
+     project default (1pt slip, $4.50)  mini  cost  1.90 pts  net   +9.78 pts  PF 1.41
+     0.5pt slip, $2.00                  micro cost  4.50 pts  net   +7.18 pts  PF 1.29
+     0.5pt slip, $2.00                  mini  cost  0.90 pts  net  +10.78 pts  PF 1.47
+     0.25pt slip, $1.00                 micro cost  2.25 pts  net   +9.43 pts  PF 1.39
+     0.25pt slip, $1.00                 mini  cost  0.45 pts  net  +11.23 pts  PF 1.49
+     zero costs                         micro cost  0.00 pts  net  +11.68 pts  PF 1.52
+     zero costs                         mini  cost  0.00 pts  net  +11.68 pts  PF 1.52
+     breakeven cost per trade = 11.68 pts (project default is 10.00 pts micro / 1.90 pts mini)
+
+YM 2024-2026 unfiltered: n=561  gross +1.77 pts/trade (PF 1.07)  = $+0.89 micro / $+8.87 mini per trade
+     project default (1pt slip, $4.50)  micro cost 10.00 pts  net   -8.23 pts  PF 0.75
+     project default (1pt slip, $4.50)  mini  cost  1.90 pts  net   -0.13 pts  PF 1.00
+     0.5pt slip, $2.00                  micro cost  4.50 pts  net   -2.73 pts  PF 0.91
+     0.5pt slip, $2.00                  mini  cost  0.90 pts  net   +0.87 pts  PF 1.03
+     0.25pt slip, $1.00                 micro cost  2.25 pts  net   -0.48 pts  PF 0.98
+     0.25pt slip, $1.00                 mini  cost  0.45 pts  net   +1.32 pts  PF 1.05
+     zero costs                         micro cost  0.00 pts  net   +1.77 pts  PF 1.07
+     zero costs                         mini  cost  0.00 pts  net   +1.77 pts  PF 1.07
+     breakeven cost per trade = 1.77 pts (project default is 10.00 pts micro / 1.90 pts mini)
+
+YM 2024-2026 vol>=1.2x: n=148  gross +9.46 pts/trade (PF 1.40)  = $+4.73 micro / $+47.30 mini per trade
+     project default (1pt slip, $4.50)  micro cost 10.00 pts  net   -0.54 pts  PF 0.98
+     project default (1pt slip, $4.50)  mini  cost  1.90 pts  net   +7.56 pts  PF 1.31
+     0.5pt slip, $2.00                  micro cost  4.50 pts  net   +4.96 pts  PF 1.19
+     0.5pt slip, $2.00                  mini  cost  0.90 pts  net   +8.56 pts  PF 1.36
+     0.25pt slip, $1.00                 micro cost  2.25 pts  net   +7.21 pts  PF 1.29
+     0.25pt slip, $1.00                 mini  cost  0.45 pts  net   +9.01 pts  PF 1.38
+     zero costs                         micro cost  0.00 pts  net   +9.46 pts  PF 1.40
+     zero costs                         mini  cost  0.00 pts  net   +9.46 pts  PF 1.40
+     breakeven cost per trade = 9.46 pts (project default is 10.00 pts micro / 1.90 pts mini)
+
+YM 2024-2026 vol>=1.5x: n=106  gross +9.81 pts/trade (PF 1.42)  = $+4.91 micro / $+49.06 mini per trade
+     project default (1pt slip, $4.50)  micro cost 10.00 pts  net   -0.19 pts  PF 0.99
+     project default (1pt slip, $4.50)  mini  cost  1.90 pts  net   +7.91 pts  PF 1.32
+     0.5pt slip, $2.00                  micro cost  4.50 pts  net   +5.31 pts  PF 1.20
+     0.5pt slip, $2.00                  mini  cost  0.90 pts  net   +8.91 pts  PF 1.37
+     0.25pt slip, $1.00                 micro cost  2.25 pts  net   +7.56 pts  PF 1.31
+     0.25pt slip, $1.00                 mini  cost  0.45 pts  net   +9.36 pts  PF 1.40
+     zero costs                         micro cost  0.00 pts  net   +9.81 pts  PF 1.42
+     zero costs                         mini  cost  0.00 pts  net   +9.81 pts  PF 1.42
+     breakeven cost per trade = 9.81 pts (project default is 10.00 pts micro / 1.90 pts mini)

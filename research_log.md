@@ -2096,3 +2096,24 @@ definitions.
   no parameter changed after it. Known inconsistency: the DSR in this run used num_trials=81 (log/AST count + 2) while the
   registry budget counts 94 used; the registry figure is the more conservative one. A DSR of 0.000 would not change either way.
 - Trials: 94 of 100 used, 6 remain.
+
+## Entry 81: Cost Sensitivity of the Live Gap Rules (descriptive, no trial used) (2026-10-25)
+- Why: Entries 68-80 repeatedly showed costs, not signals, as the main obstacle. Question: how much of that is the micro-contract
+  assumption? Per-trade cost in points = slippage + commission / point_value, so the same $4.50 commission is 2.25 NQ points on a
+  micro ($2/pt) but 0.225 points on a mini ($20/pt). Script src/research/cost_sensitivity.py, output results/cost_sensitivity_output.txt.
+  Frozen live point rules; no parameters changed; periods 2015-2023 and 2024-2026. Descriptive only, so no scorecard and no trial declared.
+- Findings (project default costs, 1 pt slippage + $4.50):
+  * Unfiltered rules: gross edge is tiny (NQ +0.27 pts/trade 2015-2023) and does not survive costs on micro or mini (NQ mini PF 0.96,
+    ES mini 0.92, YM mini 1.05). Consistent with Entry 80.
+  * Volume >= 1.2x filter: gross +4.5 NQ / +1.5 ES / +10.6 YM points per trade in 2015-2023, and larger in 2024-26. On MICRO it fails
+    or barely breaks even (NQ cost 3.25 pts, ES 1.90, YM 10.00 vs gross 4.5 / 1.5 / 10.6). On MINI it stays positive after costs in both
+    periods: net PF NQ 1.14 / 1.44, ES 1.06 / 1.18, YM 1.36 / 1.31 (2015-2023 / 2024-26). YM micro at $4.50 is the worst case in the whole
+    project because MYM is $0.50 per point.
+- Caveats (important): (1) 1.2x/1.5x thresholds were chosen after seeing 2024+ data, so these cells are selected; 2015-2023 is the only
+  semi-independent check, and it contains only 230 NQ / 304 ES / 417 YM trades. (2) Mini sizing: NQ mini stop of 40 points is $800, ES mini
+  10 points is $500; only YM mini ($200 stop) fits a $10k account's 2% risk. (3) Commission and slippage are the project defaults,
+  not Aidan's real broker fees; 1 point of slippage may be optimistic for the 08:30 ET data-release open. (4) No significance test or DSR.
+- Verdict: inconclusive / descriptive. No strategy change, nothing live touched. The finding that matters: the micro commission
+  structure, not the signal, may be what has been failing the scorecard for the volume-filtered variants.
+- Next (needs Aidan): real broker fees per contract, then at most ONE pre-registered test (e.g. YM vol>=1.2x on mini, 2015-2023,
+  net PF bar set in advance), costing 1 of the 6 remaining trials.
