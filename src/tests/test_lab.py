@@ -106,7 +106,7 @@ class TestFamilies(unittest.TestCase):
         self.assertFalse(ok); self.assertIn("FROZEN", m[0])
 
     def test_unapproved_family_refused(self):
-        r = make_root()
+        r = make_root(); set_family(r, "diversified_lowturnover", approved_by_human=False)   # real file is now approved
         ok, m = orch.submit(r, put(r, spec(family="diversified_lowturnover", symbols=["ZN"],
                       cost_model={"slippage_bps_of_notional": 1.0, "commission_round_trip_per_contract": 4.5},
                       discovery_data={"start": "2010-06-07", "end": "2019-12-31"},
