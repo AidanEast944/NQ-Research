@@ -40,6 +40,15 @@ BROKER_ACCOUNTS = [
     {"key": "vol_1_5x", "label": "Vol-Confirmed 1.5x", "path": "data/volume_gap_1_5x_paper_account.json",
      "default_point_value": 2, "candidate": True,
      "backtest_note": "PASS - honest out-of-time threshold (Entry 27 Part 5)"},
+    {"key": "vol_es_1_2x", "label": "Vol-Confirmed ES 1.2x (MES)", "path": "data/volume_gap_es_1_2x_paper_account.json",
+     "default_point_value": 5, "candidate": True,
+     "backtest_note": "Entries 68-72: 2015-2023 gross edge small; micro costs dominate"},
+    {"key": "vol_ym_1_2x", "label": "Vol-Confirmed YM 1.2x (MYM)", "path": "data/volume_gap_ym_1_2x_paper_account.json",
+     "default_point_value": 0.5, "candidate": True,
+     "backtest_note": "Micro: fails costs (Entry 81). Mini: inconclusive, 6/7 DSR 0.084 (Entry 82)"},
+    {"key": "vol_ym_1_5x", "label": "Vol-Confirmed YM 1.5x (MYM)", "path": "data/volume_gap_ym_1_5x_paper_account.json",
+     "default_point_value": 0.5, "candidate": True,
+     "backtest_note": "Stricter variant; micro costs dominate (Entry 81)"},
     {"key": "fade", "label": "Fade", "path": "data/fade_paper_account.json",
      "default_point_value": 20, "candidate": False,
      "backtest_note": "RETIRED 2026-09-11 (Entry 35) - re-run scorecard on full archive confirmed "
@@ -86,6 +95,8 @@ def combined_book_summary():
         state = load_json(acct["path"])
         balance = state.get("balance", STARTING_BALANCE) if state else STARTING_BALANCE
         trades = len(state.get("trade_history", [])) if state else 0
+        if acct["key"] == "pairs":
+            trades //= 2   # each pairs trade is two broker legs closed together; count round trips
         open_ct = len(state.get("positions", [])) if state else 0
         total_balance += balance
         total_trades += trades

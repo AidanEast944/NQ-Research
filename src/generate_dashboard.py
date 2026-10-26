@@ -291,6 +291,9 @@ def build_equity_curve():
         ("data/gap_paper_account.json", "GAP (unfiltered)", "#ffb020", 2),
         ("data/volume_gap_1_2x_paper_account.json", "VOL-CONFIRMED 1.2x", "#00e5a0", 2),
         ("data/volume_gap_1_5x_paper_account.json", "VOL-CONFIRMED 1.5x", "#2fa8ff", 2),
+        ("data/volume_gap_es_1_2x_paper_account.json", "VOL ES 1.2x", "#7be0ff", 5),
+        ("data/volume_gap_ym_1_2x_paper_account.json", "VOL YM 1.2x", "#ffd27a", 0.5),
+        ("data/volume_gap_ym_1_5x_paper_account.json", "VOL YM 1.5x", "#b3ff7a", 0.5),
         ("data/fade_paper_account.json", "FADE", "#ff8fd6", 20),
         ("data/pairs_paper_account.json", "PAIRS BOOK (all 3)", "#c86bff", 2),
         ("data/vol_momentum_reversal_paper_account.json", "VOL+MOMENTUM REVERSAL", "#ff5c5c", 2),
@@ -413,6 +416,18 @@ panels.append(live_panel(
 
 ))
 
+panels.append(live_panel(
+    "VOLUME-CONFIRMED GAP ES 1.2x (MES) // LIVE", "data/volume_gap_es_1_2x_paper_account.json", "#7be0ff",
+    note="Entries 68-72 - 2015-2023 gross edge small, micro costs dominate - automated"
+))
+panels.append(live_panel(
+    "VOLUME-CONFIRMED GAP YM 1.2x (MYM) // LIVE", "data/volume_gap_ym_1_2x_paper_account.json", "#ffd27a",
+    note="Entry 81/82 - micro fails costs; mini inconclusive (6/7, DSR 0.084) - automated"
+))
+panels.append(live_panel(
+    "VOLUME-CONFIRMED GAP YM 1.5x (MYM) // LIVE", "data/volume_gap_ym_1_5x_paper_account.json", "#b3ff7a",
+    note="Stricter variant of the YM track - automated"
+))
 panels.append(live_panel(
     "VOL+MOMENTUM REVERSAL // LIVE", "data/vol_momentum_reversal_paper_account.json", "#ff5c5c",
     note="Entry 54 - discovered via bounded pattern scanner, 5/7 scorecard, DSR 43.9% - automated"
