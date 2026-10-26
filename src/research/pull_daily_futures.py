@@ -63,11 +63,15 @@ def main():
     end = date.today() - timedelta(days=1)
     total, quotes = 0.0, {}
     for s in syms:
-        try:
-            c = client.metadata.get_cost(dataset="GLBX.MDP3", symbols=[f"{s}.c.0"], schema="ohlcv-1d",
-                                         start=eastern_midnight_iso(START), end=eastern_midnight_iso(end), stype_in="continuous")
-        except Exception as e:
-            print(f"{s}: quote failed - {e}"); c = float("nan")
+        c = float("nan")
+        for attempt in range(3):   # a gateway timeout (504) on one symbol is transient; retry before giving up
+            try:
+                c = client.metadata.get_cost(dataset="GLBX.MDP3", symbols=[f"{s}.c.0"], schema="ohlcv-1d",
+                                             start=eastern_midnight_iso(START), end=eastern_midnight_iso(end), stype_in="continuous")
+                break
+            except Exception as e:
+                print(f"{s}: quote attempt {attempt + 1} failed - {str(e)[:120]}")
+                time.sleep(3 * (attempt + 1))
         quotes[s] = c
         total += 0 if c != c else c
         print(f"{s:<4} quote ${c:.4f}")
