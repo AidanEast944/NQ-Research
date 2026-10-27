@@ -39,6 +39,7 @@ Run manually first, before scheduling:
 """
 import os
 import sys
+import time
 import glob
 import pandas as pd
 from datetime import date, datetime, timedelta, timezone
@@ -219,16 +220,24 @@ spent = 0.0  # quoted cost of pulls that actually succeeded (failed pulls are no
 failed = []
 for p in plan:
     print(f"Pulling {p['label']} ({p['start']} -> {END_DATE})...")
-    try:
-        store = client.timeseries.get_range(
-            dataset="GLBX.MDP3", symbols=[p["dbn_symbol"]], schema="ohlcv-1m",
-            start=eastern_midnight_iso(p["start"]), end=END_ISO,
-            stype_in="continuous",
-        )
-        raw_df = store.to_df()
-        spent += p["cost"]
-    except Exception as e:
-        print(f"  FAILED to pull {p['label']}: {e}")
+    raw_df, last_err = None, None
+    for attempt in range(1, 4):   # transient 504/connection resets: retry up to 3 times with backoff
+        try:
+            store = client.timeseries.get_range(
+                dataset="GLBX.MDP3", symbols=[p["dbn_symbol"]], schema="ohlcv-1m",
+                start=eastern_midnight_iso(p["start"]), end=END_ISO,
+                stype_in="continuous",
+            )
+            raw_df = store.to_df()
+            spent += p["cost"]
+            break
+        except Exception as e:
+            last_err = e
+            print(f"  attempt {attempt}/3 failed for {p['label']}: {e}")
+            if attempt < 3:
+                time.sleep(20 * attempt)
+    if raw_df is None:
+        print(f"  FAILED to pull {p['label']}: {last_err}")
         failed.append(p["label"])
         continue
 

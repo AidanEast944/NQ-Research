@@ -6,9 +6,9 @@ For each com.nqresearch.* plist in ~/Library/LaunchAgents (falls back to ./launc
 `launchctl print gui/<uid>/<label>` and checks:
   1. the job is loaded at all
   2. last exit code is 0 (or the job has never run yet)
-  3. if the job was scheduled to run today and its time (+15 min) has passed, its run counter increased since the last
-     heartbeat snapshot (so a job asleep through its slot is caught; launchd runs missed slots on wake, which counts)
-  4. its stderr file did not grow since the last snapshot
+  3. if a scheduled slot (+15 min grace) fell between the previous snapshot and now, its run counter increased
+     (so a job asleep through its slot is caught; launchd runs missed slots on wake, which counts)
+  4. its stderr file got no new Traceback/Error text since the last snapshot (plain warnings are ignored)
 Problems raise ONE Mac notification and are written to results/heartbeat.json. State lives in data/heartbeat_state.json.
 Read-only with respect to trading: touches no account, strategy or live file.
 Scheduled by launchd/com.nqresearch.heartbeat.plist at 6:10 PM PT (after the 5:50 PM shadow ledger).
@@ -22,7 +22,7 @@ import plistlib
 import re
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 
 STATE = "data/heartbeat_state.json"
 OUT = "results/heartbeat.json"
@@ -50,18 +50,39 @@ def scheduled_slots(p):
     return [(d.get("Hour"), d.get("Minute", 0), d.get("Weekday")) for d in items]
 
 
-def due_today(slots, now):
-    """True if any slot is scheduled for today and its time + grace has passed."""
-    wd = (now.weekday() + 1) % 7   # launchd: 0/7 = Sunday, 1 = Monday ... 6 = Saturday
+def due_today(slots, now, since=None):
+    """True if a scheduled slot fell inside (since, now - grace]: i.e. a run was owed since the last snapshot.
+    since=None (no earlier snapshot time known) -> False, so nothing is flagged without evidence."""
+    if since is None:
+        return False
+    cutoff = now - timedelta(minutes=GRACE_MIN)
     for hour, minute, weekday in slots:
-        if weekday is not None and weekday % 7 != wd:
-            continue
         if hour is None:
             continue
-        slot = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
-        if (now - slot).total_seconds() >= GRACE_MIN * 60:
-            return True
+        for back in range(0, 9):
+            day = (now - timedelta(days=back)).replace(hour=hour, minute=minute, second=0, microsecond=0)
+            if day > cutoff:
+                continue
+            wd = (day.weekday() + 1) % 7   # launchd: 0/7 = Sunday, 1 = Monday ... 6 = Saturday
+            if weekday is not None and weekday % 7 != wd:
+                continue
+            if day > since:
+                return True
+            break   # most recent eligible occurrence is not after the snapshot
     return False
+
+
+ERR_PATTERN = re.compile(r"Traceback|\bError\b|Exception|\bFATAL\b|\bCRITICAL\b")
+
+
+def new_error_text(path, offset):
+    """Text appended to the error file since byte `offset` (bytes past EOF reset to 0 if the file was truncated)."""
+    try:
+        with open(path, "rb") as f:
+            f.seek(offset if offset <= os.path.getsize(path) else 0)
+            return f.read().decode("utf-8", "replace")
+    except OSError:
+        return ""
 
 
 def launchctl_print(label):
@@ -98,23 +119,26 @@ def check(now=None, print_fn=launchctl_print, plists=None, state=None):
         err_path = p.get("StandardErrorPath")
         size = file_size(err_path) if err_path else 0
         prev = state.get(label, {})
+        prev_at = datetime.fromisoformat(prev["at"]) if prev.get("at") else None
         info = {"loaded": rc == 0}
         if rc != 0:
             problems.append(f"{label}: not loaded in launchd")
             report[label] = info
-            new_state[label] = {"runs": prev.get("runs"), "err_size": size}
+            new_state[label] = {"runs": prev.get("runs"), "err_size": size, "at": now.isoformat(timespec="seconds")}
             continue
         parsed = parse_print(text)
         info.update(parsed)
         runs = parsed["runs"]
         if parsed["last_exit"] not in (None, 0):
             problems.append(f"{label}: last exit code {parsed['last_exit']}")
-        if (runs is not None and prev.get("runs") is not None and due_today(scheduled_slots(p), now)
+        if (runs is not None and prev.get("runs") is not None and due_today(scheduled_slots(p), now, prev_at)
                 and runs <= prev["runs"]):
             problems.append(f"{label}: scheduled today but did not run (runs still {runs})")
-        if err_path and prev.get("err_size") is not None and size > prev["err_size"]:
-            problems.append(f"{label}: wrote {size - prev['err_size']} new bytes to its error file")
-        new_state[label] = {"runs": runs, "err_size": size}
+        if err_path and prev.get("err_size") is not None and size != prev["err_size"]:
+            added = new_error_text(err_path, prev["err_size"])
+            if ERR_PATTERN.search(added):
+                problems.append(f"{label}: error file has new Traceback/Error text ({size - prev['err_size']} bytes)")
+        new_state[label] = {"runs": runs, "err_size": size, "at": now.isoformat(timespec="seconds")}
         report[label] = info
     return problems, new_state, report
 

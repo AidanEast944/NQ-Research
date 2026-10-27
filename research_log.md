@@ -2221,3 +2221,16 @@ _Note (added 2026-10-26): this log has no Entry 36 - numbering jumps from 35 to 
 - Fix: end is now yesterday (Eastern midnight); the total line says how many quotes succeeded and warns when any failed, and --pull
   refuses outright if any quote failed. Nothing was pulled or spent. No data looked at, no trial used.
 - Verdict: bug fix.
+
+## Entry 89 — 2026-10-27 — Heartbeat false alarms fixed; Databento refresh retries per symbol
+
+- Observed: the 6:10 PM Monday heartbeat reported 11 problems. Nine "did not run" items were false: the first heartbeat snapshot was
+  taken by hand at 10:11 AM, after those morning jobs had already run, so the check wrongly expected a counter increase. Two
+  "error file grew" items were harmless yfinance/numpy DeprecationWarnings.
+- Fix (src/heartbeat.py): a run is required only if a scheduled slot (plus 15 min grace) fell between the previous snapshot and now
+  (snapshot time now stored per job); error-file growth is flagged only if the new text contains Traceback/Error/Exception. Three
+  new tests; suite at 74 passing.
+- Real problem found: Monday 10/26 3:00 AM Databento refresh failed for NQ (connection reset) and YM (read timeout); ES and RTY saved.
+  src/research/refresh_databento_archive.py now retries each symbol up to 3 times (20 s, 40 s backoff). The NQ/YM gap must be
+  re-pulled by re-running the refresh by hand.
+- No trading logic, strategy, account or live file was touched. Trial accounting is unchanged (infrastructure entry).
