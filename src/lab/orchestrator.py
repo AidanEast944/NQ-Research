@@ -202,7 +202,7 @@ def main():
         with open(a.result) as f:
             res = json.load(f)
         pol = guard.load_json(paths(ROOT)["policy"])
-        out = validator.check_many(res, pol)
+        out = validator.check_many(res, pol, guard.load_json(paths(ROOT)["families"], {"families": {}}))
         log_event(ROOT, "validated", result=a.result, verdicts=out)
         print(json.dumps(out, indent=2))
 

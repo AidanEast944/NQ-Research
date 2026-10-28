@@ -2234,3 +2234,21 @@ _Note (added 2026-10-26): this log has no Entry 36 - numbering jumps from 35 to 
   src/research/refresh_databento_archive.py now retries each symbol up to 3 times (20 s, 40 s backoff). The NQ/YM gap must be
   re-pulled by re-running the refresh by hand.
 - No trading logic, strategy, account or live file was touched. Trial accounting is unchanged (infrastructure entry).
+
+## Entry 90 — 2026-10-27 — Bounded proposer + family engine/harness built (no trial spent, nothing submitted)
+
+- Built the "bounded automated discovery" for diversified_lowturnover, as agreed: a proposer that walks a FIXED menu of six canonical
+  candidates (time-series and cross-sectional momentum x 3/6/12 months, in the fixed order tsmom12, xsmom12, tsmom6, xsmom6, tsmom3,
+  xsmom3). It invents no parameters; the menu grows only if a human edits src/lab/proposer.py, and each addition is a new trial.
+  Six candidates use 6 of the family's 12 trials; the other 6 stay unspent on purpose.
+- Pieces: src/lab/proposer.py (drafts spec + thin test script; never submits/approves/registers; AST test enforces that),
+  src/research/dlt_engine.py (canonical rules: 21-day skip, 60-day vol, 10% target vol, 3x leverage cap, month-end rebalance,
+  one-day lag, 1 bp + $4.50/contract costs), src/research/dlt_test.py (shared harness: look-ahead test, discovery/validation split,
+  validation Deflated Sharpe with num_trials = 20 + family trials, fixed pass criteria, refuses a partial universe, cuts the sealed
+  holdout from the data before any computation). validator.py now holds a family to its own approved cost model.
+- Pass criteria (same for every candidate): net Sharpe >= 0.3 in discovery AND validation, validation cumulative net > 0;
+  SUPPORTED needs validation DSR >= 0.95, conditions met but DSR below = INCONCLUSIVE, else NOT SUPPORTED.
+- Drafted dlt_tsmom_12m (spec in lab/proposals/, not submitted). It cannot run yet: data/futures_daily has 16 of 19 markets
+  (NQ, YM, ZF missing) and the harness refuses to run on a partial universe.
+- Honest limit: with only canonical parameters the menu is small, so this is a disciplined queue, not a search. 92 tests pass.
+- No live file, account, policy or family record was touched; no result exists; sealed holdout untouched.
