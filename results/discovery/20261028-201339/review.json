@@ -1,0 +1,40 @@
+{
+  "run_id": "20261028-201339",
+  "n_searched": 240,
+  "n_total_trials": 480,
+  "n_passed": 2,
+  "chance_best_sharpe": 0.694349022867279,
+  "top": [
+    {
+      "id": "xsmom_L21_skip0_rebalM_vf",
+      "family": "xsmom",
+      "params": {
+        "L": 21,
+        "skip": 0,
+        "rebal": "M"
+      },
+      "volfilter": true,
+      "sharpe_net": 0.4643689834146197,
+      "sharpe_h1": 0.7406320033435879,
+      "sharpe_h2": 0.08682973386371654,
+      "breadth": 0.6842105263157895,
+      "neighbor_ratio": 0.8556300772345661,
+      "dsr": 0.22846557436613768
+    },
+    {
+      "id": "reversal_L5_rebalW",
+      "family": "reversal",
+      "params": {
+        "L": 5,
+        "rebal": "W"
+      },
+      "volfilter": false,
+      "sharpe_net": 0.4314404090615625,
+      "sharpe_h1": 0.14200743787442746,
+      "sharpe_h2": 0.7230576279020327,
+      "breadth": 0.7368421052631579,
+      "neighbor_ratio": 0.743771185371609,
+      "dsr": 0.19976723493313103
+    }
+  ]
+}

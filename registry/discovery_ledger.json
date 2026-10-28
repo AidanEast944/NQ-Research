@@ -247,7 +247,16 @@
       "grid_size": 240,
       "new": 240,
       "cumulative": 240,
-      "passed": 50
+      "passed": 50,
+      "void": true,
+      "void_reason": "pipeline bug skipped ~10 of 19 markets (Entry 95); still counted in N"
+    },
+    {
+      "run_id": "20261028-201339",
+      "grid_size": 240,
+      "new": 0,
+      "cumulative": 240,
+      "passed": 2
     }
   ]
 }

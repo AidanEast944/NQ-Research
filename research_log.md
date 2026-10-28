@@ -2334,3 +2334,21 @@ _Note (added 2026-10-26): this log has no Entry 36 - numbering jumps from 35 to 
   discovery with the corrected pipeline re-evaluates the same candidate ids (the 300 budget counts distinct ids, so it fits), but it is a second
   look at the same data. Proposed handling: rerun, deflate with N = 480 (two passes) instead of 240, and treat the old ranking as void.
   The 2 remaining discovery_validation trials stay unspent until the corrected ranking exists.
+
+## Entry 96 — 2026-10-28 — Discovery rerun on the corrected 19-market pipeline: no robust edge found
+
+- Aidan said "rerun". Rerun of the same 240 candidate ids on discovery data only (2011-09..2019-12), corrected alignment (Entry 95).
+  Deflation counts every pass: N = 480 (the voided first pass stays in the count; ledger run 20261028-200235 is marked void). Distinct
+  candidate ids used: 240 of the approved 300. Output: results/discovery/20261028-201339/.
+- Result: 2 of 240 passed the filters, both weak. Best net Sharpe in the whole search 0.67 (tsmom 42d skip 21d monthly with volatility
+  filter, failed breadth and neighbours) against about 0.69 expected from the best of 480 candidates with no edge. 43% of candidates had
+  a positive net Sharpe (78% before the fix); median Sharpe by family: tsmom -0.02, macross -0.07, breakout -0.07, xsmom 0.03.
+- The slow-trend cluster from Entry 93 was an artifact of the market-subset bug. On all 19 markets: tsmom 252d skip 21d monthly fell from 0.81
+  to 0.25 (half 1 0.63, half 2 -0.08), tsmom 315d 0.27, breakout 250d 0.19, macross 40/250 0.01, xsmom 252d weekly 0.05; every one fails
+  the second-half and breadth filters. Trend was weak in 2015-2019 across a broad futures universe, which matches the known history.
+- The two survivors: xsmom_L21_skip0_rebalM_vf (Sharpe 0.46, second half 0.09, 20x turnover) and reversal_L5_rebalW (0.43, first half
+  0.14, 59x turnover, 0.9%/yr cost drag, which would grow with real fees). Neither is distinguishable from luck (DSR 0.23 and 0.20).
+- Decision (recommendation, awaiting Aidan): spend NO further validation trials on this ranking. discovery_validation stays at 1 of 3 used
+  (2 unspent); the already-run dv_tsmom_L252 validation (inconclusive, Entry 95) is a measurement of the old subset and is not carried forward.
+  The honest finding is that this grammar shows no robust after-cost edge on daily futures 2011-2019. Carry (needs second-contract data)
+  and the intraday ideas (frozen families) are what remains untested or already weak; forward paper evidence continues.

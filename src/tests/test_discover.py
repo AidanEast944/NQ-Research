@@ -94,6 +94,8 @@ class TestDiscover(unittest.TestCase):
         self.assertIn("Validation (2020-2023) and the sealed holdout (2024+) were not read", review)
         D.run(root=root, data_dir=d, grid=g, gate_check=False)           # same grid again: no new trials
         self.assertEqual(len(D.load_ledger(root)["evaluated"]), len(g))
+        rows2, review2, _ = D.run(root=root, data_dir=d, grid=g, gate_check=False)
+        self.assertIn(f"cumulative trials counted: {3 * len(g)}", review2)        # third pass (two earlier passes in this test) deflates with N = 3 x grid
         # budget check through the real gate with a tiny approved budget
         os.makedirs(os.path.join(root, "registry"), exist_ok=True)
         json.dump({"families": {"discovery_search": {"status": "active", "approved_by_human": True, "budget_evaluations": len(g)}}},

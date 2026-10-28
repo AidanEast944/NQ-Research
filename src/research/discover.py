@@ -4,7 +4,8 @@ DISCOVERY DATA ONLY, evaluates every candidate with the project cost model, filt
 review report. It proposes; it never trades, registers, approves or touches a live file.
 
 HONESTY RULES BUILT IN
-  * Every candidate evaluated counts as a trial, winners or not. N = cumulative candidates in registry/discovery_ledger.json.
+  * Every candidate evaluated counts as a trial, winners or not. N = every evaluation ever made across all passes in
+    registry/discovery_ledger.json (a rerun counts again); the approved budget counts distinct candidate ids.
   * The Deflated Sharpe Ratio of every candidate is computed with that full N, and the report also prints the Sharpe you would
     expect from the BEST of N pure-luck strategies, so a "good" number can be read against what luck alone produces.
   * Data: only dates <= 2019-12-31 are loaded. Validation (2020-2023) and the sealed holdout (2024+) are never read here.
@@ -294,7 +295,9 @@ def run(root=".", data_dir=None, grid=None, gate_check=True):
         rows.append(r); nets[r["id"]] = net
     for c in new:
         led["evaluated"][c["id"]] = datetime.now().isoformat(timespec="seconds")
-    n_total = max(len(led["evaluated"]), len(grid))
+    # Every pass over the grid is a fresh look at the data, so the deflation counts EVERY evaluation ever made (a rerun after a bug fix
+    # counts again, voided runs included). The approved budget counts distinct candidate ids; the deflation counts looks.
+    n_total = sum(r["grid_size"] for r in led["runs"]) + len(grid)
     chance = add_dsr(rows, nets, n_total)
     apply_filters(rows)
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
