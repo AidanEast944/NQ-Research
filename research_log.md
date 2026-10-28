@@ -2314,3 +2314,23 @@ _Note (added 2026-10-26): this log has no Entry 36 - numbering jumps from 35 to 
 - Lab: dv_tsmom_L252_skip21_rebalM queued. The other two were drafted but the weekly allowance (2 per week) is used up
   (ym_mini_vol12 and this one), so dv_macross... was REFUSED by the guard until the week rolls over; dv_xsmom... not yet submitted.
   Policy not changed (human-only). Harness src/research/dv_test.py + three thin scripts; tests: 107 pass.
+
+## Entry 95 — 2026-10-28 — First validation run scored; it exposed a data-alignment bug that voids the "19 markets" claim
+
+- dv_tsmom_L252_skip21_rebalM was run once on validation 2020-2023 (results/dv_tsmom_L252_skip21_rebalM_output.txt): net Sharpe 0.44 (gross
+  0.45), net +2.95%/yr at 6.7% vol, max drawdown -12.0%, cumulative +14.4%; by year 2020 +3.3%, 2021 +14.7%, 2022 +5.1%, 2023 -8.1%;
+  validation DSR 0.551 (needs 0.95). Mechanical reading: conditions met, DSR below the bar = INCONCLUSIVE.
+- The output said "6 of 9 traded", which was wrong for a 19-market rule. Cause: markets missing dates on the shared calendar (silver, gold,
+  grains, most FX, and RTY before 2017) had NaN returns, so their 60-day volatility almost never existed and they were never sized. In
+  2020-2023 only ES, NQ, YM, RTY, CL, NG and parts of the rates sleeve ever traded; GC, SI, HG, 6J, 6B, 6A, ZC, ZS, ZW never did.
+- Consequence: the discovery search (Entry 93) and this validation both tested an equity/energy/rates-heavy subset, not the 19-market
+  portfolio the specs describe. Entry 93's wording ("19 markets", breadth percentages) is wrong; its rankings and the 0.81 Sharpe
+  describe that subset. This validation result is a valid measurement of what the code actually did, and is not evidence about the
+  19-market rule. The trial remains SPENT (1 of 3 in discovery_validation); there is no un-spending.
+- Fix: futures_daily.align_returns (a day with no bar counts as a 0 return; NaN only before a market's first bar), used by both loaders;
+  unit test added; after the fix volatility exists for all 19 markets on every day of 2020-2023. 108 tests pass. Not yet rerun on real
+  data. Disclosure: Aidan and Claude have now seen that candidate's validation result on the flawed pipeline.
+- Verdict recorded as inconclusive for the run as executed. DECISION NEEDED from Aidan before anything else: rerunning the 240-candidate
+  discovery with the corrected pipeline re-evaluates the same candidate ids (the 300 budget counts distinct ids, so it fits), but it is a second
+  look at the same data. Proposed handling: rerun, deflate with N = 480 (two passes) instead of 240, and treat the old ranking as void.
+  The 2 remaining discovery_validation trials stay unspent until the corrected ranking exists.

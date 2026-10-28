@@ -76,10 +76,16 @@
       "script": "src/research/dv_tsmom_L252_skip21_rebalM_test.py",
       "declared_trials": 1,
       "description": "Validation of discovery candidate: 12-month time-series momentum (skip last month), monthly rebalance, 19 futures, 2020-2023",
-      "status": "registered",
+      "status": "scored",
       "registered_at": "2026-10-28T20:09:28",
       "script_commit": "729527e998d0331d69c33c708c4c3c0dc518e365",
-      "family": "discovery_validation"
+      "family": "discovery_validation",
+      "output": "results/dv_tsmom_L252_skip21_rebalM_output.txt",
+      "last_run": "2026-10-28T13:10:37",
+      "verdict": "inconclusive",
+      "log_entry": 95,
+      "verdict_note": "Ran on a pipeline that silently skipped ~10 of 19 markets (Entry 95); valid for what the code did, not for the 19-market rule",
+      "scored_at": "2026-10-28T20:12:12"
     }
   }
 }

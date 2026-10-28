@@ -34,3 +34,16 @@ def load_all(symbols, data_dir=None):
     for s in symbols:
         cols[s] = returns(load(s, data_dir), fill_roll_days=True)
     return pd.DataFrame(cols).sort_index()
+
+
+def align_returns(frames):
+    """frames: dict symbol -> loaded daily DataFrame. One return column per symbol on the union calendar.
+    A day on which a market has no bar gets 0.0 (its next bar already carries the multi-day return), so the rolling
+    volatility and signals stay defined. Before a market's first bar the value stays NaN (not tradable yet).
+    BUG FIXED 2026-10-28 (Entry 95): without this, any market missing dates (silver, gold, grains, most FX) had NaN returns on the
+    shared calendar, its 60-day volatility almost never existed, and it was silently never traded."""
+    r = pd.DataFrame({s: returns(d) for s, d in frames.items()}).sort_index()
+    for s, d in frames.items():
+        live = r.index >= d.index.min()
+        r.loc[live, s] = r.loc[live, s].fillna(0.0)
+    return r

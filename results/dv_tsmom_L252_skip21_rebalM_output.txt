@@ -1,0 +1,14 @@
+candidate tsmom_L252_skip21_rebalM | universe 19 markets | validation DSR num_trials = 3
+
+look-ahead truncation test on the signal: PASS - identical across 5 truncation points
+
+validation 2020-01-01..2023-12-29 (1243 days)
+  discovery (already seen, for comparison) net Sharpe  0.81
+  VALIDATION gross Sharpe  0.45 | NET Sharpe  0.44 | net ann.ret   2.95% | ann.vol  6.68% | max DD -12.02% | cum net   14.42%
+  turnover/yr 6.3x | cost drag/yr 0.09%
+  net return by year: 2020: +3.3%, 2021: +14.7%, 2022: +5.1%, 2023: -8.1%
+  markets with positive gross contribution: 6 of 9 traded
+
+validation Deflated Sharpe Ratio = 0.551 (needs >= 0.95)
+Mechanical check: conditions MET (validation net Sharpe >= 0.3 and cumulative net > 0).
+Mechanical reading: INCONCLUSIVE. A human scores it against the pre-registered criteria.

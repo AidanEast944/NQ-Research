@@ -1,0 +1,17 @@
+{
+  "dv_tsmom_L252_skip21_rebalM": {
+    "family": "discovery_validation",
+    "n_trades": 148,
+    "n_oos_trades": 48,
+    "net_sharpe_validation": 0.44241248547587847,
+    "dsr_validation": 0.5514449869694127,
+    "scorecard_run": true,
+    "leakage_test_passed": true,
+    "cost_model": {
+      "slippage_bps_of_notional": 1.0,
+      "commission_round_trip_per_contract": 4.5
+    },
+    "holdout_touched": false,
+    "declared_trials": 1
+  }
+}

@@ -273,7 +273,7 @@ def load_discovery_data(syms, data_dir=None):
         raise SystemExit(f"REFUSED: daily data missing for {missing}. Discovery runs on the full universe only.")
     frames = {s: fd.load(s, data_dir) for s in syms}
     frames = {s: d[d.index <= DISC_END] for s, d in frames.items()}     # validation + sealed holdout never loaded
-    rets = pd.DataFrame({s: fd.returns(d) for s, d in frames.items()}).sort_index()
+    rets = fd.align_returns(frames)
     prices = pd.DataFrame({s: d["close"] for s, d in frames.items()}).sort_index()
     return rets, prices
 

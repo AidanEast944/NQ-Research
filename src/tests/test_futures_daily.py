@@ -27,6 +27,18 @@ class TestFuturesDaily(unittest.TestCase):
         self.assertTrue(r.iloc[1:3].isna().all())
         self.assertAlmostEqual(r.iloc[3], 0.1)
 
+    def test_align_keeps_markets_with_missing_days_tradable(self):
+        full = pd.bdate_range("2020-01-01", periods=200)
+        a = pd.DataFrame({"close": np.linspace(100, 120, 200), "instrument_id": 1}, index=full)
+        b = pd.DataFrame({"close": np.linspace(50, 60, 100), "instrument_id": 1}, index=full[::2])   # half the days missing
+        late = pd.DataFrame({"close": np.linspace(10, 12, 100), "instrument_id": 1}, index=full[100:])
+        r = fd.align_returns({"A": a, "B": b, "C": late})
+        self.assertEqual(int(r["B"].isna().sum()), 0)
+        self.assertEqual(int(r["C"].iloc[:100].isna().sum()), 100)      # not tradable before its first bar
+        self.assertEqual(int(r["C"].iloc[100:].isna().sum()), 0)
+        vol = r.rolling(60, min_periods=60).std()
+        self.assertTrue(vol["B"].iloc[-1] > 0)                          # volatility exists despite missing days
+
     def test_first_day_is_zero_and_no_nan_when_filled(self):
         d = tempfile.mkdtemp(); write(d, "ZN", [100, 101], [1, 1])
         self.assertFalse(fd.returns(fd.load("ZN", d)).isna().any())
