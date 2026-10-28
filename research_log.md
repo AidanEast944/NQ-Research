@@ -2252,3 +2252,23 @@ _Note (added 2026-10-26): this log has no Entry 36 - numbering jumps from 35 to 
   (NQ, YM, ZF missing) and the harness refuses to run on a partial universe.
 - Honest limit: with only canonical parameters the menu is small, so this is a disciplined queue, not a search. 92 tests pass.
 - No live file, account, policy or family record was touched; no result exists; sealed holdout untouched.
+
+## Entry 91 — 2026-10-28 — Strategy discovery machine built (not run; waiting for human budget approval and full data)
+
+- Aidan asked for a machine that searches the data and puts new strategies out for review. Built src/research/discover.py (family
+  `discovery_search`): a grammar of 240 rule-based strategies (time-series momentum, reversal, Donchian breakout, moving-average
+  crossover, within-class cross-sectional momentum; x weekly/monthly rebalance x optional volatility filter) on the 19-market daily
+  universe, vol-targeted, one-day lag, project cost model (1 bp + $4.50/contract).
+- Honesty rules: it reads ONLY data <= 2019-12-31 (validation and sealed holdout are cut before any computation); every candidate
+  evaluated counts as a trial, tracked cumulatively in registry/discovery_ledger.json (re-evaluating the same candidate is free, a new
+  one is not); every Deflated Sharpe uses the full cumulative N; the report prints the Sharpe expected from the best of N luck-only
+  strategies; filters (net Sharpe >= 0.4, positive in both halves, >= 60% of markets, parameter-neighbour robustness, cost drag)
+  decide what is shown. It refuses to run without a human-approved `discovery_search` entry in registry/families.json
+  (budget_evaluations; proposed value 300 for the 240-candidate grid) and on a partial universe.
+- It proposes only: output is results/discovery/<run>/review.md plus CSVs. Testing any survivor on validation is a separate
+  pre-registered trial (human approval) and would use its own small budget; the sealed holdout stays untouched until a declared test.
+- Tests: 102 pass, including per-signal look-ahead truncation tests, future-shock test, budget/ledger/gate tests, and an AST test that
+  the module cannot reach live files, the broker, the lab orchestrator or the runner. A synthetic-data smoke run of all 240 takes ~7 s.
+- Not run on real data: 3 markets (NQ, YM, ZF) are still missing from data/futures_daily. No trial spent, no result exists.
+- Known limits: candidates are highly correlated, so N=240 overstates the effective number of independent trials (conservative);
+  daily data begins 2010-06-08; roll-day returns are set to 0; carry is not in the grammar (needs second-contract data).

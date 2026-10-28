@@ -91,11 +91,9 @@ def monthly_weights(w_daily):
     return held.ffill().fillna(0.0)
 
 
-def backtest(rets, prices, months, kind, classes=CLASSES, slippage_bps=SLIPPAGE_BPS, commission=COMMISSION):
-    """Returns a DataFrame of daily gross/net returns plus weights/turnover. Weights decided at t earn from t+1."""
-    rets = rets.copy()
-    w_decided = monthly_weights(target_weights(rets, months, kind, classes))
-    w = w_decided.shift(1).fillna(0.0)                       # the one-day lag: no look-ahead
+def run_weights(w_decided, rets, prices, slippage_bps=SLIPPAGE_BPS, commission=COMMISSION):
+    """Shared by every strategy: weights decided at day t's close earn from t+1 (one-day lag), costs on every weight change."""
+    w = w_decided.shift(1).fillna(0.0)
     gross = (w * rets.fillna(0.0)).sum(axis=1)
     dw = w.diff().abs().fillna(w.abs())
     slip = (dw.sum(axis=1)) * slippage_bps / 1e4
@@ -104,6 +102,12 @@ def backtest(rets, prices, months, kind, classes=CLASSES, slippage_bps=SLIPPAGE_
     comm = (dw * (commission / per_contract)).fillna(0.0).sum(axis=1)
     net = gross - slip - comm
     return pd.DataFrame({"gross": gross, "net": net, "turnover": dw.sum(axis=1), "cost": slip + comm}), w
+
+
+def backtest(rets, prices, months, kind, classes=CLASSES, slippage_bps=SLIPPAGE_BPS, commission=COMMISSION):
+    """Returns a DataFrame of daily gross/net returns plus weights/turnover. Weights decided at t earn from t+1."""
+    w_decided = monthly_weights(target_weights(rets.copy(), months, kind, classes))
+    return run_weights(w_decided, rets, prices, slippage_bps, commission)
 
 
 def sharpe(r):
