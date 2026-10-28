@@ -2279,3 +2279,22 @@ _Note (added 2026-10-26): this log has no Entry 36 - numbering jumps from 35 to 
   candidates; 60 evaluations of headroom remain and any grid change that raises the cumulative total past 300 is refused.
 - The number cannot be raised after seeing results; lowering it is allowed. The machine still reads discovery data only and cannot run
   until all 19 daily markets are present (NQ, YM, ZF missing as of today). No search has been run; no result exists.
+
+## Entry 93 — 2026-10-28 — First discovery search run (240 candidates, discovery data only)
+
+- Data: all 19 daily markets pulled (6A kept its older file, ending 2026-10-25, after three read timeouts; harmless for a search that
+  stops at 2019-12-31). Notes found while checking: RTY continuous history starts 2017-07-09 (the Russell contract moved to CME in 2017), so it
+  can only affect the equity sleeve from 2018; SI has ~15% of business days missing; CL settled at -$37 on 2020-04-20, so
+  futures_daily.returns now masks days where the close or prior close is <= 0 (this hides that real move from any later validation or
+  holdout test that holds CL); NG/CL have 10-14 |daily return| > 15% days. Puller backoff lengthened (20 s steps, 4 attempts).
+- Run: python3 src/research/discover.py run -> results/discovery/20261028-200235/ (review.md, all_candidates.csv). Cumulative trials
+  counted in registry/discovery_ledger.json: 240 of the approved 300. Only data <= 2019-12-31 was read.
+- Result: 50 of 240 passed the filters. Best net Sharpe 0.81 (tsmom 252d skip 21d, monthly), against about 0.80 expected from the best of
+  240 strategies with no edge, so no single winner is distinguishable from luck (DSR 0.51 for the best; bar is 0.95). What is NOT
+  random-looking: the survivors cluster in slow trend-following (12-15 month lookbacks, 250-day breakouts, 200-250-day moving-average
+  crossovers), they hold up across both halves, 62-85% of markets, and neighbouring parameters, and they cost only about 0.1%/yr because
+  turnover is ~7x/yr. Short-lookback, reversal and weekly variants mostly failed. Many survivors are near-copies, so 50 is not 50
+  independent ideas.
+- Honest reading: discovery shows a modest, coherent slow-trend tendency of roughly Sharpe 0.5-0.8 with drawdowns of 12-16% on 2011-2019,
+  a weak decade for trend. Nothing is validated. The next step, if Aidan approves, is to spend a small number of validation trials
+  (suggest at most 3, one per distinct idea, not near-duplicates) on 2020-2023; the sealed holdout stays untouched.

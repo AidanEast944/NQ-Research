@@ -20,6 +20,13 @@ class TestFuturesDaily(unittest.TestCase):
         self.assertEqual(r.iloc[2], 0.0)                        # masked roll day
         self.assertAlmostEqual(r.iloc[3], 1 / 110)
 
+    def test_nonpositive_price_days_are_masked(self):
+        idx = pd.to_datetime(["2020-04-17", "2020-04-20", "2020-04-21", "2020-04-22"])
+        df = pd.DataFrame({"close": [18.0, -2.67, 10.0, 11.0], "instrument_id": 1}, index=idx)
+        r = fd.returns(df, fill_roll_days=False)
+        self.assertTrue(r.iloc[1:3].isna().all())
+        self.assertAlmostEqual(r.iloc[3], 0.1)
+
     def test_first_day_is_zero_and_no_nan_when_filled(self):
         d = tempfile.mkdtemp(); write(d, "ZN", [100, 101], [1, 1])
         self.assertFalse(fd.returns(fd.load("ZN", d)).isna().any())

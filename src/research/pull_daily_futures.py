@@ -91,14 +91,14 @@ def main():
     spent = 0.0
     for s in syms:
         df = None
-        for attempt in range(3):
+        for attempt in range(4):
             try:
                 store = client.timeseries.get_range(dataset="GLBX.MDP3", symbols=[f"{s}.c.0"], schema="ohlcv-1d",
                                                     start=eastern_midnight_iso(START), end=eastern_midnight_iso(end),
                                                     stype_in="continuous")
                 df = store.to_df(); break
             except Exception as e:
-                print(f"  {s} attempt {attempt+1} failed: {e}"); time.sleep(5 * (attempt + 1))
+                print(f"  {s} attempt {attempt+1} failed: {e}"); time.sleep(20 * (attempt + 1))
         if df is None or df.empty:
             print(f"WARNING: {s} returned nothing."); continue
         out = df[["open", "high", "low", "close", "volume", "instrument_id"]].copy()

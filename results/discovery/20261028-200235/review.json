@@ -1,0 +1,167 @@
+{
+  "run_id": "20261028-200235",
+  "n_searched": 240,
+  "n_total_trials": 240,
+  "n_passed": 50,
+  "chance_best_sharpe": 0.800754832999176,
+  "top": [
+    {
+      "id": "tsmom_L252_skip21_rebalM",
+      "family": "tsmom",
+      "params": {
+        "L": 252,
+        "skip": 21,
+        "rebal": "M"
+      },
+      "volfilter": false,
+      "sharpe_net": 0.8103993811204144,
+      "sharpe_h1": 1.2004470351782826,
+      "sharpe_h2": 0.43609127380047746,
+      "breadth": 0.8461538461538461,
+      "neighbor_ratio": 0.6173049802567775,
+      "dsr": 0.5121129627908432
+    },
+    {
+      "id": "tsmom_L315_skip21_rebalM",
+      "family": "tsmom",
+      "params": {
+        "L": 315,
+        "skip": 21,
+        "rebal": "M"
+      },
+      "volfilter": false,
+      "sharpe_net": 0.6606357579712429,
+      "sharpe_h1": 1.0073961820459767,
+      "sharpe_h2": 0.34359005968892087,
+      "breadth": 0.7692307692307693,
+      "neighbor_ratio": 0.9573383989626784,
+      "dsr": 0.3288184825772365
+    },
+    {
+      "id": "macross_fast40_slow250_rebalM",
+      "family": "macross",
+      "params": {
+        "fast": 40,
+        "slow": 250,
+        "rebal": "M"
+      },
+      "volfilter": false,
+      "sharpe_net": 0.585450505899825,
+      "sharpe_h1": 0.702062505784162,
+      "sharpe_h2": 0.48389530925553753,
+      "breadth": 0.6923076923076923,
+      "neighbor_ratio": 0.8267609242999909,
+      "dsr": 0.24796044037689335
+    },
+    {
+      "id": "xsmom_L252_skip0_rebalW",
+      "family": "xsmom",
+      "params": {
+        "L": 252,
+        "skip": 0,
+        "rebal": "W"
+      },
+      "volfilter": false,
+      "sharpe_net": 0.5792451759101183,
+      "sharpe_h1": 0.8496575868382888,
+      "sharpe_h2": 0.20106917572178865,
+      "breadth": 0.6666666666666666,
+      "neighbor_ratio": 0.5948870700201908,
+      "dsr": 0.2381469722048148
+    },
+    {
+      "id": "breakout_N250_rebalM",
+      "family": "breakout",
+      "params": {
+        "N": 250,
+        "rebal": "M"
+      },
+      "volfilter": false,
+      "sharpe_net": 0.5704631871314232,
+      "sharpe_h1": 0.8006293104604556,
+      "sharpe_h2": 0.3420416117309367,
+      "breadth": 0.6923076923076923,
+      "neighbor_ratio": 0.7887159388896063,
+      "dsr": 0.2331606482464586
+    },
+    {
+      "id": "macross_fast10_slow200_rebalM",
+      "family": "macross",
+      "params": {
+        "fast": 10,
+        "slow": 200,
+        "rebal": "M"
+      },
+      "volfilter": false,
+      "sharpe_net": 0.560686954508481,
+      "sharpe_h1": 0.8144466772187624,
+      "sharpe_h2": 0.345871402934233,
+      "breadth": 0.6923076923076923,
+      "neighbor_ratio": 0.8511020202496755,
+      "dsr": 0.22405481493007723
+    },
+    {
+      "id": "tsmom_L315_skip21_rebalW",
+      "family": "tsmom",
+      "params": {
+        "L": 315,
+        "skip": 21,
+        "rebal": "W"
+      },
+      "volfilter": false,
+      "sharpe_net": 0.5547119311090575,
+      "sharpe_h1": 0.7073260946325669,
+      "sharpe_h2": 0.4162354135031772,
+      "breadth": 0.6875,
+      "neighbor_ratio": 0.7043961966169802,
+      "dsr": 0.21840278557902132
+    },
+    {
+      "id": "breakout_N250_rebalW",
+      "family": "breakout",
+      "params": {
+        "N": 250,
+        "rebal": "W"
+      },
+      "volfilter": false,
+      "sharpe_net": 0.5181437403440298,
+      "sharpe_h1": 0.7356709272164773,
+      "sharpe_h2": 0.31229303633920136,
+      "breadth": 0.6875,
+      "neighbor_ratio": 0.5454961662805455,
+      "dsr": 0.18583932133839498
+    },
+    {
+      "id": "macross_fast50_slow100_rebalM_vf",
+      "family": "macross",
+      "params": {
+        "fast": 50,
+        "slow": 100,
+        "rebal": "M"
+      },
+      "volfilter": true,
+      "sharpe_net": 0.5180144363764219,
+      "sharpe_h1": 0.6579541521624271,
+      "sharpe_h2": 0.4370153036693963,
+      "breadth": 0.7272727272727273,
+      "neighbor_ratio": 0.8905883696167839,
+      "dsr": 0.1862010172129568
+    },
+    {
+      "id": "macross_fast5_slow200_rebalM",
+      "family": "macross",
+      "params": {
+        "fast": 5,
+        "slow": 200,
+        "rebal": "M"
+      },
+      "volfilter": false,
+      "sharpe_net": 0.5131231547265371,
+      "sharpe_h1": 0.8287503784176229,
+      "sharpe_h2": 0.24696751174096432,
+      "breadth": 0.6153846153846154,
+      "neighbor_ratio": 0.8001822739848736,
+      "dsr": 0.18151950374708248
+    }
+  ]
+}
