@@ -7,3 +7,5 @@
 {"ts": "2026-10-26T02:04:31", "event": "approved", "code_commit": "119f944", "id": "ym_mini_vol12", "note": "Aidan approved 2026-10-25 19:04 as written", "decided_by": "human"}
 {"ts": "2026-10-26T02:04:40", "event": "registered", "code_commit": "a82c8c5", "id": "ym_mini_vol12", "registry_id": "ym_mini_vol12"}
 {"ts": "2026-10-26T02:05:24", "event": "validated", "code_commit": "13fe8dc", "result": "results/ym_mini_vol12_result.json", "verdicts": {"YM": {"passed_deterministic_checks": true, "vetoes": [], "note": "Passing only means no automatic veto. A human scores against the pre-registered criteria."}}}
+{"ts": "2026-10-28T20:05:10", "event": "queued", "code_commit": "0800c24", "id": "dv_tsmom_L252_skip21_rebalM", "fingerprint": "94997c14429d4415", "spec_hash": "aa67ce6aaff683de", "declared_trials": 1, "author": "claude-validation-drafter"}
+{"ts": "2026-10-28T20:05:10", "event": "rejected_policy", "code_commit": "0800c24", "id": "dv_macross_fast40_slow250_rebalM", "problems": ["weekly lab allowance 2: 2 already submitted this week, +1 refused"]}

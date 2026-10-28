@@ -88,6 +88,70 @@
       "budget_evaluations": 300,
       "reads": "discovery data only (<= 2019-12-31); validation and sealed holdout are never loaded",
       "note": "Search-only family: counts every candidate EVALUATED (ledger: registry/discovery_ledger.json). Raising this number after seeing results is not allowed; lowering it is. Surviving candidates may only go to validation as separate human-approved pre-registered trials."
+    },
+    "discovery_validation": {
+      "status": "active",
+      "approved_by_human": true,
+      "approved_at": "2026-10-28T13:03 America/Los_Angeles",
+      "approved_by": "Aidan East",
+      "approved_budget_trials": 3,
+      "budget_trials": 3,
+      "universe": {
+        "equity_index": [
+          "ES",
+          "NQ",
+          "YM",
+          "RTY"
+        ],
+        "rates": [
+          "ZN",
+          "ZB",
+          "ZF"
+        ],
+        "energy": [
+          "CL",
+          "NG"
+        ],
+        "metals": [
+          "GC",
+          "SI",
+          "HG"
+        ],
+        "fx": [
+          "6E",
+          "6J",
+          "6B",
+          "6A"
+        ],
+        "ags": [
+          "ZC",
+          "ZS",
+          "ZW"
+        ]
+      },
+      "periods": {
+        "discovery": [
+          "2010-06-07",
+          "2019-12-31"
+        ],
+        "validation": [
+          "2020-01-01",
+          "2023-12-31"
+        ],
+        "sealed_holdout": [
+          "2024-01-01",
+          "2099-12-31"
+        ]
+      },
+      "cost_model": {
+        "slippage_bps_of_notional": 1.0,
+        "commission_round_trip_per_contract": 4.5
+      },
+      "allowed_ideas": [
+        "ONLY the three candidates named in results/discovery/20261028-200235/review.md and chosen by the human: tsmom_L252_skip21_rebalM, macross_fast40_slow250_rebalM, xsmom_L252_skip0_rebalW, with exactly those parameters"
+      ],
+      "parameter_rule": "exact discovery parameters only; any other value is not part of this family",
+      "approval_note": "Each candidate is tested ONCE on validation 2020-2023. The sealed holdout (2024+) stays untouched. Raising the budget after seeing results is not allowed; lowering it is."
     }
   }
 }

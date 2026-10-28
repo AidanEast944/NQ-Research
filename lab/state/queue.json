@@ -111,5 +111,69 @@
     "decision_note": "Aidan approved 2026-10-25 19:04 as written",
     "decided_at": "2026-10-26T02:04:31",
     "registry_id": "ym_mini_vol12"
+  },
+  {
+    "status": "queued",
+    "submitted_at": "2026-10-28T20:05:10",
+    "spec": {
+      "id": "dv_tsmom_L252_skip21_rebalM",
+      "family": "discovery_validation",
+      "title": "Validation of discovery candidate: 12-month time-series momentum (skip last month), monthly rebalance",
+      "hypothesis": "12-month time-series momentum (skip last month), monthly rebalance. Picked from the 240-candidate discovery search (results/discovery/20261028-200235) because it passed all filters on 2011-2019 (survivors cluster in slow trend). If the tendency is real it should keep a positive net Sharpe on 2020-2023 data it never saw.",
+      "symbols": [
+        "ES",
+        "NQ",
+        "YM",
+        "RTY",
+        "ZN",
+        "ZB",
+        "ZF",
+        "CL",
+        "NG",
+        "GC",
+        "SI",
+        "HG",
+        "6E",
+        "6J",
+        "6B",
+        "6A",
+        "ZC",
+        "ZS",
+        "ZW"
+      ],
+      "discovery_data": {
+        "start": "2010-06-07",
+        "end": "2019-12-31"
+      },
+      "oos_data": {
+        "start": "2020-01-01",
+        "end": "2023-12-31"
+      },
+      "rules": {
+        "definition": "exactly discovery candidate tsmom_L252_skip21_rebalM as implemented in src/research/discover.py (committed)",
+        "sizing": "10% target vol per market / 60-day realized vol, 3x leverage cap, divided by active markets, one-day lag",
+        "evaluation": "net returns 2020-01-01..2023-12-31 only; signals use earlier data for warm-up"
+      },
+      "parameters": {
+        "candidate": "tsmom_L252_skip21_rebalM"
+      },
+      "declared_trials": 1,
+      "cost_model": {
+        "slippage_bps_of_notional": 1.0,
+        "commission_round_trip_per_contract": 4.5
+      },
+      "holdout_confirmation": false,
+      "author": "claude-validation-drafter",
+      "disclosure": "Chosen BECAUSE it ranked well on discovery (selection from 240). Validation data was not used for the choice. Daily history for RTY only starts 2017-07; CL's 2020-04-20 negative price day is masked (hides that real move). Four validation years are short: an INCONCLUSIVE reading is the likely outcome even for a real edge.",
+      "pass_criteria": {
+        "conditions": "validation net Sharpe >= 0.3 AND validation cumulative net return > 0",
+        "supported": "conditions met AND validation Deflated Sharpe Ratio >= 0.95 (num_trials = 3)",
+        "inconclusive": "conditions met but DSR < 0.95",
+        "not_supported": "any condition fails"
+      }
+    },
+    "fingerprint": "94997c14429d4415",
+    "family": "7a343b555d93654f",
+    "spec_hash": "aa67ce6aaff683de"
   }
 ]

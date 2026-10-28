@@ -2298,3 +2298,19 @@ _Note (added 2026-10-26): this log has no Entry 36 - numbering jumps from 35 to 
 - Honest reading: discovery shows a modest, coherent slow-trend tendency of roughly Sharpe 0.5-0.8 with drawdowns of 12-16% on 2011-2019,
   a weak decade for trend. Nothing is validated. The next step, if Aidan approves, is to spend a small number of validation trials
   (suggest at most 3, one per distinct idea, not near-duplicates) on 2020-2023; the sealed holdout stays untouched.
+
+## Entry 94 — 2026-10-28 — Validation trials set up (family discovery_validation, budget 3); first spec queued
+
+- Aidan said "yes lets run validation trials" to a proposal of at most 3 candidates, one per distinct idea. Recorded as human approval of a new
+  family `discovery_validation` (approved_budget_trials 3, 2026-10-28 13:03 PT): same 19-market universe, discovery/validation/sealed-holdout
+  windows and cost model as diversified_lowturnover; only the three named candidates with their exact discovery parameters.
+- Candidates (from results/discovery/20261028-200235): tsmom_L252_skip21_rebalM (12-month time-series momentum), macross_fast40_slow250_rebalM
+  (40/250-day trend crossover), xsmom_L252_skip0_rebalW (12-month cross-sectional momentum). Each is tested ONCE on 2020-2023; the sealed
+  holdout stays untouched. Pass rule (fixed in advance, same for all): validation net Sharpe >= 0.3 AND validation cumulative net > 0;
+  SUPPORTED additionally needs validation DSR >= 0.95 with num_trials = 3. Four validation years are short, so INCONCLUSIVE is the
+  likely reading even for a real edge; this stage is a screen.
+- Disclosure: all three were chosen BECAUSE they ranked well on discovery (selected from 240). dlt_tsmom_12m (drafted in Entry 90, never
+  submitted) is the same rule as dv_tsmom_L252_skip21_rebalM and will not be submitted, to avoid spending two trials on one idea.
+- Lab: dv_tsmom_L252_skip21_rebalM queued. The other two were drafted but the weekly allowance (2 per week) is used up
+  (ym_mini_vol12 and this one), so dv_macross... was REFUSED by the guard until the week rolls over; dv_xsmom... not yet submitted.
+  Policy not changed (human-only). Harness src/research/dv_test.py + three thin scripts; tests: 107 pass.
