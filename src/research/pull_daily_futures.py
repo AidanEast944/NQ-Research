@@ -10,6 +10,7 @@ TWO MODES - nothing is spent in the default mode:
   PULL (explicit): requires --pull and --max-cost. Re-quotes, refuses if the total is above --max-cost, then pulls each symbol
       (3 retries with backoff). An existing file is never replaced by one with fewer rows.
       python3 src/research/pull_daily_futures.py --pull --max-cost 2.00 [--symbols ZN,ZB]
+  SECOND CONTRACT (for carry): add --rank 1 -> '<SYM>.c.1' saved to data/futures_daily_c1/<SYM>.csv (front is --rank 0, the default).
 Pulling data is not a trial and looks at no results; it only fills the folder. Needs DATABENTO_API_KEY (.env or environment).
 """
 import argparse
@@ -20,7 +21,7 @@ import time
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-OUT_DIR = "data/futures_daily"
+OUT_DIR = "data/futures_daily"   # rank 0; rank N>0 goes to data/futures_daily_cN
 START = date(2010, 6, 7)
 EASTERN = ZoneInfo("America/New_York")
 
@@ -51,7 +52,9 @@ def main():
     ap.add_argument("--pull", action="store_true")
     ap.add_argument("--max-cost", type=float, default=None)
     ap.add_argument("--symbols", default=None)
+    ap.add_argument("--rank", type=int, default=0, help="0 = front month (.c.0), 1 = second contract (.c.1, for carry)")
     a = ap.parse_args()
+    out_dir = OUT_DIR if a.rank == 0 else f"{OUT_DIR}_c{a.rank}"
     load_dotenv_manually()
     if not os.environ.get("DATABENTO_API_KEY"):
         print("No DATABENTO_API_KEY found (.env or environment). Nothing done."); sys.exit(1)
@@ -66,7 +69,7 @@ def main():
         c = float("nan")
         for attempt in range(3):   # a gateway timeout (504) on one symbol is transient; retry before giving up
             try:
-                c = client.metadata.get_cost(dataset="GLBX.MDP3", symbols=[f"{s}.c.0"], schema="ohlcv-1d",
+                c = client.metadata.get_cost(dataset="GLBX.MDP3", symbols=[f"{s}.c.{a.rank}"], schema="ohlcv-1d",
                                              start=eastern_midnight_iso(START), end=eastern_midnight_iso(end), stype_in="continuous")
                 break
             except Exception as e:
@@ -87,13 +90,13 @@ def main():
         print("REFUSING: some quotes failed, so the real cost is unknown. Nothing pulled."); sys.exit(1)
     if total > a.max_cost:
         print(f"REFUSING: quote ${total:.4f} is above --max-cost ${a.max_cost:.2f}. Nothing pulled."); sys.exit(1)
-    os.makedirs(OUT_DIR, exist_ok=True)
+    os.makedirs(out_dir, exist_ok=True)
     spent = 0.0
     for s in syms:
         df = None
         for attempt in range(4):
             try:
-                store = client.timeseries.get_range(dataset="GLBX.MDP3", symbols=[f"{s}.c.0"], schema="ohlcv-1d",
+                store = client.timeseries.get_range(dataset="GLBX.MDP3", symbols=[f"{s}.c.{a.rank}"], schema="ohlcv-1d",
                                                     start=eastern_midnight_iso(START), end=eastern_midnight_iso(end),
                                                     stype_in="continuous")
                 df = store.to_df(); break
@@ -104,7 +107,7 @@ def main():
         out = df[["open", "high", "low", "close", "volume", "instrument_id"]].copy()
         out.index = out.index.tz_convert("UTC").date
         out.index.name = "date"
-        path = os.path.join(OUT_DIR, f"{s}.csv")
+        path = os.path.join(out_dir, f"{s}.csv")
         if os.path.exists(path):
             with open(path) as f:
                 old = sum(1 for _ in f) - 1

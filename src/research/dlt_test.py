@@ -27,11 +27,14 @@ sys.path.insert(0, "src/lab")
 sys.path.append("src/research")   # append: a same-named test_paper_broker.py lives there
 import dlt_engine as E
 import futures_daily as fd
+import carry as C
 import leakage
 from deflated_sharpe import deflated_sharpe_ratio
 from scipy import stats
 
 FAMILY = "diversified_lowturnover"
+CARRY_DIR = "data/futures_daily_c1"
+CARRY_KINDS = ("tscarry", "xscarry")
 DISC_END, VAL_START, VAL_END = pd.Timestamp("2019-12-31"), pd.Timestamp("2020-01-01"), pd.Timestamp("2023-12-31")
 
 
@@ -65,6 +68,22 @@ def load_data(syms, data_dir=None):
     return rets, prices
 
 
+def carry_score(syms, index, data_dir=None, carry_dir=None):
+    """Carry panel from the front (data/futures_daily) and second-contract (data/futures_daily_c1) files, cut at 2023-12-31.
+    Refuses unless every symbol has a second-contract file. Also runs the look-ahead truncation test on the ES carry series."""
+    cdir = carry_dir or (os.path.join(data_dir, "c1") if data_dir else CARRY_DIR)
+    missing = [s for s in syms if not os.path.exists(os.path.join(cdir, f"{s}.csv"))]
+    if missing:
+        raise SystemExit(f"REFUSED: second-contract data missing for {missing} in {cdir}. Pull it with --rank 1 first.")
+    fronts = {s: fd.load(s, data_dir)[lambda d: d.index <= VAL_END] for s in syms}
+    seconds = {s: fd.load(s, cdir)[lambda d: d.index <= VAL_END] for s in syms}
+    panel = C.carry_panel(fronts, seconds, index)
+    both = fronts["ES"][["close", "instrument_id"]].join(seconds["ES"][["close"]].rename(columns={"close": "close2"}), how="left")
+    ok, msg = leakage.truncation_test(lambda d: C.carry_series(d[["close", "instrument_id"]], d[["close2"]].rename(columns={"close2": "close"})),
+                                      both.dropna(), min_rows=120)
+    return panel, ok, msg
+
+
 def score(bt):
     net = bt["net"]
     disc = net[net.index <= DISC_END]
@@ -85,9 +104,13 @@ def run(cand, data_dir=None, write=True):
     rets, prices = load_data(syms, data_dir)
     num_trials = 20 + family_declared_trials()
     print(f"candidate {cand['id']}: {cand['kind']} {cand['months']}m | universe {len(syms)} markets | DSR num_trials = {num_trials}\n")
-    ok, msg = leakage.truncation_test(lambda d: E.momentum_score(d["ES"], cand["months"]), rets)
-    print(f"look-ahead truncation test on the momentum score: {'PASS' if ok else 'FAIL'} - {msg}")
-    bt, w = E.backtest(rets, prices, cand["months"], cand["kind"])
+    cscore = None
+    if cand["kind"] in CARRY_KINDS:
+        cscore, ok, msg = carry_score(syms, rets.index, data_dir)
+    else:
+        ok, msg = leakage.truncation_test(lambda d: E.momentum_score(d["ES"], cand["months"]), rets)
+    print(f"look-ahead truncation test on the {'carry' if cscore is not None else 'momentum'} score: {'PASS' if ok else 'FAIL'} - {msg}")
+    bt, w = E.backtest(rets, prices, cand["months"], cand["kind"], score=cscore)
     first = w.abs().sum(axis=1).gt(0).idxmax()
     disc, val = score(bt)
     disc = disc[disc.index >= first]

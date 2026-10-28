@@ -52,14 +52,20 @@ def month_end_flags(index):
     return pd.Series(s.dt.to_period("M").values != s.shift(-1).dt.to_period("M").values, index=index)
 
 
-def target_weights(rets, months, kind, classes=CLASSES):
-    """Daily DataFrame of the weights DECIDED at each date's close (before any lag). NaN where not tradable."""
-    score = momentum_score(rets, months)
+def target_weights(rets, months, kind, classes=CLASSES, score=None):
+    """Daily DataFrame of the weights DECIDED at each date's close (before any lag). NaN where not tradable.
+    kinds: tsmom / xsmom (score = trailing momentum) and tscarry / xscarry (score = the carry panel passed in, positive = long)."""
+    if kind in ("tscarry", "xscarry"):
+        if score is None:
+            raise ValueError("carry kinds need the carry panel as `score`")
+        score = score.reindex(index=rets.index, columns=rets.columns)
+    else:
+        score = momentum_score(rets, months)
     vol = realized_vol(rets)
     scale = (TARGET_VOL / vol).clip(upper=MAX_LEV)
-    if kind == "tsmom":
+    if kind in ("tsmom", "tscarry"):
         sig = np.sign(score)
-    elif kind == "xsmom":
+    elif kind in ("xsmom", "xscarry"):
         sig = pd.DataFrame(0.0, index=rets.index, columns=rets.columns)
         for cols in classes.values():
             cols = [c for c in cols if c in rets.columns]
@@ -77,7 +83,7 @@ def target_weights(rets, months, kind, classes=CLASSES):
             sig[cols] = part
         sig = sig.where(score.notna())
     else:
-        raise ValueError("kind must be tsmom or xsmom")
+        raise ValueError("kind must be tsmom, xsmom, tscarry or xscarry")
     raw = sig * scale
     n_active = raw.abs().gt(0).sum(axis=1).clip(lower=1)
     return raw.div(n_active, axis=0).where(raw.notna())
@@ -104,9 +110,9 @@ def run_weights(w_decided, rets, prices, slippage_bps=SLIPPAGE_BPS, commission=C
     return pd.DataFrame({"gross": gross, "net": net, "turnover": dw.sum(axis=1), "cost": slip + comm}), w
 
 
-def backtest(rets, prices, months, kind, classes=CLASSES, slippage_bps=SLIPPAGE_BPS, commission=COMMISSION):
+def backtest(rets, prices, months, kind, classes=CLASSES, slippage_bps=SLIPPAGE_BPS, commission=COMMISSION, score=None):
     """Returns a DataFrame of daily gross/net returns plus weights/turnover. Weights decided at t earn from t+1."""
-    w_decided = monthly_weights(target_weights(rets.copy(), months, kind, classes))
+    w_decided = monthly_weights(target_weights(rets.copy(), months, kind, classes, score))
     return run_weights(w_decided, rets, prices, slippage_bps, commission)
 
 

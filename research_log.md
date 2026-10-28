@@ -2352,3 +2352,23 @@ _Note (added 2026-10-26): this log has no Entry 36 - numbering jumps from 35 to 
   (2 unspent); the already-run dv_tsmom_L252 validation (inconclusive, Entry 95) is a measurement of the old subset and is not carried forward.
   The honest finding is that this grammar shows no robust after-cost edge on daily futures 2011-2019. Carry (needs second-contract data)
   and the intraday ideas (frozen families) are what remains untested or already weak; forward paper evidence continues.
+
+## Entry 97 — 2026-10-28 — Carry added to diversified_lowturnover: tooling built, two specs drafted, second-contract data not yet pulled
+
+- Aidan chose carry as the next direction after the corrected discovery search found no robust edge (Entry 96). Carry is the one idea in
+  the approved family list that was waiting on data ("carry only after second-contract data exists"); it needs no new family or budget:
+  two canonical trials against diversified_lowturnover (12 trials, 0 used before this).
+- Rule (fixed, no free parameters): annualized carry = ln(front close / second close) * 365 / contract spacing, averaged over the last 5
+  days; second contract = Databento <SYM>.c.1 (calendar-roll continuous). Spacing is proxied by the days between the previous two front rolls
+  (known at the time; an exact expiry calendar would need extra data, so the first ~6 months per market have no carry and ags are rough).
+  dlt_tscarry: long positive carry, short negative; dlt_xscarry: within each asset class long the top half, short the bottom half.
+  Same sizing, monthly rebalance, one-day lag, cost model and pass criteria as the momentum candidates (net Sharpe >= 0.3 in discovery AND
+  validation, validation cumulative > 0; SUPPORTED needs validation DSR >= 0.95). These are clean two-period tests: carry was not chosen
+  from any data.
+- Built: src/carry.py, carry kinds in dlt_engine, carry loading and a look-ahead truncation test in dlt_test, proposer menu now eight
+  (two carry items; `draft --only carry`), puller `--rank 1` -> data/futures_daily_c1/. 115 tests pass, including end-to-end synthetic
+  runs of both kinds and a refusal when any second-contract file is missing.
+- Drafted lab/proposals/dlt_tscarry.json and dlt_xscarry.json. NOT submitted: the lab's weekly allowance (2) is used up until the week
+  rolls over (Monday 2026-11-02). The tests cannot run until data/futures_daily_c1 holds all 19 markets (a data pull of about $0.87, human-run).
+- Disclosure: Aidan and Claude have seen momentum results on this universe, but nothing about carry. Known limits: the Databento .c.1 series
+  may jump when the second contract changes cycle (FX/metals serial months), which makes carry noisy for those markets; RTY starts 2017.

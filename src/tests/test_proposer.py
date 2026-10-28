@@ -20,10 +20,20 @@ def sandbox():
 
 
 class TestProposer(unittest.TestCase):
-    def test_menu_is_fixed_six(self):
-        self.assertEqual(len(P.ORDER), 6)
-        self.assertEqual(len(set(P.ORDER)), 6)
-        self.assertEqual({m for _, m in P.ORDER}, {3, 6, 12})
+    def test_menu_is_fixed_eight(self):
+        self.assertEqual(len(P.ORDER), 8)
+        self.assertEqual(len(set(P.ORDER)), 8)
+        self.assertEqual({m for k, m in P.ORDER if not k.endswith("carry")}, {3, 6, 12})
+        self.assertEqual([k for k, _ in P.ORDER if k.endswith("carry")], ["tscarry", "xscarry"])
+
+    def test_only_carry_drafts_just_the_carry_items(self):
+        root = sandbox()
+        P.cmd_draft(root, 5, only="carry")
+        names = sorted(os.listdir(os.path.join(root, "lab/proposals")))
+        self.assertEqual(names, ["dlt_tscarry.json", "dlt_xscarry.json"])
+        spec = json.load(open(os.path.join(root, "lab/proposals/dlt_tscarry.json")))
+        self.assertIn("carry", spec["parameters"]["kind"])
+        self.assertTrue(os.path.exists(os.path.join(root, "src/research/dlt_tscarry_test.py")))
 
     def test_draft_writes_valid_spec_and_script_in_order(self):
         root = sandbox()
@@ -37,7 +47,7 @@ class TestProposer(unittest.TestCase):
     def test_drafted_spec_passes_lab_shape_and_family_guards(self):
         import specs, guard
         root = sandbox()
-        P.cmd_draft(root, 6)
+        P.cmd_draft(root, 8)
         pol = guard.load_json(os.path.join(root, "lab/policy.json"))
         fams = guard.load_json(os.path.join(root, "registry/families.json"))
         reg = guard.load_json(os.path.join(root, "registry/research_registry.json"))
@@ -49,11 +59,11 @@ class TestProposer(unittest.TestCase):
             self.assertEqual(spec["declared_trials"], 1)
             self.assertLess(spec["oos_data"]["end"], "2024-01-01")     # never reaches the sealed holdout
 
-    def test_six_drafts_then_nothing_left(self):
+    def test_eight_drafts_then_nothing_left(self):
         root = sandbox()
         P.cmd_draft(root, 10)
         n = len(os.listdir(os.path.join(root, "lab/proposals")))
-        self.assertEqual(n, 6)
+        self.assertEqual(n, 8)
 
     def test_does_not_overwrite_existing(self):
         root = sandbox()

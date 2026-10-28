@@ -1,12 +1,12 @@
 """
-Proposer for the diversified_lowturnover family. It is NOT a discovery engine: it walks a FIXED, pre-approved menu of six
+Proposer for the diversified_lowturnover family. It is NOT a discovery engine: it walks a FIXED, pre-approved menu of eight
 canonical candidates in a FIXED order and drafts the next one that has not been drafted. It invents no parameters.
 
   python3 src/lab/proposer.py list            menu, order, and where each candidate stands
-  python3 src/lab/proposer.py draft [--n 1]   write the next spec(s) to lab/proposals/ plus the thin test script, dry-run the guards
+  python3 src/lab/proposer.py draft [--n 1] [--only carry]   write the next spec(s) to lab/proposals/ plus the thin test script, dry-run the guards
 Drafting spends nothing. Submitting (orchestrator submit), approving, registering and running remain separate HUMAN steps; this
 module never calls them, never edits policy/families/registry files, and never touches a live file.
-Each candidate = 1 declared trial against the family's own budget (12). Six candidates leave 6 trials unspent on purpose.
+Each candidate = 1 declared trial against the family's own budget (12). Eight candidates leave 4 trials unspent on purpose.
 The menu can only grow by a human editing this file, and any addition is a new pre-registered trial.
 """
 import json
@@ -20,15 +20,18 @@ import specs
 import guard
 
 FAMILY = "diversified_lowturnover"
-ORDER = [("tsmom", 12), ("xsmom", 12), ("tsmom", 6), ("xsmom", 6), ("tsmom", 3), ("xsmom", 3)]
+ORDER = [("tsmom", 12), ("xsmom", 12), ("tsmom", 6), ("xsmom", 6), ("tsmom", 3), ("xsmom", 3),
+         ("tscarry", 0), ("xscarry", 0)]   # carry added 2026-10-28 at Aidan's request (needs second-contract data in data/futures_daily_c1)
 KIND_TEXT = {
     "tsmom": "time-series momentum: long a market when its trailing return is positive, short when negative",
     "xsmom": "cross-sectional momentum: within each asset class, long the stronger half and short the weaker half",
+    "tscarry": "time-series carry: long a market when its front contract trades above the second (backwardation, positive roll yield), short in contango",
+    "xscarry": "cross-sectional carry: within each asset class, long the half with the highest annualized roll yield and short the half with the lowest",
 }
 
 
 def cand_id(kind, months):
-    return f"dlt_{kind}_{months}m"
+    return f"dlt_{kind}" if kind.endswith("carry") else f"dlt_{kind}_{months}m"
 
 
 def build_spec(kind, months, fam):
@@ -43,29 +46,39 @@ def build_spec(kind, months, fam):
     }
     return {
         "id": cid, "family": FAMILY,
-        "title": f"{KIND_TEXT[kind].split(':')[0].title()} {months}-month, 19 futures, monthly rebalance",
-        "hypothesis": f"{KIND_TEXT[kind]}. Lookback {months} months skipping the most recent month, risk-scaled to equal volatility, "
-                      f"rebalanced monthly. Classic, widely published rule; low turnover means the 1 bp + $4.50 cost model should "
-                      f"matter far less than it does for the intraday gap rules.",
+        "title": (f"{KIND_TEXT[kind].split(':')[0].title()}, 19 futures, monthly rebalance" if kind.endswith("carry")
+                  else f"{KIND_TEXT[kind].split(':')[0].title()} {months}-month, 19 futures, monthly rebalance"),
+        "hypothesis": (f"{KIND_TEXT[kind]}. Annualized from the front and second contract (5-day mean), risk-scaled to equal volatility, rebalanced monthly. "
+                       f"Carry is the compensation for holding the risky side of a futures curve and is a documented return source separate from price trend; "
+                       f"low turnover means the cost model should matter little.") if kind.endswith("carry") else
+                      (f"{KIND_TEXT[kind]}. Lookback {months} months skipping the most recent month, risk-scaled to equal volatility, "
+                       f"rebalanced monthly. Classic, widely published rule; low turnover means the 1 bp + $4.50 cost model should "
+                       f"matter far less than it does for the intraday gap rules."),
         "symbols": uni,
         "discovery_data": {"start": per["discovery"][0] if isinstance(per["discovery"], list) else per["discovery"]["start"],
                            "end": per["discovery"][1] if isinstance(per["discovery"], list) else per["discovery"]["end"]},
         "oos_data": {"start": per["validation"][0] if isinstance(per["validation"], list) else per["validation"]["start"],
                      "end": per["validation"][1] if isinstance(per["validation"], list) else per["validation"]["end"]},
         "rules": {
-            "signal": f"score = sum of daily log returns over the lookback of {months} months excluding the last 21 trading days",
+            "signal": ("score = ln(front close / second close) * 365 / contract spacing (days between the previous two rolls), mean of the last 5 days; "
+                       "second contract = Databento .c.1 calendar-roll continuous series" if kind.endswith("carry") else
+                       f"score = sum of daily log returns over the lookback of {months} months excluding the last 21 trading days"),
             "sizing": "weight per market = sign(score) (tsmom) or +1/-1 by within-class rank (xsmom), times 10% target vol / 60-day realized vol, "
                       "leverage capped at 3 per market, divided by number of active markets",
             "rebalance": "last trading day of each month; weights decided at the close earn returns from the NEXT day",
-            "implementation": "src/research/dlt_engine.py (committed, canonical, no tunable values)",
+            "implementation": "src/research/dlt_engine.py + src/carry.py (committed, canonical, no tunable values)",
         },
-        "parameters": {"kind": kind, "months": months, "skip_days": 21, "vol_window": 60, "target_vol": 0.10, "max_leverage": 3.0},
+        "parameters": ({"kind": kind, "carry_smooth_days": 5, "vol_window": 60, "target_vol": 0.10, "max_leverage": 3.0} if kind.endswith("carry")
+                       else {"kind": kind, "months": months, "skip_days": 21, "vol_window": 60, "target_vol": 0.10, "max_leverage": 3.0}),
         "declared_trials": 1,
         "cost_model": fam["cost_model"],
         "holdout_confirmation": False,
         "author": "claude-proposer",
-        "disclosure": "Menu candidate from the fixed canonical list; not selected on any result. Daily data starts 2010-06-08, so the first "
-                      "signal appears mid-2011 for a 12-month lookback. Roll-day returns are set to 0 (small understatement, see futures_daily.py).",
+        "disclosure": ("Menu candidate chosen on economic grounds before any carry data was looked at. Spacing between contracts is proxied from the "
+                       "previous two rolls, so the first ~6 months per market have no carry. Ags have irregular cycles, so their annualization is rough. "
+                       "RTY history starts 2017-07. Roll-day returns are set to 0." if kind.endswith("carry") else
+                       "Menu candidate from the fixed canonical list; not selected on any result. Daily data starts 2010-06-08, so the first "
+                       "signal appears mid-2011 for a 12-month lookback. Roll-day returns are set to 0 (small understatement, see futures_daily.py)."),
         "pass_criteria": pass_text,
     }
 
@@ -104,7 +117,7 @@ def cmd_list(root):
         print(f"  {i}. {cand_id(k, m):16s} {status_of(cand_id(k, m), root)}")
 
 
-def cmd_draft(root, n=1):
+def cmd_draft(root, n=1, only=None):
     policy = guard.load_json(os.path.join(root, "lab/policy.json"))
     fams = guard.load_json(os.path.join(root, "registry/families.json"))
     fam = fams["families"][FAMILY]
@@ -113,6 +126,8 @@ def cmd_draft(root, n=1):
     done = 0
     for kind, months in ORDER:
         cid = cand_id(kind, months)
+        if only and not kind.endswith(only):
+            continue
         if status_of(cid, root) != "not drafted":
             continue
         if done >= n:
@@ -127,9 +142,9 @@ def cmd_draft(root, n=1):
         os.makedirs(os.path.join(root, "lab/proposals"), exist_ok=True)
         with open(os.path.join(root, "lab/proposals", f"{cid}.json"), "w") as f:
             json.dump(spec, f, indent=2)
-        with open(os.path.join(root, "src/research", f"dlt_{kind}_{months}m_test.py"), "w") as f:
+        with open(os.path.join(root, "src/research", f"{cid}_test.py"), "w") as f:
             f.write(script_text(kind, months))
-        print(f"drafted {cid}: lab/proposals/{cid}.json + src/research/dlt_{kind}_{months}m_test.py (guards dry-run: clean)")
+        print(f"drafted {cid}: lab/proposals/{cid}.json + src/research/{cid}_test.py (guards dry-run: clean)")
         print(f"  next (you): python3 src/lab/orchestrator.py submit lab/proposals/{cid}.json")
         done += 1
     if done == 0:
@@ -146,7 +161,8 @@ def main(argv=None):
         cmd_list(ROOT)
         return 0
     n = int(argv[argv.index("--n") + 1]) if "--n" in argv else 1
-    return cmd_draft(ROOT, n)
+    only = argv[argv.index("--only") + 1] if "--only" in argv else None      # e.g. --only carry
+    return cmd_draft(ROOT, n, only)
 
 
 if __name__ == "__main__":
