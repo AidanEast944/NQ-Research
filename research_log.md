@@ -2272,3 +2272,10 @@ _Note (added 2026-10-26): this log has no Entry 36 - numbering jumps from 35 to 
 - Not run on real data: 3 markets (NQ, YM, ZF) are still missing from data/futures_daily. No trial spent, no result exists.
 - Known limits: candidates are highly correlated, so N=240 overstates the effective number of independent trials (conservative);
   daily data begins 2010-06-08; roll-day returns are set to 0; carry is not in the grammar (needs second-contract data).
+
+## Entry 92 — 2026-10-28 — Human approval: discovery_search budget 300 evaluations
+
+- Aidan approved registry/families.json `discovery_search` with budget_evaluations = 300 (2026-10-28 10:00 PT). The current grid is 240
+  candidates; 60 evaluations of headroom remain and any grid change that raises the cumulative total past 300 is refused.
+- The number cannot be raised after seeing results; lowering it is allowed. The machine still reads discovery data only and cannot run
+  until all 19 daily markets are present (NQ, YM, ZF missing as of today). No search has been run; no result exists.

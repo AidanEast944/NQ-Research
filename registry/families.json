@@ -79,6 +79,15 @@
       "approved_at": "2026-10-26T10:27 America/Los_Angeles",
       "approved_budget_trials": 12,
       "approval_note": "Approved by Aidan as proposed (12 trials, DSR rule family trials + 20), before any data for this family was pulled or looked at. Raising this number after seeing results is not allowed; lowering it is."
+    },
+    "discovery_search": {
+      "status": "active",
+      "approved_by_human": true,
+      "approved_at": "2026-10-28T10:00 America/Los_Angeles",
+      "approved_by": "Aidan East",
+      "budget_evaluations": 300,
+      "reads": "discovery data only (<= 2019-12-31); validation and sealed holdout are never loaded",
+      "note": "Search-only family: counts every candidate EVALUATED (ledger: registry/discovery_ledger.json). Raising this number after seeing results is not allowed; lowering it is. Surviving candidates may only go to validation as separate human-approved pre-registered trials."
     }
   }
 }
