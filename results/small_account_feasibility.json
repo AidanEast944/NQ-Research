@@ -1,0 +1,1050 @@
+{
+  "assumptions": {
+    "start_equity": 1000.0,
+    "costs_per_contract_rt": [
+      0.0,
+      2.0,
+      4.5
+    ],
+    "ruin": "equity <= 50% of start at any point within 100 trades",
+    "bootstrap": "5000 sims, iid resample of observed trades, seed 20261103",
+    "margin": "no broker margin assumed; 'margin_per_contract_tolerable' is the largest margin that equity at entry could have covered for every taken trade"
+  },
+  "tracks": {
+    "gap (MNQ)": {
+      "n_trades": 27,
+      "one_contract_stop_risk_usd": 80.0,
+      "one_contract_stop_risk_pct_of_start": 8.0,
+      "mean_r_gross": -0.111,
+      "scenarios": {
+        "1 micro always | cost $0.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 760.0,
+            "max_drawdown_pct": 64.5,
+            "min_equity": 440.0,
+            "trades_taken": 27,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -15.4,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 440.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.84,
+            "p_stranded": 0.667,
+            "median_final": 40.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.62,
+            "p_stranded": 0.371,
+            "median_final": 849.0
+          }
+        },
+        "1 micro always | cost $2.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 706.0,
+            "max_drawdown_pct": 66.8,
+            "min_equity": 408.0,
+            "trades_taken": 27,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -16.7,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 408.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.878,
+            "p_stranded": 0.716,
+            "median_final": 62.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.679,
+            "p_stranded": 0.437,
+            "median_final": 649.0
+          }
+        },
+        "1 micro always | cost $4.50": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 638.5,
+            "max_drawdown_pct": 69.7,
+            "min_equity": 368.0,
+            "trades_taken": 27,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -18.7,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 368.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.914,
+            "p_stranded": 0.798,
+            "median_final": 57.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.746,
+            "p_stranded": 0.527,
+            "median_final": 83.0
+          }
+        },
+        "risk cap 5% | cost $0.00": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 8.0% > cap 5%"
+        },
+        "risk cap 5% | cost $2.00": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 8.0% > cap 5%"
+        },
+        "risk cap 5% | cost $4.50": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 8.0% > cap 5%"
+        },
+        "risk cap 2% | cost $0.00": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 8.0% > cap 2%"
+        },
+        "risk cap 2% | cost $2.00": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 8.0% > cap 2%"
+        },
+        "risk cap 2% | cost $4.50": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 8.0% > cap 2%"
+        }
+      }
+    },
+    "NQ vol 1.2x": {
+      "n_trades": 5,
+      "one_contract_stop_risk_usd": 80.0,
+      "one_contract_stop_risk_pct_of_start": 8.0,
+      "mean_r_gross": 0.2,
+      "scenarios": {
+        "1 micro always | cost $0.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 1080.0,
+            "max_drawdown_pct": 18.2,
+            "min_equity": 1000.0,
+            "trades_taken": 5,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -6.9,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 1000.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.231,
+            "p_stranded": 0.079,
+            "median_final": 2600.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.65,
+            "p_stranded": 0.398,
+            "median_final": 760.0
+          }
+        },
+        "1 micro always | cost $2.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 1070.0,
+            "max_drawdown_pct": 18.7,
+            "min_equity": 1000.0,
+            "trades_taken": 5,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -7.1,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 1000.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.289,
+            "p_stranded": 0.1,
+            "median_final": 2400.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.699,
+            "p_stranded": 0.468,
+            "median_final": 320.0
+          }
+        },
+        "1 micro always | cost $4.50": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 1057.5,
+            "max_drawdown_pct": 19.3,
+            "min_equity": 1000.0,
+            "trades_taken": 5,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -7.4,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 1000.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.351,
+            "p_stranded": 0.137,
+            "median_final": 2150.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.761,
+            "p_stranded": 0.553,
+            "median_final": 76.0
+          }
+        },
+        "risk cap 5% | cost $0.00": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 8.0% > cap 5%"
+        },
+        "risk cap 5% | cost $2.00": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 8.0% > cap 5%"
+        },
+        "risk cap 5% | cost $4.50": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 8.0% > cap 5%"
+        },
+        "risk cap 2% | cost $0.00": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 8.0% > cap 2%"
+        },
+        "risk cap 2% | cost $2.00": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 8.0% > cap 2%"
+        },
+        "risk cap 2% | cost $4.50": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 8.0% > cap 2%"
+        }
+      }
+    },
+    "NQ vol 1.5x": {
+      "n_trades": 3,
+      "one_contract_stop_risk_usd": 80.0,
+      "one_contract_stop_risk_pct_of_start": 8.0,
+      "mean_r_gross": 1.0,
+      "scenarios": {
+        "1 micro always | cost $0.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 1240.0,
+            "max_drawdown_pct": 6.1,
+            "min_equity": 1000.0,
+            "trades_taken": 3,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -6.1,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 1000.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.001,
+            "p_stranded": 0.0,
+            "median_final": 9080.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.6,
+            "p_stranded": 0.381,
+            "median_final": 840.0
+          }
+        },
+        "1 micro always | cost $2.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 1234.0,
+            "max_drawdown_pct": 6.2,
+            "min_equity": 1000.0,
+            "trades_taken": 3,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -6.2,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 1000.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.002,
+            "p_stranded": 0.0,
+            "median_final": 8880.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.665,
+            "p_stranded": 0.431,
+            "median_final": 640.0
+          }
+        },
+        "1 micro always | cost $4.50": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 1226.5,
+            "max_drawdown_pct": 6.4,
+            "min_equity": 1000.0,
+            "trades_taken": 3,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -6.4,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 1000.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.003,
+            "p_stranded": 0.0,
+            "median_final": 8630.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.73,
+            "p_stranded": 0.521,
+            "median_final": 83.0
+          }
+        },
+        "risk cap 5% | cost $0.00": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 8.0% > cap 5%"
+        },
+        "risk cap 5% | cost $2.00": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 8.0% > cap 5%"
+        },
+        "risk cap 5% | cost $4.50": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 8.0% > cap 5%"
+        },
+        "risk cap 2% | cost $0.00": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 8.0% > cap 2%"
+        },
+        "risk cap 2% | cost $2.00": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 8.0% > cap 2%"
+        },
+        "risk cap 2% | cost $4.50": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 8.0% > cap 2%"
+        }
+      }
+    },
+    "ES vol 1.2x": {
+      "n_trades": 4,
+      "one_contract_stop_risk_usd": 50.0,
+      "one_contract_stop_risk_pct_of_start": 5.0,
+      "mean_r_gross": -1.0,
+      "scenarios": {
+        "1 micro always | cost $0.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 800.0,
+            "max_drawdown_pct": 20.0,
+            "min_equity": 800.0,
+            "trades_taken": 4,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -5.9,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 850.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 1.0,
+            "p_stranded": 1.0,
+            "median_final": 0.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.0,
+            "p_stranded": 0.0,
+            "median_final": 1000.0
+          }
+        },
+        "1 micro always | cost $2.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 792.0,
+            "max_drawdown_pct": 20.8,
+            "min_equity": 792.0,
+            "trades_taken": 4,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -6.2,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 844.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 1.0,
+            "p_stranded": 1.0,
+            "median_final": 12.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.0,
+            "p_stranded": 0.0,
+            "median_final": 800.0
+          }
+        },
+        "1 micro always | cost $4.50": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 782.0,
+            "max_drawdown_pct": 21.8,
+            "min_equity": 782.0,
+            "trades_taken": 4,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -6.5,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 836.5
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 1.0,
+            "p_stranded": 1.0,
+            "median_final": 19.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.0,
+            "p_stranded": 0.0,
+            "median_final": 550.0
+          }
+        },
+        "risk cap 5% | cost $0.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 950.0,
+            "max_drawdown_pct": 5.0,
+            "min_equity": 950.0,
+            "trades_taken": 1,
+            "trades_skipped": 3,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -5.0,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 1000.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.0,
+            "p_stranded": 0.0,
+            "median_final": 950.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.0,
+            "p_stranded": 0.0,
+            "median_final": 1000.0
+          }
+        },
+        "risk cap 5% | cost $2.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 948.0,
+            "max_drawdown_pct": 5.2,
+            "min_equity": 948.0,
+            "trades_taken": 1,
+            "trades_skipped": 3,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -5.2,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 1000.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.0,
+            "p_stranded": 0.0,
+            "median_final": 948.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.0,
+            "p_stranded": 0.0,
+            "median_final": 998.0
+          }
+        },
+        "risk cap 5% | cost $4.50": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 945.5,
+            "max_drawdown_pct": 5.5,
+            "min_equity": 945.5,
+            "trades_taken": 1,
+            "trades_skipped": 3,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -5.5,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 1000.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.0,
+            "p_stranded": 0.0,
+            "median_final": 946.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.0,
+            "p_stranded": 0.0,
+            "median_final": 996.0
+          }
+        },
+        "risk cap 2% | cost $0.00": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 5.0% > cap 2%"
+        },
+        "risk cap 2% | cost $2.00": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 5.0% > cap 2%"
+        },
+        "risk cap 2% | cost $4.50": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 5.0% > cap 2%"
+        }
+      }
+    },
+    "YM vol 1.2x": {
+      "n_trades": 8,
+      "one_contract_stop_risk_usd": 20.0,
+      "one_contract_stop_risk_pct_of_start": 2.0,
+      "mean_r_gross": -0.25,
+      "scenarios": {
+        "1 micro always | cost $0.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 960.0,
+            "max_drawdown_pct": 7.7,
+            "min_equity": 960.0,
+            "trades_taken": 8,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -2.0,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 960.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.613,
+            "p_stranded": 0.026,
+            "median_final": 500.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.034,
+            "p_stranded": 0.0,
+            "median_final": 1000.0
+          }
+        },
+        "1 micro always | cost $2.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 944.0,
+            "max_drawdown_pct": 9.1,
+            "min_equity": 944.0,
+            "trades_taken": 8,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -2.3,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 950.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.84,
+            "p_stranded": 0.131,
+            "median_final": 300.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.177,
+            "p_stranded": 0.0,
+            "median_final": 800.0
+          }
+        },
+        "1 micro always | cost $4.50": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 924.0,
+            "max_drawdown_pct": 10.8,
+            "min_equity": 924.0,
+            "trades_taken": 8,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -2.6,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 937.5
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.971,
+            "p_stranded": 0.505,
+            "median_final": 24.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.524,
+            "p_stranded": 0.016,
+            "median_final": 550.0
+          }
+        },
+        "risk cap 5% | cost $0.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 920.0,
+            "max_drawdown_pct": 14.8,
+            "min_equity": 920.0,
+            "trades_taken": 8,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -4.2,
+            "max_contracts": 2,
+            "margin_per_contract_tolerable": 460.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.836,
+            "p_stranded": 0.0,
+            "median_final": 380.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.135,
+            "p_stranded": 0.0,
+            "median_final": 805.0
+          }
+        },
+        "risk cap 5% | cost $2.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 888.0,
+            "max_drawdown_pct": 17.5,
+            "min_equity": 888.0,
+            "trades_taken": 8,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -4.7,
+            "max_contracts": 2,
+            "margin_per_contract_tolerable": 450.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.95,
+            "p_stranded": 0.0,
+            "median_final": 390.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.391,
+            "p_stranded": 0.0,
+            "median_final": 636.0
+          }
+        },
+        "risk cap 5% | cost $4.50": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 848.0,
+            "max_drawdown_pct": 20.8,
+            "min_equity": 848.0,
+            "trades_taken": 8,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -5.5,
+            "max_contracts": 2,
+            "margin_per_contract_tolerable": 437.5
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.993,
+            "p_stranded": 0.0,
+            "median_final": 390.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.762,
+            "p_stranded": 0.0,
+            "median_final": 397.0
+          }
+        },
+        "risk cap 2% | cost $0.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 980.0,
+            "max_drawdown_pct": 5.8,
+            "min_equity": 980.0,
+            "trades_taken": 4,
+            "trades_skipped": 4,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -2.0,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 1000.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.0,
+            "p_stranded": 0.0,
+            "median_final": 980.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.0,
+            "p_stranded": 0.0,
+            "median_final": 985.0
+          }
+        },
+        "risk cap 2% | cost $2.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 994.0,
+            "max_drawdown_pct": 4.2,
+            "min_equity": 994.0,
+            "trades_taken": 3,
+            "trades_skipped": 5,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -2.2,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 1000.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.0,
+            "p_stranded": 0.0,
+            "median_final": 978.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.0,
+            "p_stranded": 0.0,
+            "median_final": 983.0
+          }
+        },
+        "risk cap 2% | cost $4.50": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 986.5,
+            "max_drawdown_pct": 4.7,
+            "min_equity": 986.5,
+            "trades_taken": 3,
+            "trades_skipped": 5,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -2.4,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 1000.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.0,
+            "p_stranded": 0.0,
+            "median_final": 976.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.0,
+            "p_stranded": 0.0,
+            "median_final": 980.0
+          }
+        }
+      }
+    },
+    "YM vol 1.5x": {
+      "n_trades": 6,
+      "one_contract_stop_risk_usd": 20.0,
+      "one_contract_stop_risk_pct_of_start": 2.0,
+      "mean_r_gross": 0.0,
+      "scenarios": {
+        "1 micro always | cost $0.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 1000.0,
+            "max_drawdown_pct": 5.8,
+            "min_equity": 980.0,
+            "trades_taken": 6,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -2.0,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 980.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.078,
+            "p_stranded": 0.0,
+            "median_final": 980.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.078,
+            "p_stranded": 0.0,
+            "median_final": 980.0
+          }
+        },
+        "1 micro always | cost $2.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 988.0,
+            "max_drawdown_pct": 6.4,
+            "min_equity": 972.0,
+            "trades_taken": 6,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -2.2,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 972.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.22,
+            "p_stranded": 0.002,
+            "median_final": 780.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.22,
+            "p_stranded": 0.002,
+            "median_final": 780.0
+          }
+        },
+        "1 micro always | cost $4.50": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 973.0,
+            "max_drawdown_pct": 7.1,
+            "min_equity": 962.0,
+            "trades_taken": 6,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -2.5,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 962.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.527,
+            "p_stranded": 0.043,
+            "median_final": 530.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.527,
+            "p_stranded": 0.043,
+            "median_final": 530.0
+          }
+        },
+        "risk cap 5% | cost $0.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 1000.0,
+            "max_drawdown_pct": 11.1,
+            "min_equity": 960.0,
+            "trades_taken": 6,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -4.0,
+            "max_contracts": 2,
+            "margin_per_contract_tolerable": 480.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.228,
+            "p_stranded": 0.0,
+            "median_final": 780.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.228,
+            "p_stranded": 0.0,
+            "median_final": 780.0
+          }
+        },
+        "risk cap 5% | cost $2.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 976.0,
+            "max_drawdown_pct": 12.3,
+            "min_equity": 944.0,
+            "trades_taken": 6,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -4.5,
+            "max_contracts": 2,
+            "margin_per_contract_tolerable": 472.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.451,
+            "p_stranded": 0.0,
+            "median_final": 618.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.451,
+            "p_stranded": 0.0,
+            "median_final": 618.0
+          }
+        },
+        "risk cap 5% | cost $4.50": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 946.0,
+            "max_drawdown_pct": 13.7,
+            "min_equity": 924.0,
+            "trades_taken": 6,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -5.0,
+            "max_contracts": 2,
+            "margin_per_contract_tolerable": 462.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.757,
+            "p_stranded": 0.0,
+            "median_final": 396.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.757,
+            "p_stranded": 0.0,
+            "median_final": 396.0
+          }
+        },
+        "risk cap 2% | cost $0.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 980.0,
+            "max_drawdown_pct": 5.8,
+            "min_equity": 980.0,
+            "trades_taken": 4,
+            "trades_skipped": 2,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -2.0,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 1000.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.0,
+            "p_stranded": 0.0,
+            "median_final": 980.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.0,
+            "p_stranded": 0.0,
+            "median_final": 980.0
+          }
+        },
+        "risk cap 2% | cost $2.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 994.0,
+            "max_drawdown_pct": 4.2,
+            "min_equity": 994.0,
+            "trades_taken": 3,
+            "trades_skipped": 3,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -2.2,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 1000.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.0,
+            "p_stranded": 0.0,
+            "median_final": 978.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.0,
+            "p_stranded": 0.0,
+            "median_final": 978.0
+          }
+        },
+        "risk cap 2% | cost $4.50": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 986.5,
+            "max_drawdown_pct": 4.7,
+            "min_equity": 986.5,
+            "trades_taken": 3,
+            "trades_skipped": 3,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -2.4,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 1000.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.0,
+            "p_stranded": 0.0,
+            "median_final": 976.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.0,
+            "p_stranded": 0.0,
+            "median_final": 976.0
+          }
+        }
+      }
+    },
+    "fade (NQ->MNQ)": {
+      "n_trades": 6,
+      "one_contract_stop_risk_usd": 60.0,
+      "one_contract_stop_risk_pct_of_start": 6.0,
+      "mean_r_gross": 0.5,
+      "scenarios": {
+        "1 micro always | cost $0.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 1180.0,
+            "max_drawdown_pct": 5.4,
+            "min_equity": 1000.0,
+            "trades_taken": 6,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -5.4,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 1000.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.012,
+            "p_stranded": 0.0,
+            "median_final": 4000.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.545,
+            "p_stranded": 0.277,
+            "median_final": 1000.0
+          }
+        },
+        "1 micro always | cost $2.00": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 1168.0,
+            "max_drawdown_pct": 5.5,
+            "min_equity": 1000.0,
+            "trades_taken": 6,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -5.5,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 1000.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.021,
+            "p_stranded": 0.0,
+            "median_final": 3800.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.62,
+            "p_stranded": 0.346,
+            "median_final": 800.0
+          }
+        },
+        "1 micro always | cost $4.50": {
+          "tradeable_at_start": true,
+          "replay": {
+            "final_equity": 1153.0,
+            "max_drawdown_pct": 5.8,
+            "min_equity": 1000.0,
+            "trades_taken": 6,
+            "trades_skipped": 0,
+            "stranded_at_trade": null,
+            "worst_trade_pct_of_equity": -5.8,
+            "max_contracts": 1,
+            "margin_per_contract_tolerable": 1000.0
+          },
+          "bootstrap_observed_edge": {
+            "p_ruin_half": 0.031,
+            "p_stranded": 0.001,
+            "median_final": 3550.0
+          },
+          "bootstrap_zero_edge": {
+            "p_ruin_half": 0.706,
+            "p_stranded": 0.446,
+            "median_final": 370.0
+          }
+        },
+        "risk cap 5% | cost $0.00": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 6.0% > cap 5%"
+        },
+        "risk cap 5% | cost $2.00": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 6.0% > cap 5%"
+        },
+        "risk cap 5% | cost $4.50": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 6.0% > cap 5%"
+        },
+        "risk cap 2% | cost $0.00": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 6.0% > cap 2%"
+        },
+        "risk cap 2% | cost $2.00": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 6.0% > cap 2%"
+        },
+        "risk cap 2% | cost $4.50": {
+          "tradeable_at_start": false,
+          "why": "one contract risks 6.0% > cap 2%"
+        }
+      }
+    }
+  },
+  "excluded": {
+    "pairs": {
+      "closed_legs": 4,
+      "reason": "no stop price (spread exit), so risk cannot be sized; also needs 2 legs (e.g. MNQ + MES) at once",
+      "worst_leg_usd": -694.5
+    }
+  }
+}
