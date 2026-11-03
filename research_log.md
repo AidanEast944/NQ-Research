@@ -2410,3 +2410,12 @@ _Note (added 2026-10-26): this log has no Entry 36 - numbering jumps from 35 to 
 - Combined with Entries 93-96: simple momentum, reversal, breakout, moving-average and carry rules on 19 daily futures markets show no robust
   after-cost edge that passes our bar on validation. Both carry rules stay on the frozen forward roster (free forward evidence from 2026-11-03).
   diversified_lowturnover: 2 of 12 used. The sealed holdout remains untouched. Verdicts recorded as not_supported.
+
+## Entry 100 — 2026-11-03 — Heartbeat caught a DST crash in the retired trend-forward job; fixed
+
+- The 6:10 PM heartbeat on 11/2 flagged com.nqresearch.trendforward (exit code 1, Traceback). Cause: archive files carry their own UTC offset; after the
+  US clock change on 11/1, files with -04:00 and -05:00 offsets concatenated into an object index, and `.index.date` failed. Only this job
+  lacked the `pd.to_datetime(..., utc=True).tz_convert("America/New_York")` step that strategy.py already uses; the live gap, volume and
+  shadow jobs were unaffected (their trades on 11/2 resolved normally). Strategy is RETIRED (Entry 6), so no trade was at risk.
+- Fix: src/trend_forward_daily.py parses each file as UTC and converts to Eastern. Verified it runs. The new overnight jobs (daily futures
+  refresh, forward tracker) ran on schedule on 11/3 and the data is current through 11/2; the first scored forward day arrives on 11/3.

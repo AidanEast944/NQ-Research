@@ -32,7 +32,13 @@ if not files:
     print("No archive data available.")
     sys.exit()
 
-all_days = [pd.read_csv(f, index_col="Datetime", parse_dates=True) for f in files]
+# Archive files carry their own UTC offset (-04:00 before the US clock change, -05:00 after). Parsing them together with parse_dates=True
+# gave an object index after 2026-11-01 and crashed on .date (heartbeat caught it 2026-11-02). Parse as UTC, then convert to Eastern.
+all_days = []
+for f in files:
+    d = pd.read_csv(f, index_col="Datetime")
+    d.index = pd.to_datetime(d.index, utc=True).tz_convert("America/New_York")
+    all_days.append(d)
 history = pd.concat(all_days)
 history = history[~history.index.duplicated(keep="first")]
 history = history.sort_index()
