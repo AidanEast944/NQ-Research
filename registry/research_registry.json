@@ -86,6 +86,24 @@
       "log_entry": 95,
       "verdict_note": "Ran on a pipeline that silently skipped ~10 of 19 markets (Entry 95); valid for what the code did, not for the 19-market rule",
       "scored_at": "2026-10-28T20:12:12"
+    },
+    "dlt_tscarry": {
+      "script": "src/research/dlt_tscarry_test.py",
+      "declared_trials": 1,
+      "description": "Pre-registered time-series carry, 19 futures, monthly rebalance, discovery 2010-2019 and validation 2020-2023",
+      "status": "registered",
+      "registered_at": "2026-11-03T06:56:22",
+      "script_commit": "a307a06593f3bd378fc4a2014f5584093bc43dc4",
+      "family": "diversified_lowturnover"
+    },
+    "dlt_xscarry": {
+      "script": "src/research/dlt_xscarry_test.py",
+      "declared_trials": 1,
+      "description": "Pre-registered cross-sectional carry, 19 futures, monthly rebalance, discovery 2010-2019 and validation 2020-2023",
+      "status": "registered",
+      "registered_at": "2026-11-03T06:56:22",
+      "script_commit": "a307a06593f3bd378fc4a2014f5584093bc43dc4",
+      "family": "diversified_lowturnover"
     }
   }
 }

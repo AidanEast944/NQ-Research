@@ -13,3 +13,7 @@
 {"ts": "2026-10-28T20:09:28", "event": "registered", "code_commit": "729527e", "id": "dv_tsmom_L252_skip21_rebalM", "registry_id": "dv_tsmom_L252_skip21_rebalM"}
 {"ts": "2026-11-03T06:25:28", "event": "queued", "code_commit": "a307a06", "id": "dlt_tscarry", "fingerprint": "16d3d6212587fa38", "spec_hash": "e23628363b72ad96", "declared_trials": 1, "author": "claude-proposer"}
 {"ts": "2026-11-03T06:25:28", "event": "queued", "code_commit": "a307a06", "id": "dlt_xscarry", "fingerprint": "9f9f0700574a393b", "spec_hash": "7bbfab7117c92de2", "declared_trials": 1, "author": "claude-proposer"}
+{"ts": "2026-11-02T22:28:50", "event": "approved", "code_commit": "f64a152", "id": "dlt_tscarry", "note": "", "decided_by": "human"}
+{"ts": "2026-11-02T22:28:50", "event": "approved", "code_commit": "f64a152", "id": "dlt_xscarry", "note": "", "decided_by": "human"}
+{"ts": "2026-11-03T06:56:22", "event": "registered", "code_commit": "f64a152", "id": "dlt_tscarry", "registry_id": "dlt_tscarry"}
+{"ts": "2026-11-03T06:56:22", "event": "registered", "code_commit": "f64a152", "id": "dlt_xscarry", "registry_id": "dlt_xscarry"}

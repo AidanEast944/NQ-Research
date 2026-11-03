@@ -180,7 +180,7 @@
     "registry_id": "dv_tsmom_L252_skip21_rebalM"
   },
   {
-    "status": "queued",
+    "status": "registered",
     "submitted_at": "2026-11-03T06:25:28",
     "spec": {
       "id": "dlt_tscarry",
@@ -246,10 +246,13 @@
     },
     "fingerprint": "16d3d6212587fa38",
     "family": "34a9129ba646a679",
-    "spec_hash": "e23628363b72ad96"
+    "spec_hash": "e23628363b72ad96",
+    "decision_note": "",
+    "decided_at": "2026-11-02T22:28:50",
+    "registry_id": "dlt_tscarry"
   },
   {
-    "status": "queued",
+    "status": "registered",
     "submitted_at": "2026-11-03T06:25:28",
     "spec": {
       "id": "dlt_xscarry",
@@ -315,6 +318,9 @@
     },
     "fingerprint": "9f9f0700574a393b",
     "family": "34a9129ba646a679",
-    "spec_hash": "7bbfab7117c92de2"
+    "spec_hash": "7bbfab7117c92de2",
+    "decision_note": "",
+    "decided_at": "2026-11-02T22:28:50",
+    "registry_id": "dlt_xscarry"
   }
 ]
