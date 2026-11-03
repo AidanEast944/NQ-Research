@@ -172,6 +172,7 @@ def evaluate(c, rets, prices):
     net = bt["net"]
     contrib = (w * rets.fillna(0.0).loc[bt.index]).sum()
     active = (w.abs().sum() > 0)
+    n_traded = int(active.sum())
     breadth = float((contrib[active] > 0).mean()) if active.any() else 0.0
     h1, h2 = net[net.index < HALF_SPLIT], net[net.index >= HALF_SPLIT]
     years = max((net.index.max() - net.index.min()).days / 365.25, 1e-9)
@@ -180,7 +181,7 @@ def evaluate(c, rets, prices):
             "sharpe_h1": E.sharpe(h1), "sharpe_h2": E.sharpe(h2), "ann_ret": float(net.mean() * 252),
             "ann_vol": float(net.std() * np.sqrt(252)), "max_dd": E.max_drawdown(net), "breadth": breadth,
             "turnover_yr": float(bt["turnover"].sum() / years), "cost_drag_yr": float(bt["cost"].sum() / years),
-            "n_days": int(len(net)), "skew": float(stats.skew(net.dropna())),
+            "n_days": int(len(net)), "markets_traded": n_traded, "skew": float(stats.skew(net.dropna())),
             "kurt": float(stats.kurtosis(net.dropna(), fisher=False))}, net
 
 
@@ -298,6 +299,13 @@ def run(root=".", data_dir=None, grid=None, gate_check=True):
     # Every pass over the grid is a fresh look at the data, so the deflation counts EVERY evaluation ever made (a rerun after a bug fix
     # counts again, voided runs included). The approved budget counts distinct candidate ids; the deflation counts looks.
     n_total = sum(r["grid_size"] for r in led["runs"]) + len(grid)
+    # Silent-skip guard (Entry 95): within EACH signal family, some candidate must trade every market in the universe.
+    n_uni = rets.shape[1]
+    for fam_name in sorted({r["family"] for r in rows}):
+        cov = max(r["markets_traded"] for r in rows if r["family"] == fam_name)
+        if cov < n_uni:
+            raise SystemExit(f"REFUSED: in the {fam_name} family at most {cov} of {n_uni} markets ever trade. A market is being silently "
+                             "skipped; nothing was recorded in the ledger.")
     chance = add_dsr(rows, nets, n_total)
     apply_filters(rows)
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -308,20 +316,22 @@ def run(root=".", data_dir=None, grid=None, gate_check=True):
     pd.DataFrame([{**{k: v for k, v in r.items() if k not in ("params", "fails")}, "params": json.dumps(r["params"]),
                    "fails": ",".join(r["fails"])} for r in rows]).to_csv(os.path.join(out, "all_candidates.csv"), index=False)
     pd.DataFrame(nets).to_csv(os.path.join(out, "daily_net_returns.csv"))
-    review = write_review(rows, nets, n_total, chance, out, run_id)
+    review = write_review(rows, nets, n_total, chance, out, run_id, rets_n=n_uni)
     save_ledger(led, root)
     with open(os.path.join(root, OUT_DIR, "latest.txt"), "w") as f:
         f.write(run_id)
     return rows, review, out
 
 
-def write_review(rows, nets, n_total, chance_sharpe, out, run_id):
+def write_review(rows, nets, n_total, chance_sharpe, out, run_id, rets_n=19):
     passed = sorted([r for r in rows if r["passes"]], key=lambda r: -r["sharpe_net"])
     top = passed[:TOP_K]
     best = max(rows, key=lambda r: r["sharpe_net"])
     L = [f"# Strategy discovery review {run_id}", "",
          f"**Searched {len(rows)} strategies on 2011-09 to 2019-12 only** (cumulative trials counted: {n_total}). "
          f"Validation (2020-2023) and the sealed holdout (2024+) were not read.", "",
+         f"- Market coverage check passed: in every signal family, all {rets_n} universe markets trade "
+         f"(median {int(np.median([r['markets_traded'] for r in rows]))} per candidate).",
          f"- Passed all filters: **{len(passed)} of {len(rows)}**.",
          f"- Best net Sharpe in the whole search: {best['sharpe_net']:.2f} ({best['id']}).",
          f"- Best Sharpe you would expect from {n_total} strategies with NO real edge: about **{chance_sharpe:.2f}**. "

@@ -48,6 +48,8 @@ def run(cid, data_dir=None, write=True):
     ok, msg = leakage.truncation_test(lambda d: D.signal(cand, D.adj_index(d), d)[syms[0]], rets, min_rows=320)
     print(f"look-ahead truncation test on the signal: {'PASS' if ok else 'FAIL'} - {msg}")
     bt, w = E.run_weights(D.decided_weights(cand, rets), rets, prices)
+    n_mk = E.require_all_markets_trade(w, syms, cid, T.VAL_START, T.VAL_END)     # refuse if any market is silently never traded
+    print(f"market coverage check: {n_mk} of {len(syms)} markets traded at least once in validation")
     net = bt["net"]
     disc = net[(net.index >= D.EVAL_START) & (net.index <= D.DISC_END)]
     val = net[(net.index >= T.VAL_START) & (net.index <= T.VAL_END)]

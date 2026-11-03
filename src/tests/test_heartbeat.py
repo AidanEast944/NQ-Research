@@ -6,11 +6,13 @@ import heartbeat as hb
 NOW = datetime(2026, 10, 26, 18, 10)  # Monday
 
 
-def make_plist(label, hour, minute, weekday=None, err=None):
+def make_plist(label, hour, minute, weekday=None, err=None, day=None):
     d = tempfile.mkdtemp()
     sci = {"Hour": hour, "Minute": minute}
     if weekday is not None:
         sci["Weekday"] = weekday
+    if day is not None:
+        sci["Day"] = day
     body = {"Label": label, "StartCalendarInterval": sci}
     if err:
         body["StandardErrorPath"] = err
@@ -81,6 +83,18 @@ class TestHeartbeat(unittest.TestCase):
         p = make_plist("com.nqresearch.a", 5, 5)
         probs, _, _ = hb.check(NOW, fake(5), [p], {"com.nqresearch.a": {"runs": 5, "err_size": 0}})
         self.assertEqual(probs, [])
+
+    def test_monthly_job_is_not_expected_every_day(self):
+        p = make_plist("com.nqresearch.monthly", 6, 20, day=1)           # NOW is the 26th; last slot was the 1st
+        st = {"com.nqresearch.monthly": {"runs": 5, "err_size": 0, "at": "2026-10-02T09:00:00"}}   # snapshot after the last slot
+        probs, _, _ = hb.check(NOW, fake(5), [p], st)
+        self.assertEqual(probs, [])
+
+    def test_monthly_job_that_missed_its_slot_is_flagged(self):
+        p = make_plist("com.nqresearch.monthly", 6, 20, day=1)
+        st = {"com.nqresearch.monthly": {"runs": 5, "err_size": 0, "at": "2026-09-20T09:00:00"}}   # snapshot before the Oct 1 slot
+        probs, _, _ = hb.check(NOW, fake(5), [p], st)
+        self.assertTrue(any("did not run" in x for x in probs))
 
     def test_first_run_has_no_false_alarms(self):
         p = make_plist("com.nqresearch.a", 17, 5)

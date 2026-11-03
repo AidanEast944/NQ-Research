@@ -1,0 +1,47 @@
+{
+  "generated": "2026-11-03T06:26:18",
+  "forward_start": "2026-11-02",
+  "data_last_date": "2026-10-27",
+  "entries": {
+    "tsmom_L252_skip21_rebalM": {
+      "kind": "discover",
+      "note": "benchmark: 12-month time-series momentum; failed discovery filters after the Entry 95 fix (net Sharpe 0.25)",
+      "days": 0,
+      "last_date": null,
+      "cum_net": null,
+      "max_dd": null,
+      "net_sharpe": null,
+      "status": "no_forward_days_yet"
+    },
+    "xsmom_L21_skip0_rebalM_vf": {
+      "kind": "discover",
+      "note": "corrected-search survivor 1 (net Sharpe 0.46, second half 0.09)",
+      "days": 0,
+      "last_date": null,
+      "cum_net": null,
+      "max_dd": null,
+      "net_sharpe": null,
+      "status": "no_forward_days_yet"
+    },
+    "reversal_L5_rebalW": {
+      "kind": "discover",
+      "note": "corrected-search survivor 2 (net Sharpe 0.43, 59x turnover)",
+      "days": 0,
+      "last_date": null,
+      "cum_net": null,
+      "max_dd": null,
+      "net_sharpe": null,
+      "status": "no_forward_days_yet"
+    },
+    "dlt_tscarry": {
+      "kind": "carry",
+      "note": "pre-registered carry candidate (needs data/futures_daily_c1)",
+      "status": "waiting_for_data"
+    },
+    "dlt_xscarry": {
+      "kind": "carry",
+      "note": "pre-registered carry candidate (needs data/futures_daily_c1)",
+      "status": "waiting_for_data"
+    }
+  }
+}

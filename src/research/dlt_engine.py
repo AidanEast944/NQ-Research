@@ -124,3 +124,20 @@ def sharpe(r):
 def max_drawdown(r):
     eq = (1 + pd.Series(r).fillna(0)).cumprod()
     return float((eq / eq.cummax() - 1).min())
+
+
+def markets_traded(w, start=None, end=None):
+    """Symbols whose weight is non-zero on at least one day in [start, end]."""
+    ww = w.loc[start:end] if (start is not None or end is not None) else w
+    return [c for c in ww.columns if (ww[c].abs() > 0).any()]
+
+
+def require_all_markets_trade(w, symbols, label, start=None, end=None):
+    """Guard added after the 2026-10-28 bug (Entry 95), where ~10 of 19 markets were silently never sized. A run that does not
+    trade every market in the universe at least once in its window is refused, never reported."""
+    got = markets_traded(w, start, end)
+    missing = [s for s in symbols if s not in got]
+    if missing:
+        raise SystemExit(f"REFUSED ({label}): {len(missing)} of {len(symbols)} markets never traded in the window: {missing}. "
+                         "This is the silent-skip failure; fix the data or signal before reading any result.")
+    return len(got)

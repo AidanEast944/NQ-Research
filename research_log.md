@@ -2372,3 +2372,22 @@ _Note (added 2026-10-26): this log has no Entry 36 - numbering jumps from 35 to 
   rolls over (Monday 2026-11-02). The tests cannot run until data/futures_daily_c1 holds all 19 markets (a data pull of about $0.87, human-run).
 - Disclosure: Aidan and Claude have seen momentum results on this universe, but nothing about carry. Known limits: the Databento .c.1 series
   may jump when the second contract changes cycle (FX/metals serial months), which makes carry noisy for those markets; RTY starts 2017.
+
+## Entry 98 — 2026-11-02 — Silent-skip guard, carry specs submitted, forward tracker + monthly report + daily data refresh built
+
+- Silent-skip guard (the Entry 95 lesson): dlt_engine.require_all_markets_trade is now called by the family harness (dlt_test), the
+  validation harness (dv_test) and, per signal family, by discover.run; a run in which any universe market is never sized is REFUSED
+  and, for the search, nothing is written to the ledger. Reports print "N of 19 markets traded". New tests build a flat-price market and
+  confirm all three refuse. The corrected search reproduces exactly in a temp root (2 of 240 pass, best Sharpe 0.67).
+- Carry: dlt_tscarry and dlt_xscarry submitted to the lab (weekly allowance 2 of 2, queued, awaiting Aidan's approval; each declares
+  1 of the 12 diversified_lowturnover trials; the second shows a harmless "same rules family" notice because both are carry variants,
+  declared as 1 trial each). Neither can run until data/futures_daily_c1 holds all 19 markets (12 of 19 on 11/2: missing 6E, 6J, 6B, 6A, ZC, ZS, ZW).
+- Ongoing feed (all read-only, no trials): registry/forward_roster.json freezes five candidates on 2026-11-02 (12-month tsmom benchmark, the two
+  corrected-search survivors, both carry rules). src/forward_daily.py reports ONLY daily net returns on dates after forward_start; earlier
+  history is warm-up only and the sealed holdout (2024-01-01 to 11/02) is never scored. A Sharpe appears after 60 forward days.
+  src/research/refresh_daily_futures.py refreshes data/futures_daily and data/futures_daily_c1 incrementally (cents per run, --max-cost 0.25,
+  merge never shrinks a file, exits 1 on failure so the heartbeat alerts). src/monthly_report.py writes results/monthly_report_YYYY-MM.md
+  (paper-track changes since last report, forward tracker, status snapshot). Three launchd jobs prepared, NOT yet installed: dailyfuturesrefresh
+  3:20 AM, forwarddaily 3:40 AM, monthlyreport on the 1st at 6:20 AM. heartbeat.py now understands monthly (Day) schedules.
+- Untested against the live Databento API (sandbox cannot reach it): the refresh script's quote and pull calls reuse the proven puller
+  patterns but should be watched on their first run (quote-only mode is the default). 125 tests pass.

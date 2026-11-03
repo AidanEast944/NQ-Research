@@ -1,0 +1,12 @@
+{
+  "frozen_at": "2026-11-02",
+  "forward_start": "2026-11-02",
+  "rule": "Only daily returns on dates AFTER forward_start are ever reported. Earlier history is used solely as warm-up for the signals. The sealed holdout (2024-01-01 to forward_start) is never scored here. The roster is frozen: adding or changing an entry is a human decision and a new, dated roster line, never an edit of an existing one.",
+  "entries": [
+    {"id": "tsmom_L252_skip21_rebalM", "kind": "discover", "note": "benchmark: 12-month time-series momentum; failed discovery filters after the Entry 95 fix (net Sharpe 0.25)"},
+    {"id": "xsmom_L21_skip0_rebalM_vf", "kind": "discover", "note": "corrected-search survivor 1 (net Sharpe 0.46, second half 0.09)"},
+    {"id": "reversal_L5_rebalW", "kind": "discover", "note": "corrected-search survivor 2 (net Sharpe 0.43, 59x turnover)"},
+    {"id": "dlt_tscarry", "kind": "carry", "carry_kind": "tscarry", "note": "pre-registered carry candidate (needs data/futures_daily_c1)"},
+    {"id": "dlt_xscarry", "kind": "carry", "carry_kind": "xscarry", "note": "pre-registered carry candidate (needs data/futures_daily_c1)"}
+  ]
+}

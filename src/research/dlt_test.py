@@ -111,6 +111,8 @@ def run(cand, data_dir=None, write=True):
         ok, msg = leakage.truncation_test(lambda d: E.momentum_score(d["ES"], cand["months"]), rets)
     print(f"look-ahead truncation test on the {'carry' if cscore is not None else 'momentum'} score: {'PASS' if ok else 'FAIL'} - {msg}")
     bt, w = E.backtest(rets, prices, cand["months"], cand["kind"], score=cscore)
+    n_mk = E.require_all_markets_trade(w, syms, cand["id"])      # refuse if any market is silently never traded
+    print(f"market coverage check: {n_mk} of {len(syms)} markets traded at least once")
     first = w.abs().sum(axis=1).gt(0).idxmax()
     disc, val = score(bt)
     disc = disc[disc.index >= first]

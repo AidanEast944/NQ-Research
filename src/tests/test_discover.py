@@ -103,6 +103,17 @@ class TestDiscover(unittest.TestCase):
         with self.assertRaises(SystemExit):
             D.run(root=root, data_dir=d, grid=D.build_grid()[:len(g) + 5] + g, gate_check=True)
 
+    def test_run_refuses_and_records_nothing_when_a_market_is_never_traded(self):
+        root = tempfile.mkdtemp(); d = synth_dir()
+        flat = pd.read_csv(os.path.join(d, "SI.csv"))
+        for col in ("open", "high", "low", "close"):
+            flat[col] = 50.0
+        flat.to_csv(os.path.join(d, "SI.csv"), index=False)
+        with self.assertRaises(SystemExit) as cm:
+            D.run(root=root, data_dir=d, grid=small_grid(), gate_check=False)
+        self.assertIn("silently skipped", str(cm.exception))
+        self.assertEqual(D.load_ledger(root)["evaluated"], {})
+
     def test_filters_flag_each_failure(self):
         base = {"id": "x", "family": "tsmom", "params": {"L": 126, "skip": 0, "rebal": "M"}, "volfilter": False, "sharpe_net": 0.8,
                 "sharpe_h1": 0.5, "sharpe_h2": 0.4, "breadth": 0.7, "cost_drag_yr": 0.01}

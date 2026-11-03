@@ -1,0 +1,44 @@
+{
+  "2026-11-03": {
+    "fade": {
+      "balance": 11800.0,
+      "closed": 6,
+      "open": 0
+    },
+    "gap": {
+      "balance": 9760.0,
+      "closed": 27,
+      "open": 0
+    },
+    "pairs": {
+      "balance": 10296.0,
+      "closed": 4,
+      "open": 0
+    },
+    "volume_gap_1_2x": {
+      "balance": 10080.0,
+      "closed": 5,
+      "open": 0
+    },
+    "volume_gap_1_5x": {
+      "balance": 10240.0,
+      "closed": 3,
+      "open": 0
+    },
+    "volume_gap_es_1_2x": {
+      "balance": 9800.0,
+      "closed": 4,
+      "open": 0
+    },
+    "volume_gap_ym_1_2x": {
+      "balance": 9960.0,
+      "closed": 8,
+      "open": 0
+    },
+    "volume_gap_ym_1_5x": {
+      "balance": 10000.0,
+      "closed": 6,
+      "open": 0
+    }
+  }
+}

@@ -4,3 +4,5 @@
 {"id": "ym_mini_vol12", "fingerprint": "fc7409081c5fe6d4", "family": "89f58277458c362d", "status": "approved"}
 {"id": "dv_tsmom_L252_skip21_rebalM", "fingerprint": "94997c14429d4415", "family": "7a343b555d93654f", "status": "queued", "submitted_at": "2026-10-28T20:05:10"}
 {"id": "dv_tsmom_L252_skip21_rebalM", "fingerprint": "94997c14429d4415", "family": "7a343b555d93654f", "status": "approved"}
+{"id": "dlt_tscarry", "fingerprint": "16d3d6212587fa38", "family": "34a9129ba646a679", "status": "queued", "submitted_at": "2026-11-03T06:25:28"}
+{"id": "dlt_xscarry", "fingerprint": "9f9f0700574a393b", "family": "34a9129ba646a679", "status": "queued", "submitted_at": "2026-11-03T06:25:28"}

@@ -42,12 +42,12 @@ def read_plist(path):
 
 
 def scheduled_slots(p):
-    """List of (hour, minute, weekday_or_None) from StartCalendarInterval; [] for non-calendar jobs."""
+    """List of (hour, minute, weekday_or_None, day_of_month_or_None) from StartCalendarInterval; [] for non-calendar jobs."""
     sci = p.get("StartCalendarInterval")
     if sci is None:
         return []
     items = sci if isinstance(sci, list) else [sci]
-    return [(d.get("Hour"), d.get("Minute", 0), d.get("Weekday")) for d in items]
+    return [(d.get("Hour"), d.get("Minute", 0), d.get("Weekday"), d.get("Day")) for d in items]
 
 
 def due_today(slots, now, since=None):
@@ -56,15 +56,17 @@ def due_today(slots, now, since=None):
     if since is None:
         return False
     cutoff = now - timedelta(minutes=GRACE_MIN)
-    for hour, minute, weekday in slots:
+    for hour, minute, weekday, dom in slots:
         if hour is None:
             continue
-        for back in range(0, 9):
+        for back in range(0, 40):   # 40 days back so a monthly (Day=1) slot is found
             day = (now - timedelta(days=back)).replace(hour=hour, minute=minute, second=0, microsecond=0)
             if day > cutoff:
                 continue
             wd = (day.weekday() + 1) % 7   # launchd: 0/7 = Sunday, 1 = Monday ... 6 = Saturday
             if weekday is not None and weekday % 7 != wd:
+                continue
+            if dom is not None and day.day != dom:
                 continue
             if day > since:
                 return True

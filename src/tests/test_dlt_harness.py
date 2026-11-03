@@ -52,6 +52,16 @@ class TestHarness(unittest.TestCase):
         out = validator.check_many(res, pol, fams)
         self.assertTrue(out["dlt_unit"]["passed_deterministic_checks"], out)
 
+    def test_refuses_when_a_market_is_silently_never_traded(self):
+        d = make_dir()
+        flat = pd.read_csv(os.path.join(d, "GC.csv"))
+        for col in ("open", "high", "low", "close"):
+            flat[col] = 100.0                                   # constant price -> zero vol -> never sized
+        flat.to_csv(os.path.join(d, "GC.csv"), index=False)
+        with self.assertRaises(SystemExit) as cm:
+            T.run({"id": "dlt_unit", "kind": "tsmom", "months": 6, "declared_trials": 1}, data_dir=d, write=False)
+        self.assertIn("never traded", str(cm.exception))
+
     def test_validator_rejects_wrong_family_cost_model(self):
         import validator, json
         pol = json.load(open("lab/policy.json")); fams = json.load(open("registry/families.json"))
