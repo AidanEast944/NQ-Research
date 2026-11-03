@@ -202,22 +202,22 @@ def to_markdown(res):
         L.append(f"## {name} ({rec['n_trades']} trades, one contract risks ${rec['one_contract_stop_risk_usd']} "
                  f"= {rec['one_contract_stop_risk_pct_of_start']}% of $1,000; mean gross R {rec['mean_r_gross']})")
         L.append("")
-        L.append("| sizing | cost/ct | final $ | max DD | worst trade | margin tol/ct | P(ruin) observed | P(ruin) zero-edge |")
-        L.append("|---|---|---|---|---|---|---|---|")
+        L.append("| sizing | cost/ct | trades taken | final $ | max DD | worst trade | min equity at entry per contract | P(ruin) observed | P(ruin) zero-edge |")
+        L.append("|---|---|---|---|---|---|---|---|---|")
         for key, s in rec["scenarios"].items():
             sz, c = [x.strip() for x in key.split("|")]
             if not s.get("tradeable_at_start"):
-                L.append(f"| {sz} | {c.replace('cost ','')} | not tradeable | | | | | {s['why']} |")
+                L.append(f"| {sz} | {c.replace('cost ','')} | 0 | not tradeable | | | | | {s['why']} |")
                 continue
             r, b1, b0 = s["replay"], s["bootstrap_observed_edge"], s["bootstrap_zero_edge"]
             strand = f" (stranded at #{r['stranded_at_trade']})" if r["stranded_at_trade"] is not None else ""
-            L.append(f"| {sz} | {c.replace('cost ','')} | {r['final_equity']}{strand} | {r['max_drawdown_pct']}% | "
+            L.append(f"| {sz} | {c.replace('cost ','')} | {r['trades_taken']} of {rec['n_trades']} | {r['final_equity']}{strand} | {r['max_drawdown_pct']}% | "
                      f"{r['worst_trade_pct_of_equity']}% | ${r['margin_per_contract_tolerable']} | "
                      f"{b1['p_ruin_half']:.0%} | {b0['p_ruin_half']:.0%} |")
         L.append("")
     for name, e in res["excluded"].items():
         L.append(f"## {name}: excluded - {e['reason']} (worst leg ${e['worst_leg_usd']})")
-    L += ["", "Ruin = equity at or below 50% of start at any point within 100 resampled trades. "
+    L += ["", "A capped rule can only trade when equity is high enough for one contract, so after a loss it skips trades: it looks safe partly by not trading (see trades taken). Zero-edge is degenerate when every trade has the same R. Tracks with under ~10 trades say almost nothing. Ruin = equity at or below 50% of start at any point within 100 resampled trades. "
           "'Zero-edge' removes the average R first, so it shows risk from variance and costs alone."]
     return "\n".join(L)
 
