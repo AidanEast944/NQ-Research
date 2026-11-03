@@ -1,0 +1,16 @@
+candidate dlt_tscarry: tscarry 0m | universe 19 markets | DSR num_trials = 22
+
+/Users/aidaneast/nq-research/venv/lib/python3.14/site-packages/pandas/core/arraylike.py:399: RuntimeWarning: invalid value encountered in log
+  result = getattr(ufunc, method)(*inputs, **kwargs)
+look-ahead truncation test on the carry score: PASS - identical across 5 truncation points
+market coverage check: 19 of 19 markets traded at least once
+
+trading starts 2010-09-01; discovery 2010-09-01..2019-12-31 (2900 days), validation 2020-01-01..2023-12-29 (1243 days)
+  discovery  gross Sharpe   0.54 | NET Sharpe   0.52 | net ann.ret   1.65% | net ann.vol  3.19% | max DD  -6.65% | cum net   20.17%
+  validation gross Sharpe   0.25 | NET Sharpe   0.23 | net ann.ret   0.80% | net ann.vol  3.53% | max DD  -6.75% | cum net    3.69%
+  turnover (sum |dw|) per year: 5.9x | cost drag per year: 0.09%
+  net return by calendar year: 2010: -3.1%, 2011: +11.5%, 2012: +4.3%, 2013: +5.4%, 2014: +2.9%, 2015: +3.4%, 2016: -1.6%, 2017: +2.1%, 2018: -1.2%, 2019: -4.1%, 2020: +0.5%, 2021: +4.5%, 2022: -0.4%, 2023: -0.9%
+
+validation Deflated Sharpe Ratio = 0.075 (needs >= 0.95)
+Mechanical check: conditions NOT met (net Sharpe >= 0.3 in BOTH periods, validation cum net > 0).
+Mechanical reading: NOT SUPPORTED. A human scores it against the pre-registered criteria.

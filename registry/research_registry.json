@@ -91,19 +91,31 @@
       "script": "src/research/dlt_tscarry_test.py",
       "declared_trials": 1,
       "description": "Pre-registered time-series carry, 19 futures, monthly rebalance, discovery 2010-2019 and validation 2020-2023",
-      "status": "registered",
+      "status": "scored",
       "registered_at": "2026-11-03T06:56:22",
       "script_commit": "a307a06593f3bd378fc4a2014f5584093bc43dc4",
-      "family": "diversified_lowturnover"
+      "family": "diversified_lowturnover",
+      "output": "results/dlt_tscarry_output.txt",
+      "last_run": "2026-11-02T22:56:51",
+      "verdict": "not_supported",
+      "log_entry": 99,
+      "verdict_note": "validation net Sharpe 0.23 < 0.3; DSR 0.075",
+      "scored_at": "2026-11-03T06:57:25"
     },
     "dlt_xscarry": {
       "script": "src/research/dlt_xscarry_test.py",
       "declared_trials": 1,
       "description": "Pre-registered cross-sectional carry, 19 futures, monthly rebalance, discovery 2010-2019 and validation 2020-2023",
-      "status": "registered",
+      "status": "scored",
       "registered_at": "2026-11-03T06:56:22",
       "script_commit": "a307a06593f3bd378fc4a2014f5584093bc43dc4",
-      "family": "diversified_lowturnover"
+      "family": "diversified_lowturnover",
+      "output": "results/dlt_xscarry_output.txt",
+      "last_run": "2026-11-02T22:56:52",
+      "verdict": "not_supported",
+      "log_entry": 99,
+      "verdict_note": "validation net Sharpe -0.19; DSR 0.009",
+      "scored_at": "2026-11-03T06:57:25"
     }
   }
 }

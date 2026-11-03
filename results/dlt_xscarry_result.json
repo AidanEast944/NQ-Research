@@ -1,0 +1,18 @@
+{
+  "dlt_xscarry": {
+    "family": "diversified_lowturnover",
+    "n_trades": 160,
+    "n_oos_trades": 48,
+    "net_sharpe_discovery": 0.15036496604345723,
+    "net_sharpe_validation": -0.19401951931753653,
+    "dsr_validation": 0.008653403875202052,
+    "scorecard_run": true,
+    "leakage_test_passed": true,
+    "cost_model": {
+      "slippage_bps_of_notional": 1.0,
+      "commission_round_trip_per_contract": 4.5
+    },
+    "holdout_touched": false,
+    "declared_trials": 1
+  }
+}

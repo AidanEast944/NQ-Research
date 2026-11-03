@@ -2391,3 +2391,22 @@ _Note (added 2026-10-26): this log has no Entry 36 - numbering jumps from 35 to 
   3:20 AM, forwarddaily 3:40 AM, monthlyreport on the 1st at 6:20 AM. heartbeat.py now understands monthly (Day) schedules.
 - Untested against the live Databento API (sandbox cannot reach it): the refresh script's quote and pull calls reuse the proven puller
   patterns but should be watched on their first run (quote-only mode is the default). 125 tests pass.
+
+## Entry 99 — 2026-11-02 — Carry tests scored: both NOT SUPPORTED (diversified_lowturnover 2 of 12)
+
+- Both pre-registered carry tests ran once (results/dlt_tscarry_output.txt, results/dlt_xscarry_output.txt). Look-ahead test passed and all 19 of
+  19 markets traded for both. Second-contract data was complete (19 files); carry signs matched economics (bond carry positive, energy and grains
+  mostly in contango, FX reflecting rate differentials). Pass rule (fixed beforehand): net Sharpe >= 0.3 in BOTH discovery (2010-09..2019) and
+  validation (2020-2023), validation cumulative net > 0; SUPPORTED additionally needs validation DSR >= 0.95 with num_trials 22.
+- dlt_tscarry: discovery net Sharpe 0.52 (gross 0.54, +20.2% cumulative), validation net Sharpe 0.23 (gross 0.25, +3.7%), validation DSR
+  0.075, turnover 5.9x/yr, cost drag 0.09%/yr, max drawdown about -6.7% in each period. Conditions NOT met (validation Sharpe 0.23 < 0.3).
+  By year: 2011 +11.5%, 2012 +4.3%, 2013 +5.4% were the best years; 2016, 2018, 2019 lost; 2020 +0.5%, 2021 +4.5%, 2022 -0.4%, 2023 -0.9%.
+  NOT SUPPORTED.
+- dlt_xscarry: discovery net Sharpe 0.15, validation net Sharpe -0.19 (cum -2.2%), validation DSR 0.009. NOT SUPPORTED.
+- Reading: time-series carry shows a small, positive, low-risk return stream that was clearly present in 2010-2019 and faded to about a 0.2 Sharpe in
+  2020-2023, below the bar we set. Cross-sectional carry within asset classes adds nothing. Portfolio volatility is only about 3% a year because
+  the sizing splits a 10% per-market target across active markets, so absolute returns are small even where the Sharpe is positive (Sharpe is
+  unaffected by this scaling). No parameter was changed after seeing results and none may be: a different carry rule would be a new trial.
+- Combined with Entries 93-96: simple momentum, reversal, breakout, moving-average and carry rules on 19 daily futures markets show no robust
+  after-cost edge that passes our bar on validation. Both carry rules stay on the frozen forward roster (free forward evidence from 2026-11-03).
+  diversified_lowturnover: 2 of 12 used. The sealed holdout remains untouched. Verdicts recorded as not_supported.
